@@ -5,6 +5,7 @@
  *
  */
 
+#include <stdarg.h>
 #include <ts7200.h>
 #include <bwio.h>
 
