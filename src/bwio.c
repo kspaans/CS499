@@ -238,7 +238,7 @@ void bwformat(int channel, char *fmt, va_list va) {
             case 0:
                 return;
             case 'c':
-                bwputc(channel, va_arg(va, char));
+                bwputc(channel, va_arg(va, int));
                 break;
             case 's':
                 bwputw(channel, w, 0, va_arg(va, char *));
