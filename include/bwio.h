@@ -20,20 +20,20 @@ typedef char *va_list;
 #define ON	1
 #define	OFF	0
 
-int bwsetfifo( int channel, int state );
+int bwsetfifo(int channel, int state);
 
-int bwsetspeed( int channel, int speed );
+int bwsetspeed(int channel, int speed);
 
-int bwputc( int channel, char c );
+int bwputc(int channel, char c);
 
-int bwgetc( int channel );
+int bwgetc(int channel);
 
-int bwputx( int channel, char c );
+int bwputx(int channel, char c);
 
-int bwputstr( int channel, char *str );
+int bwputstr(int channel, char *str);
 
-int bwputr( int channel, unsigned int reg );
+int bwputr(int channel, unsigned int reg);
 
-void bwputw( int channel, int n, char fc, char *bf );
+void bwputw(int channel, int n, char fc, char *bf);
 
-void bwprintf( int channel, char *format, ... );
+void bwprintf(int channel, char *format, ...);
