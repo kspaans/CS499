@@ -9,6 +9,8 @@
 #include <ts7200.h>
 #include <bwio.h>
 
+void raise(void) {}
+
 /*
  * The UARTs are initialized by RedBoot to the following state
  * 	115,200 bps
