@@ -4,7 +4,7 @@ SECTIONS
 {
   . = 0x8000;
 
-  .text 0x8000 : /* The actual instructions. */
+  .text : /* The actual instructions. */
   {
     obj/ts7800.o(.text)
     *(.text)
@@ -31,4 +31,6 @@ SECTIONS
     *(COMMON)
     __bss_end__ = .;
   }
+
+  init_stack = 0x8000000;
 }

@@ -1,5 +1,6 @@
 .global ts7800_start
 ts7800_start:
+  ldr sp, =init_stack
   bl zero_bss
   bl main
   b reboot

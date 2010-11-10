@@ -1,87 +1,40 @@
 /*
  * bwio.c - busy-wait I/O routines for diagnosis
  *
- * Specific to the TS-7200 ARM evaluation board
+ * Specific to the TS-7800 ARM evaluation board
  *
  */
 
 #include <stdarg.h>
-#include <ts7200.h>
+#include <ts7800.h>
 #include <bwio.h>
 
-void raise(void) {}
+void raise() {}
 
 /*
- * The UARTs are initialized by RedBoot to the following state
- * 	115,200 bps
- * 	8 bits
- * 	no parity
- * 	fifos enabled
+ * UART 0 is initialized by TS-BOOTROM to the following state:
+ *      115,200 bps
+ *      8 bits
+ *      no parity
+ *      fifos enabled
  */
-int bwsetfifo(int channel, int state) {
-    volatile int *line, buf;
-    switch (channel) {
-    case COM1:
-        line = (int *)(UART1_BASE + UART_LCRH_OFFSET);
-        break;
-    case COM2:
-        line = (int *)(UART2_BASE + UART_LCRH_OFFSET);
-        break;
-    default:
-        return -1;
-        break;
-    }
-    buf = *line;
-    buf = state ? buf | FEN_MASK : buf & ~FEN_MASK;
-    *line = buf;
-    return 0;
-}
-
-int bwsetspeed(int channel, int speed) {
-    volatile int *high, *low;
-    switch (channel) {
-    case COM1:
-        high = (int *)(UART1_BASE + UART_LCRM_OFFSET);
-        low = (int *)(UART1_BASE + UART_LCRL_OFFSET);
-        break;
-    case COM2:
-        high = (int *)(UART2_BASE + UART_LCRM_OFFSET);
-        low = (int *)(UART2_BASE + UART_LCRL_OFFSET);
-        break;
-    default:
-        return -1;
-        break;
-    }
-    switch (speed) {
-    case 115200:
-        *high = 0x0;
-        *low = 0x3;
-        return 0;
-    case 2400:
-        *high = 0x0;
-        *low = 0x90;
-        return 0;
-    default:
-        return -1;
-    }
-}
 
 int bwputc(int channel, char c) {
     volatile int *flags, *data;
     switch (channel) {
     case COM1:
-        flags = (int *)(UART1_BASE + UART_FLAG_OFFSET);
-        data = (int *)(UART1_BASE + UART_DATA_OFFSET);
+        flags = (int *)(UART1_PHYS_BASE + UART_LSR_OFFSET);
+        data = (int *)(UART1_PHYS_BASE + UART_THR_OFFSET);
         break;
     case COM2:
-        flags = (int *)(UART2_BASE + UART_FLAG_OFFSET);
-        data = (int *)(UART2_BASE + UART_DATA_OFFSET);
+        flags = (int *)(UART2_PHYS_BASE + UART_LSR_OFFSET);
+        data = (int *)(UART2_PHYS_BASE + UART_THR_OFFSET);
         break;
     default:
         return -1;
         break;
     }
-    while ((*flags & TXFF_MASK)) ;
+    while (!(*flags & UART_THRE_MASK));
     *data = c;
     return 0;
 }
@@ -111,6 +64,8 @@ int bwputr(int channel, unsigned int reg) {
 }
 
 int bwputstr(int channel, char *str) {
+  bwputc(COM1, '!');
+
     while (*str) {
         if (bwputc(channel, *str) < 0)
             return -1;
@@ -137,18 +92,18 @@ int bwgetc(int channel) {
 
     switch (channel) {
     case COM1:
-        flags = (int *)(UART1_BASE + UART_FLAG_OFFSET);
-        data = (int *)(UART1_BASE + UART_DATA_OFFSET);
+        flags = (int *)(UART1_PHYS_BASE + UART_LSR_OFFSET);
+        data = (int *)(UART1_PHYS_BASE + UART_RBR_OFFSET);
         break;
     case COM2:
-        flags = (int *)(UART2_BASE + UART_FLAG_OFFSET);
-        data = (int *)(UART2_BASE + UART_DATA_OFFSET);
+        flags = (int *)(UART2_PHYS_BASE + UART_LSR_OFFSET);
+        data = (int *)(UART2_PHYS_BASE + UART_RBR_OFFSET);
         break;
     default:
         return -1;
         break;
     }
-    while (!(*flags & RXFF_MASK)) ;
+    while (!(*flags & UART_DRS_MASK)) ;
     c = *data;
     return c;
 }
