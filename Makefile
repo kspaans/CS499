@@ -37,7 +37,7 @@ endif
 
 all: bin/iotest
 
-bin/iotest: obj/bwio.o obj/iotest.o
+bin/iotest: obj/bwio.o obj/iotest.o obj/ts7800.o
 
 bin/% :
 	@mkdir -p $(shell dirname $@)
@@ -60,6 +60,6 @@ obj/%.s : obj/%.c
 	$(CC) -c $(CFLAGS) -o $@ $^
 
 clean:
-	rm -rf obj lib bin/*
+	rm -rf obj lib bin
 
 .PRECIOUS: obj/%.s obj/%.c
