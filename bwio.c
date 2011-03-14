@@ -64,8 +64,6 @@ int bwputr(int channel, unsigned int reg) {
 }
 
 int bwputstr(int channel, char *str) {
-  bwputc(COM1, '!');
-
     while (*str) {
         if (bwputc(channel, *str) < 0)
             return -1;
