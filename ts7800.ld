@@ -31,6 +31,4 @@ SECTIONS
     *(COMMON)
     __bss_end__ = .;
   }
-
-  init_stack = 0x8000000;
 }
