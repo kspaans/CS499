@@ -1,8 +1,9 @@
 .global ts7800_start
 ts7800_start:
-  str lr, [sp, #-4]!
+  stmfd sp!, {fp, lr}
+  mov fp, #0
   bl main
-  ldr lr, [sp], #4
+  ldmfd sp!, {fp, lr}
 
   @ To return to U-Boot you should first return things to the state
   @ you found them: svc mode, interrupts disabled, etc. If you don't

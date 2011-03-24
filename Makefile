@@ -7,7 +7,7 @@ CFLAGS  += -Wall -Werror -Iinclude -std=gnu99
 CFLAGS  += -march=armv5te -mtune=arm926ej-s
 
 # Keep frame pointers
-CFLAGS  += -fno-omit-frame-pointer
+CFLAGS  += -fno-omit-frame-pointer -mapcs-frame
 
 # Make assembly output more readable
 CFLAGS  += -fverbose-asm
