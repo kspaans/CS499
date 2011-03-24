@@ -3,6 +3,11 @@ ts7800_start:
   str lr, [sp, #-4]!
   bl main
   ldr lr, [sp], #4
+
+  @ To return to U-Boot you should first return things to the state
+  @ you found them: svc mode, interrupts disabled, etc. If you don't
+  @ want to bother, reboot instead. U-Boot lives at 0x07FCA000 so
+  @ don't overwrite anything above the stack.
   bx lr
 
 ts7800_reboot:
