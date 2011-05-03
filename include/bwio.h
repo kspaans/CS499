@@ -4,6 +4,7 @@
 
 #define COM1	0
 #define COM2	1
+#define COM3	2
 
 #define ON	1
 #define	OFF	0

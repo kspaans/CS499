@@ -6,7 +6,7 @@
  */
 
 #include <stdarg.h>
-#include <ts7800.h>
+#include <omap3.h>
 #include <bwio.h>
 
 void raise() {}
@@ -29,6 +29,10 @@ int bwputc(int channel, char c) {
     case COM2:
         flags = (int *)(UART2_PHYS_BASE + UART_LSR_OFFSET);
         data = (int *)(UART2_PHYS_BASE + UART_THR_OFFSET);
+        break;
+    case COM3:
+        flags = (int *)(UART3_PHYS_BASE + UART_LSR_OFFSET);
+        data = (int *)(UART3_PHYS_BASE + UART_THR_OFFSET);
         break;
     default:
         return -1;
@@ -96,6 +100,10 @@ int bwgetc(int channel) {
     case COM2:
         flags = (int *)(UART2_PHYS_BASE + UART_LSR_OFFSET);
         data = (int *)(UART2_PHYS_BASE + UART_RBR_OFFSET);
+        break;
+    case COM3:
+        flags = (int *)(UART3_PHYS_BASE + UART_LSR_OFFSET);
+        data = (int *)(UART3_PHYS_BASE + UART_RBR_OFFSET);
         break;
     default:
         return -1;

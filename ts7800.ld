@@ -2,7 +2,7 @@ ENTRY(ts7800_start)
 
 SECTIONS
 {
-  . = 0x8000;
+  . = 0x80000000;
 
   .text : /* The actual instructions. */
   {
