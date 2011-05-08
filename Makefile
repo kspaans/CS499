@@ -1,10 +1,10 @@
-CC = gcc -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -I/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2/include
+CC = gcc
 
 # Standard options
 CFLAGS  += -Wall -Werror -Iinclude -std=gnu99
 
-# ARMv5TE instruction set, ARM926ej-s tuning
-CFLAGS  += -march=armv5te -mtune=arm926ej-s
+# ARMv7 instruction set, Cortex-A8 tuning
+CFLAGS  += -march=armv7-a -mtune=cortex-a8
 
 # Keep frame pointers
 CFLAGS  += -fno-omit-frame-pointer -mapcs-frame
@@ -22,7 +22,7 @@ LDFLAGS += -nostdlib
 LDFLAGS += -Wl,-Map=$@.map
 
 # Custom linker script
-LDFLAGS += -T ts7800.ld
+LDFLAGS += -T omap3.ld
 
 # Disable demand-pageable
 LDFLAGS += -n
@@ -35,9 +35,9 @@ ifeq ($(DEBUG),1)
   CFLAGS += -g -DDEBUG -Wno-unused-function
 endif
 
-all: bin/iotest
+all: bin/kernel
 
-bin/iotest: obj/bwio.o obj/iotest.o obj/ts7800.o
+bin/kernel: obj/kernel.o obj/bwio.o obj/omap3.o obj/vectors.o
 
 bin/% :
 	@mkdir -p $(shell dirname $@)

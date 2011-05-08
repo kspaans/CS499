@@ -1,4 +1,4 @@
-ENTRY(ts7800_start)
+ENTRY(omap3_start)
 
 SECTIONS
 {
@@ -6,7 +6,7 @@ SECTIONS
 
   .text : /* The actual instructions. */
   {
-    obj/ts7800.o(.text)
+    *(.init)
     *(.text)
     *(.got)
     *(.got.plt)
@@ -19,16 +19,17 @@ SECTIONS
 
   .data : /* Initialized data. */
   {
-    __data_start__ = .;
     *(.data)
-    __data_end__ = .;
   }
 
   .bss : /* Uninitialized data. */
   {
-    __bss_start__ = .;
     *(.bss)
     *(COMMON)
-    __bss_end__ = .;
+  }
+
+  .vectors 0x4020FFC8 : /* Exception vectors. */
+  {
+    *(.vectors)
   }
 }
