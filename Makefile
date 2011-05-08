@@ -1,4 +1,4 @@
-CC = gcc
+CC = arm-linux-gnueabi-gcc
 
 # Standard options
 CFLAGS  += -Wall -Werror -Iinclude -std=gnu99

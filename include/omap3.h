@@ -28,4 +28,22 @@
 #define UART_TE_MASK   0x40 /* TxEmpty */
 #define UART_RFE_MASK  0x80 /* RxFIFOErr */
 
+#define GPTIMER1 0x48318000
+#define GPTIMER2 0x49032000
+#define GPTIMER3 0x49034000
+#define GPTIMER4 0x49036000
+#define GPTIMER5 0x49038000
+#define GPTIMER6 0x4903A000
+#define GPTIMER7 0x4903C000
+#define GPTIMER8 0x4903E000
+#define GPTIMER9 0x49040000
+#define GPTIMER10 0x48086000
+#define GPTIMER11 0x48088000
+
+#define TISR 0x018 // timer interrupt status
+#define TIER 0x01C // timer interrupt enable
+#define TCLR 0x024 // timer control register
+#define TCCR 0x028 // this is where the time is
+#define TLDR 0x02C // timer load register (loads this on overflow)
+
 #endif
