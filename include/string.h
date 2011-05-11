@@ -14,7 +14,6 @@
 #define strcmp(s1, s2) __builtin_strcmp(s1, s2)
 #define strncmp(s1, s2, n) __builtin_strncmp(s1, s2, n)
 #define strlen(s) __builtin_strlen(s)
-#define strnlen(s, n) __builtin_strnlen(s, n)
 #define strcat(dst, src) __builtin_strcat(dst, src)
 #define strncat(dst, src, n) __builtin_strcat(dst, src, n)
 #define strcpy(dst, src) __builtin_strcpy(dst, src)
