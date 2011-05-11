@@ -37,7 +37,7 @@ endif
 
 all: bin/kernel
 
-bin/kernel: obj/kernel.o obj/bwio.o obj/omap3.o obj/vectors.o obj/backtrace.o obj/kmalloc.o
+bin/kernel: obj/kernel.o obj/bwio.o obj/omap3.o obj/vectors.o obj/backtrace.o obj/kmalloc.o obj/string.o
 
 bin/% :
 	@mkdir -p $(shell dirname $@)
