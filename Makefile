@@ -1,7 +1,7 @@
 CC = arm-linux-gnueabi-gcc
 
 # Standard options
-CFLAGS  += -Wall -Werror -Iinclude -std=gnu99
+CFLAGS  += -Wall -Werror -Iinclude -std=gnu99 -O2
 
 # ARMv7 instruction set, Cortex-A8 tuning
 CFLAGS  += -march=armv7-a -mtune=cortex-a8
