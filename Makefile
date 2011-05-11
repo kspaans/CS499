@@ -7,7 +7,7 @@ CFLAGS  += -Wall -Werror -Iinclude -std=gnu99
 CFLAGS  += -march=armv7-a -mtune=cortex-a8
 
 # Keep frame pointers
-CFLAGS  += -fno-omit-frame-pointer -mapcs-frame
+CFLAGS  += -fno-omit-frame-pointer -mapcs-frame -marm
 
 # Make assembly output more readable
 CFLAGS  += -fverbose-asm
@@ -37,7 +37,7 @@ endif
 
 all: bin/kernel
 
-bin/kernel: obj/kernel.o obj/bwio.o obj/omap3.o obj/vectors.o
+bin/kernel: obj/kernel.o obj/bwio.o obj/omap3.o obj/vectors.o obj/backtrace.o
 
 bin/% :
 	@mkdir -p $(shell dirname $@)
