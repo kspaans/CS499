@@ -28,6 +28,8 @@ SECTIONS
     *(COMMON)
   }
 
+  runtime_data_start = .;
+
   .vectors 0x4020FFC8 : /* Exception vectors. */
   {
     *(.vectors)
