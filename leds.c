@@ -273,8 +273,8 @@ void gpio_led_set(int gpio, int status) {
 void eth0_led_set(int pin, int status) {
 	volatile int *flags = (int *)(ETH1_BASE + ETH_GPIO_CFG_OFFSET);
 	int cur = *flags;
-	cur &= ~(0x10000000 << pin);
-	cur |= (0x100 << pin);
+	cur &= ~(0x10000000 << pin); // switch LED control to GPIO
+	cur |= (0x100 << pin); // set GPIO output direction
 	if(status)
 		cur |= (0x1 << pin);
 	else

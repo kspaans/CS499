@@ -37,7 +37,7 @@ endif
 
 all: bin/kernel
 
-bin/kernel: obj/kernel.o obj/bwio.o obj/omap3.o obj/vectors.o obj/backtrace.o obj/kmalloc.o obj/string.o
+bin/kernel: obj/kernel.o obj/bwio.o obj/omap3.o obj/vectors.o obj/backtrace.o obj/kmalloc.o obj/string.o obj/leds.o
 
 bin/% :
 	@mkdir -p $(shell dirname $@)
@@ -61,5 +61,7 @@ obj/%.s : obj/%.c
 
 clean:
 	rm -rf obj lib bin
+
+.PHONY: all clean upload
 
 .PRECIOUS: obj/%.s obj/%.c

@@ -1,3 +1,4 @@
+
 /*
  * bwio.c - busy-wait I/O routines for diagnosis
  *
@@ -174,7 +175,9 @@ void bwformat(int channel, char *fmt, va_list va) {
     int w;
 
     while ((ch = *(fmt++))) {
-        if (ch != '%')
+        if (ch == '\n')
+            bwputstr(channel, "\r\n");
+        else if (ch != '%')
             bwputc(channel, ch);
         else {
             lz = 0;
@@ -214,6 +217,9 @@ void bwformat(int channel, char *fmt, va_list va) {
                 bwi2a(va_arg(va, int), bf);
                 bwputw(channel, w, lz, bf);
                 break;
+            case 'p':
+                w = 8;
+                lz = 1;
             case 'x':
                 bwui2a(va_arg(va, unsigned int), 16, bf);
                 bwputw(channel, w, lz, bf);
