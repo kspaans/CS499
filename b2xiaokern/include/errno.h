@@ -16,12 +16,11 @@
 #define ERR_REPLY_NOTBLOCKED -3 /* task is not reply blocked */
 #define ERR_REPLY_NOSPACE    -4 /* insufficient space for the entire reply in sender's reply buffer */
 
-#define ERR_NAMESERVER_BADTID -1 /* task id inside the wrapper is invalid */
-#define ERR_NAMESERVER_NOTI -2 /* task id inside the wrapper is not the name server */
-#define ERR_NAMESERVER_NOMEM -3 /* the name server is out of memory */
-#define ERR_NAMESERVER_UNKNOWN -4 /* Unknown error */
-#define ERR_NAMESERVER_NOSUCHTASK -5 /* No registered task with this name */
-#define ERR_NAMESERVER_NAMETOOLONG -6 /* The name is too long */
+#define ERR_AWAITEVENT_INVALIDEVENT -1 /* eventid is invalid */
+#define ERR_AWAITEVENT_CORRUPTEDDATA -2 /* corrupted volatile data */
+#define ERR_AWAITEVENT_SRRFAIL -3 /* temporary value to indicate that AwaitEvent has not yet returned */
+
+#define ERR_TASKSTAT_BADTID   -1 /* task id is impossible */
 
 #define ERR_BADCALL          -0xbeef
 

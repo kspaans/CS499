@@ -1,0 +1,10 @@
+#ifndef KERN_EVENT_H
+#define KERN_EVENT_H
+
+#define NEVENTS 3
+
+#define EVENT_CLOCKTICK 0
+#define EVENT_CONSOLETRANSMIT 1
+#define EVENT_CONSOLERECEIVE 2
+
+#endif /* KERN_EVENT_H */

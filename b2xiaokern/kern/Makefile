@@ -11,12 +11,10 @@ include ../defs.mk
 -include syscall.dep
 -include main.dep
 -include task.dep
--include nameserver.dep
--include message.dep
--include rps.dep
+-include interrupt.dep
 
-$(PROG).elf: switch.o syscall.o main.o task.o nameserver.o message.o rps.o omap3.o ../lib/libbwio.a
+$(PROG).elf: switch.o syscall.o main.o task.o omap3.o interrupt.o ../lib/libbwio.a
 	$(XCC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) $(LDLIBS)
 
 clean:
-	-rm -f $(PROG).elf *.dep *.o $(PROG).map *.s
+	-rm -f $(PROG).elf *.dep *.o *.map *.s

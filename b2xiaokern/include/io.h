@@ -7,10 +7,7 @@ void init_timer();
 void init_cache();
 
 /* Timers */
-#define TICKS_PER_MSEC 508
-unsigned int read_timer();
-#define T4_TICKS_PER_MSEC 983.04
-unsigned long long read_timer4();
-unsigned int read_clock();
+#define TICKS_PER_MSEC 32768
+unsigned long long read_timer();
 
 #endif /* MACHINEIO_H */

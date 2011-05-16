@@ -3,10 +3,16 @@
 
 typedef void* useraddr_t;
 
+/* Number of non-daemon tasks. The system exits when no non-daemon tasks remain. */
+extern int nondaemon_count;
+
+#define TASK_DAEMON 1
+#define TASK_NORMAL 0
+
 /* Number of priorities supported.
  * Priority numbers run from 0 (highest priority)
  * to TASK_NPRIO-1 (lowest priority). */
-#define TASK_NPRIO          7
+#define TASK_NPRIO          8
 
 /* Size of the stack allocated to each task */
 #define TASK_STACKSIZE      65536 /* 64 KB */
@@ -19,6 +25,7 @@ enum taskstate {
 	TASK_REPLY_BLOCKED,	/* Called Send(), waiting for Reply() */
 	TASK_SEND_BLOCKED,	/* Called Receive(), waiting for Send() */
 	TASK_DEAD,			/* Called Exit() */
+	TASK_EVENT_BLOCKED,
 };
 
 /* NOTE: Changes to the regs stucture MUST be reflected in switch.S. */
@@ -49,6 +56,17 @@ struct tasksrr {
 	int reply_len;
 	/* Receive TID */
 	useraddr_t recv_tidptr;
+	int target_tid;
+};
+
+/* Publically query-able task state. */
+struct task_stat {
+	int tid;
+	int ptid;
+	int priority;
+	int daemon;
+	enum taskstate state;
+	int srrtid;
 };
 
 struct task {
@@ -57,6 +75,8 @@ struct task {
 	int tid;
 	struct task *parent;
 	int priority;
+	int daemon;
+	int stack_start;
 	enum taskstate state;
 	struct tasksrr srr;
 
@@ -71,12 +91,19 @@ void init_tasks();
 int get_user_psr(); /* asm function */
 /* Activate the specified task, allowing it to run */
 void task_activate(struct task *task); /* asm function */
+/* SWI and IRQ handlers */
+void task_syscall(int code, struct task *task); /* in task.c */
+void task_irq(); /* in interrupt.c */
 /* Get the next ready task */
 struct task *task_dequeue();
 /* Enqueue a ready task */
 void task_enqueue(struct task *task);
 /* Lookup a task given its TID */
 struct task *get_task(int tid);
+/* Check for stack overflow */
+void check_stack(struct task* task);
+
+int get_num_tasks();
 
 /* Task queue management */
 void taskqueue_init(taskqueue* queue);
@@ -90,6 +117,7 @@ void print_task(struct task *task);
 
 /* System calls */
 int syscall_Create(struct task *task, int priority, void (*code)());
+int syscall_CreateDaemon(struct task *task, int priority, void (*code)());
 int syscall_MyTid(struct task *task);
 int syscall_MyParentTid(struct task *task);
 void syscall_Pass(struct task *task);
@@ -97,5 +125,13 @@ void syscall_Exit(struct task *task);
 int syscall_Send(struct task *task, int tid, useraddr_t msg, int msglen, useraddr_t reply, int replylen);
 int syscall_Receive(struct task *task, useraddr_t tid, useraddr_t msg, int msglen);
 int syscall_Reply(struct task *task, int tid, useraddr_t reply, int replylen);
+int syscall_AwaitEvent(struct task* task, int eventid);
+int syscall_TaskStat(struct task* task, int tid, useraddr_t stat);
+/* Kernel-internal calls */
+int reserve_tid();
+int do_Create(struct task *task, int priority, void (*code)(), int daemon, int tid);
+
+void event_unblock_all(int eventid, int return_value);
+void event_unblock_one(int eventid, int return_value);
 
 #endif /* KERN_TASK_H */

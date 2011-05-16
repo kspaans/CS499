@@ -146,13 +146,3 @@ int strlen(const char* s) {
 	}
 	return len;
 }
-
-static unsigned int rand_value;
-
-void srand(unsigned int seed) {
-	rand_value = seed;
-}
-
-unsigned int rand() {
-	return rand_value = 1664525U * rand_value + 1013904223U;
-}

@@ -40,11 +40,19 @@
 #define GPTIMER10 0x48086000
 #define GPTIMER11 0x48088000
 
+#define TIDR 0x000 // timer revision
+#define TIOCP_CFG 0x010 // interface options
+# define TIOCP_CFG_SOFTRESET 0x2
+#define TISTAT 0x014 // timer status
+# define TISTAT_RESETDONE 0x1
 #define TISR 0x018 // timer interrupt status
 #define TIER 0x01C // timer interrupt enable
 #define TCLR 0x024 // timer control register
-#define TCCR 0x028 // this is where the time is
+# define TCLR_AR 0x2 // autoreload enable
+# define TCLR_ST 0x1 // timer start
+#define TCRR 0x028 // this is where the time is
 #define TLDR 0x02C // timer load register (loads this on overflow)
+#define TOCR 0x054 // timer overflow counter (timers 1, 2 and 10 only)
 
 #define GPIO1_BASE 0x48310000
 #define GPIO2_BASE 0x40950000
@@ -70,6 +78,14 @@
 #define ETH1_GPMC_SLOT 5
 #define ETH2_BASE 0x2B000000
 #define ETH2_GPMC_SLOT 4
+#define ETH_RX_FIFO_OFFSET 0x00
+#define ETH_RX_FIFO_LEN 0x20
+#define ETH_TX_FIFO_OFFSET 0x20
+#define ETH_TX_FIFO_LEN 0x20
+#define ETH_RX_STS_FIFO_OFFSET 0x40
+#define ETH_RX_STS_PEEK_OFFSET 0x44
+#define ETH_TX_STS_FIFO_OFFSET 0x48
+#define ETH_TX_STS_PEEK_OFFSET 0x4C
 #define ETH_ID_REV_OFFSET 0x50
 #define ETH_IRQ_CFG_OFFSET 0x54
 #define ETH_INT_STS_OFFSET 0x58

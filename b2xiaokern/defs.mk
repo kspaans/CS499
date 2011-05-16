@@ -1,4 +1,4 @@
-S       = /cygdrive/e/devel/cs452-a2
+S       = ..
 XPREFIX = arm-linux-gnueabi-
 XCC     = $(XPREFIX)gcc
 AS      = $(XPREFIX)as
@@ -19,6 +19,9 @@ CFLAGS  += -fverbose-asm
 
 # No unqualified builtin functions
 CFLAGS  += -fno-builtin
+
+# Supervisor-mode tasks
+CFLAGS  += -DSUPERVISOR_TASKS
 
 
 # Do not link in glibc

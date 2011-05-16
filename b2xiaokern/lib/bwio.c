@@ -27,7 +27,7 @@ static void bw_printfunc(void *unused, const char *str, unsigned long len) {
 	}
 }
 
-int printf(const char *fmt, ...) {
+int printk(const char *fmt, ...) {
 	va_list va;
 	va_start(va, fmt);
 	int ret = func_vprintf(bw_printfunc, NULL, fmt, va);
@@ -35,12 +35,12 @@ int printf(const char *fmt, ...) {
 	return ret;
 }
 
-int vprintf(const char *fmt, va_list va) {
+int vprintk(const char *fmt, va_list va) {
 	return func_vprintf(bw_printfunc, NULL, fmt, va);
 }
 
-void puts(const char *str) {
-	printf("%s\n", str);
+void kputs(const char *str) {
+	printk("%s\n", str);
 }
 
 // Blocking getchar.
