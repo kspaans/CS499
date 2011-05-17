@@ -5,6 +5,7 @@
 #include "errno.h"
 #include "task.h"
 #include "ip.h"
+#include "eth.h"
 #include "machine.h"
 
 void idle() {
@@ -150,97 +151,6 @@ static void a2_init() {
 	ASSERTNOERR(Create(0, memcpy_bench));
 }
 
-static uint32_t eth1_read(int offset) {
-	return *(volatile int *)(ETH1_BASE + offset);
-}
-
-static void eth1_write(int offset, uint32_t value) {
-	*(volatile int *)(ETH1_BASE + offset) = value;
-}
-
-static void eth1_mac_wait() {
-	while(eth1_read(ETH_MAC_CSR_CMD_OFFSET) & ETH_MAC_CSR_BUSY)
-		;
-}
-
-static uint32_t eth1_mac_read(int index) {
-	eth1_mac_wait();
-	eth1_write(ETH_MAC_CSR_CMD_OFFSET, ETH_MAC_CSR_BUSY | ETH_MAC_CSR_READ | index);
-	eth1_mac_wait();
-	return eth1_read(ETH_MAC_CSR_DATA_OFFSET);
-}
-
-static void eth1_mac_write(int index, uint32_t value) {
-	eth1_mac_wait();
-	eth1_write(ETH_MAC_CSR_DATA_OFFSET, value);
-	eth1_write(ETH_MAC_CSR_CMD_OFFSET, ETH_MAC_CSR_BUSY | index);
-	eth1_mac_wait();
-}
-
-static void eth1_phy_wait() {
-	while(eth1_mac_read(ETH_MAC_MII_ACC) & ETH_MII_ACC_BUSY)
-		;
-}
-
-static uint16_t eth1_phy_read(int index) {
-	eth1_phy_wait();
-	eth1_mac_write(ETH_MAC_MII_ACC, ETH_MII_ACC_PHY | (index << 6) | ETH_MII_ACC_BUSY);
-	eth1_phy_wait();
-	return eth1_mac_read(ETH_MAC_MII_DATA);
-}
-
-static void eth1_phy_write(int index, uint16_t value) {
-	eth1_phy_wait();
-	eth1_mac_write(ETH_MAC_MII_DATA, value);
-	eth1_mac_write(ETH_MAC_MII_ACC, ETH_MII_ACC_PHY | (index << 6) | ETH_MII_ACC_BUSY | ETH_MII_ACC_WRITE);
-	eth1_phy_wait();
-}
-
-static void init_eth1() {
-	/* phy reset */
-	uint32_t reg = eth1_read(ETH_PMT_CTRL_OFFSET);
-	reg &= 0xFCF;
-	reg |= (1<<10);
-	eth1_write(ETH_PMT_CTRL_OFFSET, reg);
-	while(eth1_read(ETH_PMT_CTRL_OFFSET) & (1<<10))
-		;
-
-	eth1_phy_write(ETH_MII_BCR, ETH_MII_BCR_RESET);
-	while(eth1_phy_read(ETH_MII_BCR) & ETH_MII_BCR_RESET)
-		;
-	eth1_phy_write(ETH_MII_ADVERTISE, 0x01e1);
-	eth1_phy_write(ETH_MII_BCR, ETH_MII_BCR_ANENABLE | ETH_MII_BCR_ANRESTART);
-	while(!(eth1_phy_read(ETH_MII_BSR) & ETH_MII_BSR_LSTS))
-		;
-
-	printk("phy up\n");
-	eth1_write(ETH_HW_CFG_OFFSET, 8 << 16 | 0x00100000);
-	eth1_write(ETH_TX_CFG_OFFSET, ETH_TX_CFG_ON);
-	eth1_mac_write(ETH_MAC_MAC_CR, ETH_MAC_TXEN | ETH_MAC_RXEN);
-}
-
-static void eth1_tx_aligned(uint32_t *buf, uint16_t offset, uint16_t nbytes, int first, int last, uint32_t btag) {
-	volatile uint32_t *port = (uint32_t *)(ETH1_BASE + ETH_TX_FIFO_OFFSET);
-
-	*port = ((offset << 16) | (first << 13) | (last << 12) | nbytes);
-	*port = btag;
-	int ndw = (nbytes+offset+3)>>2;
-	printk("%08X %08X  ", ((offset << 16) | (first << 13) | (last << 12) | nbytes), btag);
-	while(ndw-->0) {
-		printk("%08x ", *buf);
-		*port = *buf++;
-	}
-	printk("\n");
-}
-
-static void eth1_tx(void *buf, uint16_t nbytes, int first, int last, uint32_t btag) {
-	eth1_tx_aligned((uint32_t *)((uint32_t)buf & ~3), (uint32_t)buf & 3, nbytes, first, last, btag);
-}
-
-static uint32_t make_btag(uint32_t tag, uint32_t len) {
-	return (tag << 16) | (len & 0x7ff);
-}
-
 static uint16_t ip_checksum(uint8_t *data, uint16_t len) {
 	uint32_t sum = 0;
 	int i;
@@ -250,21 +160,51 @@ static uint16_t ip_checksum(uint8_t *data, uint16_t len) {
 	return ~((sum & 0xffff) + (sum >> 16));
 }
 
-static uint32_t eth1_sts() {
-	volatile int *flags, *sts;
+static mac_addr_t arp_lookup(uint32_t addr) {
+	struct ethhdr eth;
+	struct arppkt arp;
 
-	flags = (int *)(ETH1_BASE + ETH_TX_FIFO_INF_OFFSET);
-	sts = (int *)(ETH1_BASE + ETH_TX_STS_FIFO_OFFSET);
+	memcpy(eth.preamble, "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab", 8);
+	memset(&eth.dest, 0xff, 6);
+	eth.src = eth_mac_addr(ETH1_BASE);
+	eth.ethertype = SWAP16(ET_ARP);
 
-	while((*flags & 0x00ff0000) == 0x00)
-		;
+	arp.arp_htype = SWAP16(ARP_HTYPE_ETH);
+	arp.arp_ptype = SWAP16(ET_IPV4);
+	arp.arp_hlen = 6;
+	arp.arp_plen = 4;
+	arp.arp_sha = eth.src;
+	arp.arp_spa = SWAP32(0x0a00000b);
+	arp.arp_tpa = SWAP32(addr);
 
-	return *sts;
+	uint32_t btag = MAKE_BTAG(0xcafe, sizeof(eth) + sizeof(arp));
+
+	eth_tx(ETH1_BASE, &eth, sizeof(eth), 1, 0, btag);
+	eth_tx(ETH1_BASE, &arp, sizeof(arp), 0, 1, btag);
+
+	printk("ARP send status 0x%08x\n", eth_tx_wait_sts(ETH1_BASE));
+
+	uint8_t buf[2048];
+	uint32_t sts = eth_rx_wait_sts(ETH1_BASE);
+	uint32_t len = (sts >> 16) & 0x3fff;
+	printk("ARP recv status 0x%08x (len %d)\n", sts, len);
+	eth_rx(ETH1_BASE, (uint32_t *)buf, len);
+	printk("packet:");
+	for(int i=0; i<len; i++) {
+		printk(" %02x", buf[i]);
+	}
+	printk("\n");
+	return arp.arp_sha;
 }
 
 static uint32_t send_udp(uint32_t addr, uint16_t port, char *data, uint16_t len) {
+	struct ethhdr eth;
 	struct ip ip;
 	struct udphdr udp;
+
+	memcpy(eth.preamble, "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab", 8);
+	/* ??? */
+	eth.ethertype = SWAP16(0x0800);
 
 	ip.ip_vhl = IP_VHL_BORING;
 	ip.ip_tos = 0;
@@ -283,13 +223,14 @@ static uint32_t send_udp(uint32_t addr, uint16_t port, char *data, uint16_t len)
 	udp.uh_ulen = SWAP16(sizeof(struct udphdr) + len);
 	udp.uh_sum = SWAP16(0);
 
-	uint32_t btag = make_btag(0xbeef, ip.ip_len);
+	uint32_t btag = MAKE_BTAG(0xbeef, sizeof(eth) + sizeof(ip) + sizeof(udp) + len);
 
-	eth1_tx(&ip, sizeof(struct ip), 1, 0, btag);
-	eth1_tx(&udp, sizeof(struct udphdr), 0, 0, btag);
-	eth1_tx(data, len, 0, 1, btag);
+	eth_tx(ETH1_BASE, &eth, sizeof(eth), 1, 0, btag);
+	eth_tx(ETH1_BASE, &ip, sizeof(ip), 0, 0, btag);
+	eth_tx(ETH1_BASE, &udp, sizeof(udp), 0, 0, btag);
+	eth_tx(ETH1_BASE, data, len, 0, 1, btag);
 
-	return eth1_sts();
+	return eth_tx_wait_sts(ETH1_BASE);
 }
 
 int main() {
@@ -316,8 +257,9 @@ int main() {
 	/* Initialize first user program */
 	syscall_Create(NULL, 0, a2_init);
 
-	init_eth1();
-	printk("PACKET STATUS: %08x\n", send_udp(0xc0a80177, 12345, "abcd", 4));
+	eth_init(ETH1_BASE);
+	arp_lookup(0x0a000000);
+	printk("UDP STATUS: %08x\n", send_udp(0xc0a80177, 12345, "abcd", 4));
 
 	while (nondaemon_count > 0) {
 		next = task_dequeue();

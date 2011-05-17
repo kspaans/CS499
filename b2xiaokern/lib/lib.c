@@ -146,3 +146,10 @@ int strlen(const char* s) {
 	}
 	return len;
 }
+
+void *memset(void *p, int b, int size) {
+	char *c = p;
+	for(int i = 0; i < size; ++i)
+		c[i] = b;
+	return c;
+}

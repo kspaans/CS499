@@ -80,11 +80,12 @@ unsigned long strtoul(const char *start, const char **end, int base);
 int strcmp(const char *s1, const char *s2);
 int strncmp(const char *s1, const char *s2, int len);
 int strlen(const char* s);
+void *memset(void *p, int b, int size);
 
 /* Miscellaneous utilities */
 // Destructively parse args from a buffer. argv will refer to positions within buf.
 int parse_args(char *buf, char **argv, int argv_len);
-void memcpy(char *dest, const char *src, int len);
+void memcpy(void *dest, const void *src, int len);
 void copy_aligned_region(int *dest, const int *src, int len);
 
 #endif /* KERNLIB_H */
