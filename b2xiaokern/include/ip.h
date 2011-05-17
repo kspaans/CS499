@@ -1,5 +1,6 @@
 #ifndef _IP_H
 #define _IP_H
+#include "inttypes.h"
 typedef uint32_t in_addr_t;
 
 struct in_addr {
@@ -29,6 +30,16 @@ enum {
 	IPPROTO_MAX
 };
 
+#define SWAP16(x) \
+	((((uint16_t)((x) & 0x00FF)) << 8) | \
+	 (((uint16_t)((x) & 0xFF00)) >> 8))
+
+#define SWAP32(x) \
+	((((uint32_t)((x) & 0x000000FF)) << 24) | \
+	 (((uint32_t)((x) & 0x0000FF00)) << 8) | \
+	 (((uint32_t)((x) & 0x00FF0000)) >> 8) | \
+	 (((uint32_t)((x) & 0xFF000000)) >> 24))
+
 struct ip {
 #define IPVERSION       4
 #define IP_MAKE_VHL(v, hl)      ((v) << 4 | (hl))
@@ -51,10 +62,10 @@ struct ip {
 };
 
 struct udphdr {
-	u_short	uh_sport;		/* source port */
-	u_short	uh_dport;		/* destination port */
-	u_short	uh_ulen;		/* udp length */
-	u_short	uh_sum;			/* udp checksum */
+	uint16_t	uh_sport;		/* source port */
+	uint16_t	uh_dport;		/* destination port */
+	uint16_t	uh_ulen;		/* udp length */
+	uint16_t	uh_sum;			/* udp checksum */
 };
 
 #endif /* _IP_H */

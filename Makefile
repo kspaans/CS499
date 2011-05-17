@@ -62,6 +62,9 @@ obj/%.s : obj/%.c
 clean:
 	rm -rf obj lib bin
 
+upload: bin/kernel
+	scp bin/kernel csclub:/srv/tftp/ARM/b2xiao/kernel
+
 .PHONY: all clean upload
 
 .PRECIOUS: obj/%.s obj/%.c
