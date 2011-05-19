@@ -63,7 +63,7 @@ clean:
 	rm -rf obj lib bin
 
 upload: bin/kernel
-	scp bin/kernel csclub:/srv/tftp/ARM/b2xiao/kernel
+	scp bin/kernel gumstix.cs.uwaterloo.ca:/srv/tftp/ARM/b2xiao/kernel
 
 .PHONY: all clean upload
 
