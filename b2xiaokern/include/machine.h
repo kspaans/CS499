@@ -1,6 +1,7 @@
 #ifndef OMAP3_MACHINE_H
 #define OMAP3_MACHINE_H
 
+/* UARTs */
 #define UART1_PHYS_BASE 0x4806a000
 #define UART2_PHYS_BASE 0x4806c000
 #define UART3_PHYS_BASE 0x49020000
@@ -15,19 +16,18 @@
 #define UART_LCR_OFFSET 0x0C
 #define UART_MCR_OFFSET 0x10
 #define UART_LSR_OFFSET 0x14
+# define UART_DRS_MASK   0x01 /* DataRxStat */
+# define UART_ORE_MASK   0x02 /* OverRunErr */
+# define UART_PE_MASK    0x04 /* ParErr */
+# define UART_FE_MASK    0x08 /* FrameErr */
+# define UART_BI_MASK    0x10 /* BI */
+# define UART_THRE_MASK  0x20 /* THRE */
+# define UART_TE_MASK    0x40 /* TxEmpty */
+# define UART_RFE_MASK   0x80 /* RxFIFOErr */
 #define UART_MSR_OFFSET 0x18
 #define UART_SCR_OFFSET 0x1C
 
-/* Line Status Register */
-#define UART_DRS_MASK  0x01 /* DataRxStat */
-#define UART_ORE_MASK  0x02 /* OverRunErr */
-#define UART_PE_MASK   0x04 /* ParErr */
-#define UART_FE_MASK   0x08 /* FrameErr */
-#define UART_BI_MASK   0x10 /* BI */
-#define UART_THRE_MASK 0x20 /* THRE */
-#define UART_TE_MASK   0x40 /* TxEmpty */
-#define UART_RFE_MASK  0x80 /* RxFIFOErr */
-
+/* Timers (OMAP3 chapter 16) */
 #define GPTIMER1 0x48318000
 #define GPTIMER2 0x49032000
 #define GPTIMER3 0x49034000
@@ -54,6 +54,7 @@
 #define TLDR 0x02C // timer load register (loads this on overflow)
 #define TOCR 0x054 // timer overflow counter (timers 1, 2 and 10 only)
 
+/* GPIO (OMAP3 chapter 24) */
 #define GPIO1_BASE 0x48310000
 #define GPIO2_BASE 0x40950000
 #define GPIO3_BASE 0x40952000
@@ -72,6 +73,10 @@
 #define GPIO_OE_OFFSET 0x034
 #define GPIO_DATAIN_OFFSET 0x038
 #define GPIO_DATAOUT_OFFSET 0x03C
+#define GPIO_CLEARIRQENABLE1 0x060
+#define GPIO_SETIRQENABLE1 0x064
+#define GPIO_CLEARIRQENABLE2 0x070
+#define GPIO_SETIRQENABLE2 0x074
 
 /* ethernet chips mapped by U-Boot */
 #define ETH1_BASE 0x2C000000
@@ -137,5 +142,48 @@
 #define ETH_E2P_CMD_OFFSET 0xB0
 # define ETH_E2P_MACLOADED 0x00000100
 #define ETH_E2P_DATA_OFFSET 0xB4
+
+/* Vectored interrupt controller (OMAP3 chapter 10) */
+#define INTC_PHYS_BASE 0x48200000
+#define INTCPS_REVISION_OFFSET 0x0000
+#define INTCPS_SYSCONFIG_OFFSET 0x0010
+# define INTCPS_SOFTRESET 0x2
+# define INTCPS_AUTOIDLE 0x1
+#define INTCPS_SYSSTATUS_OFFSET 0x0014
+# define INTCPS_RESETDONE 0x1
+#define INTCPS_SIR_IRQ_OFFSET 0x0040
+# define INTCPS_ACTIVEIRQ_MASK 0x7F
+#define INTCPS_SIR_FIQ_OFFSET 0x0044
+#define INTCPS_CONTROL_OFFSET 0x0048
+# define INTCPS_NEWFIQAGR 0x2
+# define INTCPS_NEWIRQAGR 0x1
+#define INTCPS_PROTECTION_OFFSET 0x004C
+#define INTCPS_IDLE_OFFSET 0x0050
+#define INTCPS_IRQ_PRIORITY_OFFSET 0x0060
+#define INTCPS_FIQ_PRIORITY_OFFSET 0x0064
+#define INTCPS_THRESHOLD_OFFSET 0x0068
+#define INTCPS_VECTORS_OFFSET 0x0080
+#define INTCPS_ILR_OFFSET 0x100
+
+#define IRQ_GPIO1 29
+#define IRQ_GPIO2 30
+#define IRQ_GPIO3 31
+#define IRQ_GPIO4 32
+#define IRQ_GPIO5 33
+#define IRQ_GPIO6 34
+#define IRQ_GPT1 37
+#define IRQ_GPT2 38
+#define IRQ_GPT3 39
+#define IRQ_GPT4 40
+#define IRQ_GPT5 41
+#define IRQ_GPT6 42
+#define IRQ_GPT7 43
+#define IRQ_GPT8 44
+#define IRQ_GPT9 45
+#define IRQ_GPT10 46
+#define IRQ_GPT11 47
+#define IRQ_UART1 72
+#define IRQ_UART2 73
+#define IRQ_UART3 74
 
 #endif /* OMAP3_MACHINE_H */

@@ -70,4 +70,4 @@ ARFLAGS = rs
 .PRECIOUS: %.s
 
 upload: $(PROG).elf
-	scp $(PROG).elf csclub:/srv/tftp/ARM/b2xiao/$(PROG)
+	scp $(PROG).elf gumstix.cs.uwaterloo.ca:/srv/tftp/ARM/b2xiao/$(PROG)

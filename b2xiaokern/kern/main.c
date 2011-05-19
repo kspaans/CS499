@@ -164,7 +164,6 @@ static mac_addr_t arp_lookup(uint32_t addr) {
 	struct ethhdr eth;
 	struct arppkt arp;
 
-	memcpy(eth.preamble, "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab", 8);
 	memset(&eth.dest, 0xff, 6);
 	eth.src = eth_mac_addr(ETH1_BASE);
 	eth.ethertype = SWAP16(ET_ARP);
@@ -173,6 +172,7 @@ static mac_addr_t arp_lookup(uint32_t addr) {
 	arp.arp_ptype = SWAP16(ET_IPV4);
 	arp.arp_hlen = 6;
 	arp.arp_plen = 4;
+	arp.arp_oper = SWAP16(ARP_OPER_REQUEST);
 	arp.arp_sha = eth.src;
 	arp.arp_spa = SWAP32(0x0a00000b);
 	arp.arp_tpa = SWAP32(addr);
@@ -202,7 +202,6 @@ static uint32_t send_udp(uint32_t addr, uint16_t port, char *data, uint16_t len)
 	struct ip ip;
 	struct udphdr udp;
 
-	memcpy(eth.preamble, "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab", 8);
 	/* ??? */
 	eth.ethertype = SWAP16(0x0800);
 
@@ -237,7 +236,9 @@ int main() {
 	struct task *next;
 	/* Start up hardware */
 	init_timer();
-	init_cache();
+	/* For some reason, turning on the caches causes the kernel to hang after finishing
+	   the third invocation. Maybe we have to clear the caches here. */
+	//init_cache();
 
 	init_interrupts();
 
@@ -258,7 +259,7 @@ int main() {
 	syscall_Create(NULL, 0, a2_init);
 
 	eth_init(ETH1_BASE);
-	arp_lookup(0x0a000000);
+	arp_lookup(0x0a000001);
 	printk("UDP STATUS: %08x\n", send_udp(0xc0a80177, 12345, "abcd", 4));
 
 	while (nondaemon_count > 0) {

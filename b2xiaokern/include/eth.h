@@ -10,7 +10,6 @@ typedef struct {
 } mac_addr_t;
 
 struct ethhdr {
-	uint8_t preamble[8];
 	mac_addr_t dest;
 	mac_addr_t src;
 	uint16_t ethertype;
@@ -24,6 +23,7 @@ struct arppkt {
 	uint16_t arp_ptype;
 	uint8_t arp_hlen;
 	uint8_t arp_plen;
+	uint16_t arp_oper;
 	mac_addr_t arp_sha;
 	in_addr_t arp_spa;
 	mac_addr_t arp_tha;
@@ -31,6 +31,8 @@ struct arppkt {
 };
 
 #define ARP_HTYPE_ETH 0x1
+#define ARP_OPER_REQUEST 1
+#define ARP_OPER_REPLY 2
 
 #pragma pack(pop)
 
