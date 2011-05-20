@@ -78,6 +78,11 @@
 #define GPIO_CLEARIRQENABLE2 0x070
 #define GPIO_SETIRQENABLE2 0x074
 
+/* GPIO pins */
+#define GPIO_ETH1_IRQ 176
+#define GPIO_LED1 21 /* stagecoach red LED */
+#define GPIO_LED2 22 /* stagecoach blue LED */
+
 /* ethernet chips mapped by U-Boot */
 #define ETH1_BASE 0x2C000000
 #define ETH1_GPMC_SLOT 5

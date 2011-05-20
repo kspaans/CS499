@@ -40,6 +40,12 @@ enum {
 	 (((uint32_t)((x) & 0x00FF0000)) >> 8) | \
 	 (((uint32_t)((x) & 0xFF000000)) >> 24))
 
+/* standard endian swap functions */
+#define htonl(x) SWAP32(x)
+#define htons(x) SWAP16(x)
+#define ntohl(x) SWAP32(x)
+#define ntohs(s) SWAP16(x)
+
 struct ip {
 #define IPVERSION       4
 #define IP_MAKE_VHL(v, hl)      ((v) << 4 | (hl))

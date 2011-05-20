@@ -15,7 +15,7 @@ get_user_psr:
 #endif
 	@ Enable IRQs, disable FIQs
 	bic   r0, r0, #0xc0
-	orr   r0, r0, #0xc0	@ 0x80=IRQ disable, 0x40=FIQ disable
+	orr   r0, r0, #0x40	@ 0x80=IRQ disable, 0x40=FIQ disable
 	@ Clear condition codes
 	bic   r0, r0, #0xf0000000
 	bx    lr

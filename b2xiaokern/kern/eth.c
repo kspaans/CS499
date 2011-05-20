@@ -111,7 +111,7 @@ int eth_init(int base) {
 	reg &= 0xFCF; /* clear power management mode and wakeup status */
 	reg |= ETH_PMT_CTRL_PHY_RST;
 	eth_write(base, ETH_PMT_CTRL_OFFSET, reg);
-	while(eth_read(base, ETH_PMT_CTRL_OFFSET) & (1<<10))
+	while(eth_read(base, ETH_PMT_CTRL_OFFSET) & ETH_PMT_CTRL_PHY_RST)
 		;
 
 	eth_phy_write(base, ETH_MII_BCR, ETH_MII_BCR_RESET);
