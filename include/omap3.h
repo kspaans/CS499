@@ -88,4 +88,19 @@
 #define ETH_GPT_CFG_OFFSET 0x8C
 #define ETH_GPT_CNT_OFFSET 0x90
 
+/* Watchdot Timer */
+#define WDT2_PHYS_BASE 0x48314000
+
+#define WISR 0x018
+#define WIER 0x01C
+#define WCLR 0x024
+#define WCCR 0x028
+#define WLDR 0x02C
+#define WTGR 0x030
+#define WWPS 0x034
+#define WSPR 0x048
+
+#define W_PEND_WSPR_MASK 0x10
+#define W_PEND_WTGR_MASK 0x08
+
 #endif
