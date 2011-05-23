@@ -4,8 +4,8 @@ TARGET = $(S)/bin/kern.elf
 
 all: $(TARGET)
 
-OBJS = obj/switch.o obj/syscall.o obj/main.o obj/task.o obj/omap3.o obj/interrupt.o obj/eth.o
-LIBS = $(S)/bin/libbwio.a
+OBJS = obj/backtrace.o obj/interrupt.o obj/kmalloc.o obj/main.o obj/omap3.o obj/printk.o obj/switch.o obj/syscall.o obj/task.o obj/userprog.o
+LIBS = $(S)/bin/libbwio.a $(S)/bin/drivers.a
 
 include ../defs.mk
 -include $(OBJS:.o=.dep)

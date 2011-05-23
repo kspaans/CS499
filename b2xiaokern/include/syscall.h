@@ -1,6 +1,6 @@
-#ifndef KERN_SYSCALL_H
-#define KERN_SYSCALL_H
-#include "task.h"
+#ifndef SYSCALL_H
+#define SYSCALL_H
+#include <task.h>
 
 int Create(int priority, void (*code)());
 /* Identical to Create, but it makes a daemon task.
@@ -16,4 +16,4 @@ int Reply(int tid, char *reply, int replylen);
 int AwaitEvent(int eventid);
 int TaskStat(int tid, struct task_stat *stat);
 
-#endif /* KERN_SYSCALL_H */
+#endif /* SYSCALL_H */

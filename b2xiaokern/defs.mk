@@ -45,7 +45,7 @@ endif
 
 
 # New pattern rules
-$(S)/bin/%.elf : $(OBJS) $(LIBS)
+$(S)/bin/%.elf : $(OBJS)
 	-@mkdir -p $(S)/bin
 	$(XCC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS) $(LDLIBS)
 
@@ -53,7 +53,7 @@ $(S)/bin/%.a : $(OBJS)
 	-@mkdir -p $(S)/bin
 	$(AR) crs $@ $(OBJS)
 
-obj/%.s: %.c obj/%.dep
+obj/%.s: %.c
 	-@mkdir -p obj
 	$(XCC) -S $(CFLAGS) -o $@ $(filter %.c,$^)
 
@@ -61,26 +61,27 @@ obj/%.o: obj/%.s
 	-@mkdir -p obj
 	$(XCC) -c $(CFLAGS) -o $@ $<
 
-obj/%.o: %.S obj/%.dep
+obj/%.o: %.S
 	-@mkdir -p obj
 	$(XCC) -c $(CFLAGS) -o $@ $(filter %.S,$^)
 
 obj/%.dep: %.c
 	-@mkdir -p obj
-	$(SHELL) -ec '$(XCC) -S -MT $(<:%.c=%.s) -M $(CFLAGS) $< | sed "s/$*.s/& $(subst $@,/,\\/)/g" > $@'
+	$(SHELL) -ec '$(XCC) -S -MT $(<:%.c=%.s) -M $(CFLAGS) $< | sed "s/$*.s/obj\\/$*.s obj\\/$*.dep/g" > $@'
 
 obj/%.dep: %.S
 	-@mkdir -p obj
-	$(SHELL) -ec '$(XCC) -S -M $(CFLAGS) $< | sed "s/$*.S/& $(subst $@,/,\\/)/g" > $@'
+	$(SHELL) -ec '$(XCC) -S -M $(CFLAGS) $< | sed "s/$*.S/& obj\\/$*.dep/g" > $@'
 
 clean:
 	-rm -rf obj
+	-rm $(TARGET)
 
 # Cancel .c shortcut rule
 %.o: %.c
 
 # Keep .s files around
-.PRECIOUS: $(S)/bin/% obj/%.s obj/%.dep
+.PRECIOUS: $(S)/bin/% obj/%.s obj/%.dep obj/%.o
 
 upload: $(TARGET)
 	scp $(TARGET) gumstix.cs.uwaterloo.ca:/srv/tftp/ARM/$(USER)/kern

@@ -1,4 +1,4 @@
-#include "syscallno.h"
+#include <kern/syscallno.h>
 @ Preprocessor workaround: # stringizes the argument, so it must be avoided.
 #define HASH #
 #ifdef SUPERVISOR_TASKS

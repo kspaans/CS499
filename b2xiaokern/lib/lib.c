@@ -1,64 +1,13 @@
 /* Utility functions */
 
-#include "lib.h"
+#include <lib.h>
+#include <types.h>
 
 /* GCC hacks */
 void raise() {}
 // this is a silly hack to prevent a ton of GCC unwind garbage from being linked in
 // (unwind functionality is loaded by long long division)
 char __aeabi_unwind_cpp_pr0[0];
-
-/* Queue functions */
-void queue_pushcircular(queue *buf, char c) {
-	int i = (buf->idx + buf->len)%buf->max;
-	buf->arr[i] = c;
-	if(buf->len < buf->max)
-		buf->len++;
-	else
-		buf->idx = (buf->idx+1)%buf->max;
-}
-
-void queue_pushback(queue *buf, char c) {
-	if(buf->len < buf->max) {
-		queue_pushcircular(buf, c);
-	}
-}
-
-void queue_pushfront(queue *buf, char c) {
-	buf->len++;
-	buf->idx = (buf->idx - 1)%buf->max;
-	buf->arr[buf->idx] = c;
-}
-
-char queue_popfront(queue *buf) {
-	char c = buf->arr[buf->idx];
-	buf->idx = (buf->idx + 1)%buf->max;
-	buf->len--;
-	return c;
-}
-
-void queue_clear(queue *buf) {
-	buf->len = 0;
-}
-
-void intqueue_pushback(intqueue *buf, int c) {
-	if(buf->len < buf->max) {
-		int i = (buf->idx + buf->len)%buf->max;
-		buf->arr[i] = c;
-		buf->len++;
-	}
-}
-
-int intqueue_popfront(intqueue *buf) {
-	int c = buf->arr[buf->idx];
-	buf->idx = (buf->idx + 1)%buf->max;
-	buf->len--;
-	return c;
-}
-
-void intqueue_clear(intqueue *buf) {
-	buf->len = 0;
-}
 
 /* Argument parsing */
 int parse_args(char *buf, char **argv, int argv_len) {
@@ -114,55 +63,4 @@ long strtol(const char *start, const char **end, int base) {
 
 int atoi(const char *s) {
 	return strtol(s, NULL, 10);
-}
-
-int strcmp(const char *s1, const char *s2) {
-	char c1, c2;
-	do {
-		c1 = *s1++;
-		c2 = *s2++;
-		if(c1 == '\0')
-			break;
-	} while(c1 == c2);
-	return c1-c2;
-}
-
-int strncmp(const char *s1, const char *s2, int len) {
-	char c1='\0', c2='\0';
-	while(len > 0) {
-		c1 = *s1++;
-		c2 = *s2++;
-		if(c1 == '\0' || c1 != c2)
-			return c1-c2;
-		len--;
-	}
-	return c1-c2;
-}
-
-int strlen(const char* s) {
-	int len = 0;
-	while(*s++) {
-		len++;
-	}
-	return len;
-}
-
-
-int memcmp(const void *s1, const void *s2, int len) {
-	const char *a = s1, *b = s2;
-
-	while(len-->0) {
-		int ret = (*a++) - (*b++);
-		if(ret)
-			return ret;
-	}
-
-	return 0;
-}
-
-void *memset(void *p, int b, int size) {
-	char *c = p;
-	for(int i = 0; i < size; ++i)
-		c[i] = b;
-	return c;
 }

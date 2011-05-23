@@ -1,6 +1,7 @@
 /* printf and related functions */
 
-#include "lib.h"
+#include <lib.h>
+#include <string.h>
 
 // maximum possible length of a 64-bit integer represented as a string
 // this assumes that the lowest base allowable is octal (base 8)
@@ -356,7 +357,7 @@ int func_printf(printfunc_t printfunc, void *data, const char *fmt, ...) {
 	return ret;
 }
 
-static void printfunc_sprintf(void *data, const char *buf, unsigned long len) {
+static void printfunc_sprintf(void *data, const char *buf, size_t len) {
 	char *ptr = *(char **)data;
 	while(len--) {
 		*ptr++ = *buf++;

@@ -1,19 +1,19 @@
-#include "lib.h"
-#include "errno.h"
-#include "task.h"
-#include "event.h"
-#include "syscall.h"
-#include "syscallno.h"
-#include "io.h"
+#include <lib.h>
+#include <string.h>
+#include <errno.h>
+#include <event.h>
+#include <syscall.h>
+#include <kern/task.h>
+#include <kern/syscallno.h>
+#include <kern/kmalloc.h>
+#include <kern/printk.h>
 
-/* _KernelEnd is defined by the linker in orex.ld */
-extern int _KernelEnd;
-static int mem_bottom;
-static int mem_top;
 static int next_tid;
 static taskqueue taskqueues[TASK_NPRIO];
 
 static taskqueue eventqueues[NEVENTS];
+
+static struct task *task_lookup[MAX_TASKS];
 
 /* visible to kernel main */
 int nondaemon_count;
@@ -27,9 +27,6 @@ void init_tasks() {
 	for(i=0; i<NEVENTS; i++) {
 		taskqueue_init(&eventqueues[i]);
 	}
-	mem_bottom = (int)&_KernelEnd;
-	/* minimum 256 MB installed on the board; leave a 4 MB gap for the kernel stack which starts at the top of memory */
-	mem_top = 0x90000000 - (1<<22);
 
 	next_tid = 1;
 	nondaemon_count = 0;
@@ -40,7 +37,7 @@ void init_tasks() {
 struct task *get_task(int tid) {
 	if(tid <= 0) return NULL;
 	if(tid >= next_tid) return NULL;
-	return (struct task *)&_KernelEnd + (tid-1);
+	return task_lookup[tid-1];
 }
 
 int get_num_tasks() {
@@ -97,23 +94,6 @@ void taskqueue_push(taskqueue* queue, struct task* task) {
 	}
 }
 
-/* Allocate from the bottom of RAM. */
-static void __attribute__((malloc)) *alloc_bottom(int size) {
-	void *cur = (void *)mem_bottom;
-	if(mem_bottom + size >= mem_top)
-		return NULL;
-	mem_bottom += size;
-	return cur;
-}
-
-/* Allocate from the top of RAM. */
-static void __attribute__((malloc)) *alloc_top(int size) {
-	if(mem_top - size <= mem_bottom)
-		return NULL;
-	mem_top -= size;
-	return (void *)mem_top;
-}
-
 static void __attribute__((noreturn)) task_run(void (*code)()) {
 	code();
 	Exit();
@@ -129,11 +109,11 @@ int do_Create(struct task *task, int priority, void (*code)(), int daemon, int t
 
 	/* TODO: When free lists are implemented, try the free lists instead of
 	 * dying here. */
-	struct task *newtask = alloc_bottom(sizeof(struct task));
+	struct task *newtask = kmalloc(sizeof(struct task));
 	if(newtask == NULL)
 		return ERR_CREATE_NOMEM;
 
-	void *newtask_stack = alloc_top(TASK_STACKSIZE);
+	void *newtask_stack = kmalloc(TASK_STACKSIZE);
 	if(newtask_stack == NULL)
 		return ERR_CREATE_NOMEM;
 
@@ -142,6 +122,7 @@ int do_Create(struct task *task, int priority, void (*code)(), int daemon, int t
 
 	if(tid == -1)
 		tid = reserve_tid();
+	task_lookup[tid-1] = newtask;
 	newtask->tid = tid;
 	newtask->parent = task;
 	newtask->priority = priority;
@@ -155,6 +136,9 @@ int do_Create(struct task *task, int priority, void (*code)(), int daemon, int t
 	newtask->regs.psr = get_user_psr();
 	newtask->regs.r0 = (int)code;
 	newtask->regs.sp = (int)(newtask_stack) + TASK_STACKSIZE;
+	/* set fp and lr to 0 to make backtrace happy */
+	newtask->regs.fp = 0;
+	newtask->regs.lr = 0;
 	task_enqueue(newtask);
 	return newtask->tid;
 }

@@ -28,13 +28,13 @@ SECTIONS
     *(COMMON)
   }
 
+  /* gcc exception crap */
   __exidx_start = .;
   .ARM.exidx   : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) }
   __exidx_end = .;
   .ARM.extab   : { *(.ARM.extab*) }
 
   runtime_data_start = .;
-  _KernelEnd = .;
 
   .vectors 0x4020FFC8 : /* Exception vectors. */
   {

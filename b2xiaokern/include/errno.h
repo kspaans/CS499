@@ -1,5 +1,5 @@
-#ifndef KERN_ERRNO_H
-#define KERN_ERRNO_H
+#ifndef ERRNO_H
+#define ERRNO_H
 
 /* Error codes for system calls */
 #define ERR_CREATE_BADPRIO   -1 /* priority is invalid */
@@ -24,4 +24,4 @@
 
 #define ERR_BADCALL          -0xbeef
 
-#endif /* KERN_ERRNO_H */
+#endif /* ERRNO_H */

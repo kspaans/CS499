@@ -4,7 +4,7 @@ TARGET = $(S)/bin/libbwio.a
 
 all: $(TARGET)
 
-OBJS = obj/io.o obj/lib.o obj/bwio.o obj/cpu.o obj/libs.o obj/printf.o
+OBJS = obj/cpu.o obj/lib.o obj/libs.o obj/printf.o obj/ip.o obj/string.o obj/bwio.o
 
 include ../defs.mk
 -include $(OBJS:.o=.dep)

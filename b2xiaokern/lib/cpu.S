@@ -1,5 +1,3 @@
-.extern hello
-
 .global init_cache
 .type init_cache, %function
 init_cache:

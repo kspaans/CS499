@@ -1,7 +1,7 @@
 #ifndef MEM_H
 #define MEM_H
 
-#include <inttypes.h>
+#include <types.h>
 
 #define mem8(addr)  (*(volatile uint8_t  *)(addr))
 #define mem16(addr) (*(volatile uint16_t *)(addr))

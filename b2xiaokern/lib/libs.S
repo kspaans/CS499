@@ -1,8 +1,8 @@
 	.align	2
-	.global	memcpy
-	.type	memcpy, %function
-@ void memcpy(char *dest, const char *src, int len)
-memcpy:
+	.global	_memcpy
+	.type	_memcpy, %function
+@ void _memcpy(void *d, const void *s, size_t size)
+_memcpy:
 	@ if len is zero, don't copy anything
 	cmp	r2, #0
 	bxeq	lr
@@ -32,7 +32,7 @@ memcpy:
 	add	r0, r0, r3
 	add	r1, r1, r3
 	b	.byteloop
-	.size	memcpy, .-memcpy
+.size	memcpy, .-memcpy
 
 	.align	2
 	.global	copy_aligned_region
