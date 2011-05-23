@@ -1,6 +1,2 @@
-*.dep
-*.o
-*.s
-*.map
-*.elf
-*.a
+bin
+obj

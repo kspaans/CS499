@@ -1,21 +1,11 @@
-#
-# Kernel
-#
+S = ..
 
-PROG = kern
+TARGET = $(S)/bin/kern.elf
 
-all: $(PROG).elf
+all: $(TARGET)
+
+OBJS = obj/switch.o obj/syscall.o obj/main.o obj/task.o obj/omap3.o obj/interrupt.o obj/eth.o
+LIBS = $(S)/bin/libbwio.a
 
 include ../defs.mk
--include switch.dep
--include syscall.dep
--include main.dep
--include task.dep
--include interrupt.dep
--include eth.dep
-
-$(PROG).elf: switch.o syscall.o main.o task.o omap3.o interrupt.o eth.o ../lib/libbwio.a
-	$(XCC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) $(LDLIBS)
-
-clean:
-	-rm -f $(PROG).elf *.dep *.o *.map *.s
+-include $(OBJS:.o=.dep)

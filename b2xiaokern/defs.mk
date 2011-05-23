@@ -1,4 +1,3 @@
-S       = ..
 XPREFIX = arm-linux-gnueabi-
 XCC     = $(XPREFIX)gcc
 AS      = $(XPREFIX)as
@@ -45,29 +44,45 @@ ifeq ($(DEBUG),1)
 endif
 
 
-ARFLAGS = rs
-
 # New pattern rules
-%.s: %.c
-	$(XCC) -S $(CFLAGS) -o $@ $<
+$(S)/bin/%.elf : $(OBJS) $(LIBS)
+	-@mkdir -p $(S)/bin
+	$(XCC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS) $(LDLIBS)
 
-%.o: %.s
+$(S)/bin/%.a : $(OBJS)
+	-@mkdir -p $(S)/bin
+	$(AR) crs $@ $(OBJS)
+
+obj/%.s: %.c obj/%.dep
+	-@mkdir -p obj
+	$(XCC) -S $(CFLAGS) -o $@ $(filter %.c,$^)
+
+obj/%.o: obj/%.s
+	-@mkdir -p obj
 	$(XCC) -c $(CFLAGS) -o $@ $<
 
-%.o: %.S
-	$(XCC) -c $(CFLAGS) -o $@ $<
+obj/%.o: %.S obj/%.dep
+	-@mkdir -p obj
+	$(XCC) -c $(CFLAGS) -o $@ $(filter %.S,$^)
 
-%.dep: %.c
-	$(SHELL) -ec '$(XCC) -S -MT $(<:%.c=%.s) -M $(CFLAGS) $< | sed "s/$*.s/& $@/g" > $@'
+obj/%.dep: %.c
+	-@mkdir -p obj
+	$(SHELL) -ec '$(XCC) -S -MT $(<:%.c=%.s) -M $(CFLAGS) $< | sed "s/$*.s/& $(subst $@,/,\\/)/g" > $@'
 
-%.dep: %.S
-	$(SHELL) -ec '$(XCC) -S -M $(CFLAGS) $< | sed "s/$*.S/& $@/g" > $@'
+obj/%.dep: %.S
+	-@mkdir -p obj
+	$(SHELL) -ec '$(XCC) -S -M $(CFLAGS) $< | sed "s/$*.S/& $(subst $@,/,\\/)/g" > $@'
+
+clean:
+	-rm -rf obj
 
 # Cancel .c shortcut rule
 %.o: %.c
 
 # Keep .s files around
-.PRECIOUS: %.s
+.PRECIOUS: $(S)/bin/% obj/%.s obj/%.dep
 
-upload: $(PROG).elf
-	scp $(PROG).elf gumstix.cs.uwaterloo.ca:/srv/tftp/ARM/b2xiao/$(PROG)
+upload: $(TARGET)
+	scp $(TARGET) gumstix.cs.uwaterloo.ca:/srv/tftp/ARM/b2xiao/kern
+
+.PHONY: all upload

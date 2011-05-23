@@ -5,3 +5,4 @@ all:
 clean:
 	cd lib; make clean
 	cd kern; make clean
+	-rm -rf bin
