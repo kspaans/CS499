@@ -80,6 +80,7 @@ unsigned long strtoul(const char *start, const char **end, int base);
 int strcmp(const char *s1, const char *s2);
 int strncmp(const char *s1, const char *s2, int len);
 int strlen(const char* s);
+int memcmp(const void *s1, const void *s2, int len);
 void *memset(void *p, int b, int size);
 
 /* Miscellaneous utilities */

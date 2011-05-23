@@ -136,6 +136,12 @@ int eth_init(int base) {
 	eth_write(base, ETH_TX_CFG_OFFSET, ETH_TX_CFG_ON);
 	eth_mac_write(base, ETH_MAC_MAC_CR, ETH_MAC_TXEN | ETH_MAC_RXEN);
 
+	/* delay for 0.25s to wait for the stagecoach ks8999 switch */
+	printk("waiting for switch...\n");
+	volatile int loop = 750000;
+	while(loop-->0)
+		;
+
 	return 0;
 }
 

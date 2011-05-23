@@ -9,8 +9,9 @@
 #include "machine.h"
 
 void idle() {
+	/* Todo: use the ARM wait-for-interrupt instruction */
 	while (1)
-		Pass()/* IDLE TODO */;
+		Pass();
 }
 
 static void memcpy_bench() {
@@ -160,22 +161,30 @@ static uint16_t ip_checksum(uint8_t *data, uint16_t len) {
 	return ~((sum & 0xffff) + (sum >> 16));
 }
 
+static void print_mac(mac_addr_t mac) {
+	for(int i=0; i<5; i++) {
+		printk("%02x:", mac.addr[i]);
+	}
+	printk("%02x", mac.addr[5]);
+}
+
 static mac_addr_t arp_lookup(uint32_t addr) {
 	struct ethhdr eth;
 	struct arppkt arp;
 
 	memset(&eth.dest, 0xff, 6);
 	eth.src = eth_mac_addr(ETH1_BASE);
-	eth.ethertype = SWAP16(ET_ARP);
+	eth.ethertype = htons(ET_ARP);
 
-	arp.arp_htype = SWAP16(ARP_HTYPE_ETH);
-	arp.arp_ptype = SWAP16(ET_IPV4);
+	arp.arp_htype = htons(ARP_HTYPE_ETH);
+	arp.arp_ptype = htons(ET_IPV4);
 	arp.arp_hlen = 6;
 	arp.arp_plen = 4;
-	arp.arp_oper = SWAP16(ARP_OPER_REQUEST);
+	arp.arp_oper = htons(ARP_OPER_REQUEST);
 	arp.arp_sha = eth.src;
-	arp.arp_spa = SWAP32(0x0a00000b);
-	arp.arp_tpa = SWAP32(addr);
+	arp.arp_spa = htonl(0x0a00000b);
+	arp.arp_tpa = htonl(addr);
+	memset(&arp.arp_tha, 0x00, 6);
 
 	uint32_t btag = MAKE_BTAG(0xcafe, sizeof(eth) + sizeof(arp));
 
@@ -185,42 +194,45 @@ static mac_addr_t arp_lookup(uint32_t addr) {
 	printk("ARP send status 0x%08x\n", eth_tx_wait_sts(ETH1_BASE));
 
 	uint8_t buf[2048];
-	uint32_t sts = eth_rx_wait_sts(ETH1_BASE);
-	uint32_t len = (sts >> 16) & 0x3fff;
-	printk("ARP recv status 0x%08x (len %d)\n", sts, len);
-	eth_rx(ETH1_BASE, (uint32_t *)buf, len);
-	printk("packet:");
-	for(int i=0; i<len; i++) {
-		printk(" %02x", buf[i]);
+	while(1) {
+		uint32_t sts = eth_rx_wait_sts(ETH1_BASE);
+		uint32_t len = (sts >> 16) & 0x3fff;
+		printk("recv status 0x%08x (len %d)\n", sts, len);
+		eth_rx(ETH1_BASE, (uint32_t *)buf, len);
+		struct ethhdr *recveth = (void *)buf;
+		if(recveth->ethertype != htons(ET_ARP))
+			continue;
+		if(memcmp(&recveth->dest, &eth.src, 6))
+			continue;
+		return ((struct arppkt *)(buf + sizeof(struct ethhdr)))->arp_sha;
 	}
-	printk("\n");
-	return arp.arp_sha;
 }
 
-static uint32_t send_udp(uint32_t addr, uint16_t port, char *data, uint16_t len) {
+static uint32_t send_udp(mac_addr_t macaddr, uint32_t addr, uint16_t port, char *data, uint16_t len) {
 	struct ethhdr eth;
 	struct ip ip;
 	struct udphdr udp;
 
-	/* ??? */
-	eth.ethertype = SWAP16(0x0800);
+	eth.dest = macaddr;
+	eth.src = eth_mac_addr(ETH1_BASE);
+	eth.ethertype = htons(ET_IPV4);
 
 	ip.ip_vhl = IP_VHL_BORING;
 	ip.ip_tos = 0;
-	ip.ip_len = SWAP16(sizeof(struct ip) + sizeof(struct udphdr) + len);
-	ip.ip_id = SWAP16(0);
-	ip.ip_off = SWAP16(0);
+	ip.ip_len = htons(sizeof(struct ip) + sizeof(struct udphdr) + len);
+	ip.ip_id = htons(0);
+	ip.ip_off = htons(0);
 	ip.ip_ttl = 64;
 	ip.ip_p = IPPROTO_UDP;
 	ip.ip_sum = 0;
-	ip.ip_src.s_addr = SWAP32(0x0a00000b);
-	ip.ip_dst.s_addr = SWAP32(addr);
-	ip.ip_sum = SWAP16(ip_checksum((uint8_t *)&ip, sizeof(struct ip)));
+	ip.ip_src.s_addr = htonl(0x0a00000b);
+	ip.ip_dst.s_addr = htonl(addr);
+	ip.ip_sum = htons(ip_checksum((uint8_t *)&ip, sizeof(struct ip)));
 
-	udp.uh_sport = SWAP16(7777);
-	udp.uh_dport = SWAP16(port);
-	udp.uh_ulen = SWAP16(sizeof(struct udphdr) + len);
-	udp.uh_sum = SWAP16(0);
+	udp.uh_sport = htons(7777);
+	udp.uh_dport = htons(port);
+	udp.uh_ulen = htons(sizeof(struct udphdr) + len);
+	udp.uh_sum = htons(0);
 
 	uint32_t btag = MAKE_BTAG(0xbeef, sizeof(eth) + sizeof(ip) + sizeof(udp) + len);
 
@@ -235,12 +247,12 @@ static uint32_t send_udp(uint32_t addr, uint16_t port, char *data, uint16_t len)
 int main() {
 	struct task *next;
 	/* Start up hardware */
+	init_interrupts();
+
 	init_timer();
 	/* For some reason, turning on the caches causes the kernel to hang after finishing
 	   the third invocation. Maybe we have to clear the caches here. */
 	//init_cache();
-
-	init_interrupts();
 
 	/* Initialize task queues */
 	init_tasks();
@@ -259,8 +271,11 @@ int main() {
 	syscall_Create(NULL, 0, a2_init);
 
 	eth_init(ETH1_BASE);
-	arp_lookup(0x0a000001);
-	printk("UDP STATUS: %08x\n", send_udp(0xc0a80177, 12345, "abcd", 4));
+	mac_addr_t dest = arp_lookup(0x0a000001);
+	printk("received mac: ");
+	print_mac(dest);
+	printk("\n");
+	printk("UDP STATUS: %08x\n", send_udp(dest, 0x0a000001, 12345, "abcd", 4));
 
 	while (nondaemon_count > 0) {
 		next = task_dequeue();

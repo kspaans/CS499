@@ -147,6 +147,19 @@ int strlen(const char* s) {
 	return len;
 }
 
+
+int memcmp(const void *s1, const void *s2, int len) {
+	const char *a = s1, *b = s2;
+
+	while(len-->0) {
+		int ret = (*a++) - (*b++);
+		if(ret)
+			return ret;
+	}
+
+	return 0;
+}
+
 void *memset(void *p, int b, int size) {
 	char *c = p;
 	for(int i = 0; i < size; ++i)
