@@ -83,6 +83,6 @@ clean:
 .PRECIOUS: $(S)/bin/% obj/%.s obj/%.dep
 
 upload: $(TARGET)
-	scp $(TARGET) gumstix.cs.uwaterloo.ca:/srv/tftp/ARM/b2xiao/kern
+	scp $(TARGET) gumstix.cs.uwaterloo.ca:/srv/tftp/ARM/$(USER)/kern
 
 .PHONY: all upload
