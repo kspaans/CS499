@@ -1,11 +1,65 @@
-#include <drivers/timers.h>
-#include <lib.h>
+/* Put your "user" programs here.
+   For ease of modification, put the header files that you need
+   right above your function, rather than all at the top; this allows
+   functions to be easily added and removed without leaving a ton
+   of #includes up top. */
 #include <kern/printk.h>
 #include <syscall.h>
-#include <string.h>
-#include <ip.h>
-#include <kern/backtrace.h>
+#include <lib.h>
 
+#include <drivers/leds.h>
+static void flash_leds() {
+	for(;;) {
+		for(enum leds led = LED1; led <= LED5; led++) {
+			led_set(led, 1);
+			for(volatile int i=0; i<200000; i++)
+				;
+			led_set(led, 0);
+		}
+		Pass();
+	}
+}
+
+#include <machine.h>
+#include <drivers/uart.h>
+static void console_loop() {
+	volatile uint32_t *flags, *data;
+	flags = (uint32_t *)(UART3_PHYS_BASE + UART_LSR_OFFSET);
+	data = (uint32_t *)(UART3_PHYS_BASE + UART_RBR_OFFSET);
+
+	printk("Now flashing the blinkenlights; press q to quit.\n");
+	for(;;) {
+		if(*flags & UART_DRS_MASK) {
+			char c = getchar();
+			if(c == 'q')
+				return;
+		}
+		Pass();
+	}
+}
+
+#include <machine.h>
+#include <drivers/wd_timer.h>
+#include <mem.h>
+static void kyles_wd_timer_test() {
+	printk("The WD_SYSCONFIG status register looks like %x\n", read32(WDT2_PHYS_BASE + 0x10));
+	printk("The WIER status register looks like %x.\n", read32(0x4831401C));
+	//write32(0x4831401C, 0x1);
+	printk("The WIER status register's now like %x.\n", read32(0x4831401C));
+	printk("The time register is currently %x\n", read_wdt());
+	//load_wdt(0xFFFF0ACE); // about 4s with default settings
+	printk("The time register is now %x\n", read_wdt());
+	enable_wdt();
+	for (;;) {
+		printk("Timer register is %x\n", read_wdt());
+		//if (read32(0x48314028) == 0xFFFFFFFF) {
+		printk("PRM_RSTST register is %x\n", read32(0x48307258));
+		//printk("PRM_RSTST register is %x\n", read32(0x48307258));}
+		if (getchar() == 'q') break;
+	}
+}
+
+#include <ip.h>
 static void udp_test() {
 	mac_addr_t dest = arp_lookup(0x0a000001);
 	printk("received mac: ");
@@ -16,6 +70,10 @@ static void udp_test() {
 	printk("UDP STATUS: %08x\n", send_udp(dest, 0x0a000001, 12345, "abcd", 4));
 }
 
+#include <kern/backtrace.h>
+#include <lib.h>
+#include <string.h>
+#include <drivers/timers.h>
 static void memcpy_bench() {
 	backtrace();
 	int tid = MyTid();
@@ -127,6 +185,7 @@ static void srrbench_child() {
 	}
 }
 
+#include <drivers/timers.h>
 #define BENCH(name, code) { \
 	printk("SRR Benchmarking: " name ": "); \
 	start = read_timer(); \
@@ -151,7 +210,13 @@ static void srrbench_task() {
 	printk("srrbench_task[%d]: benchmark finished.\n", tid);
 }
 
-void a2_init() {
+/* The first user program */
+void userprog_init() {
 	ASSERTNOERR(Create(1, memcpy_bench));
 	ASSERTNOERR(Create(0, udp_test));
+
+	ASSERTNOERR(Create(3, kyles_wd_timer_test));
+
+	ASSERTNOERR(CreateDaemon(4, flash_leds));
+	ASSERTNOERR(Create(4, console_loop));
 }

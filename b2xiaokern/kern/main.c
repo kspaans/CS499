@@ -14,7 +14,7 @@ void idle() {
 }
 
 /* userprog.c */
-void a2_init();
+void userprog_init();
 
 int main() {
 	struct task *next;
@@ -42,7 +42,7 @@ int main() {
 #endif
 
 	/* Initialize first user program */
-	syscall_Create(NULL, 0, a2_init);
+	syscall_Create(NULL, 0, userprog_init);
 
 	while (nondaemon_count > 0) {
 		next = task_dequeue();
