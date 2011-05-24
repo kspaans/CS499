@@ -1,9 +1,7 @@
 #ifndef STRING_H
 #define STRING_H
 
-#include <inttypes.h>
-
-#define NULL ((void *)0)
+#include <types.h>
 
 #define memcpy(dst, src, n) __builtin_memcpy(dst, src, n)
 #define memcmp(s1, s2, n) __builtin_memcmp(s1, s2, n)
@@ -21,16 +19,13 @@
 
 const char *strchr(const char *s, int c);
 int strcmp(const char *s1, const char *s2);
-int strcasecmp(const char *s1, const char *s2);
 int strncmp(const char *s1, const char *s2, size_t n);
-size_t strnlen(const char *s, size_t maxlen);
 size_t strlen(const char *s);
-char *strcpy(char *dest, const char *src);
-void *memcpy(void * d, const void * s, size_t size);
+size_t strnlen(const char *s, size_t maxlen);
+char *strcpy(char *d, const char *s);
+size_t strlcpy(char *d, const char *s, size_t n);
+void *memcpy(void *d, const void *s, size_t n);
 int memcmp(const void *s1, const void *s2, size_t n);
-
-void memzero(void *p, size_t size);
-void *memset(void *p, int b, size_t size);
-size_t strlcpy(char *destination, const char *source, size_t size);
+void *memset(void *p, int b, size_t n);
 
 #endif
