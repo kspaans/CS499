@@ -1,10 +1,10 @@
 all:
-	cd lib; make
-	cd drivers; make
-	cd kern; make upload
+	cd lib && $(MAKE)
+	cd drivers && $(MAKE)
+	cd kern && $(MAKE) upload
 
 clean:
-	cd lib; make clean
-	cd drivers; make clean
-	cd kern; make clean
+	cd lib && $(MAKE) clean
+	cd drivers && $(MAKE) clean
+	cd kern && $(MAKE) clean
 	-rm -rf bin

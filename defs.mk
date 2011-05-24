@@ -5,7 +5,7 @@ LD      = $(XPREFIX)ld
 AR      = $(XPREFIX)ar
 
 # Standard options
-CFLAGS  += -Wall -I$(S)/include -std=gnu99 -O2
+CFLAGS  += -Wall -I$(S)/include -std=gnu99 -O2 -s
 
 # ARMv7 instruction set, Cortex-A8 tuning
 CFLAGS  += -march=armv7-a -mtune=cortex-a8
@@ -24,7 +24,7 @@ CFLAGS  += -DSUPERVISOR_TASKS
 
 
 # Do not link in glibc
-LDFLAGS += -nostdlib
+LDFLAGS += -nostdlib -s
 
 # Dump link map for inspection
 LDFLAGS += -Wl,-Map=$@.map
@@ -45,13 +45,13 @@ endif
 
 
 # New pattern rules
-$(S)/bin/%.elf : $(OBJS)
+$(TARGET) : $(OBJS) $(LIBS)
 	-@mkdir -p $(S)/bin
-	$(XCC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS) $(LDLIBS)
-
-$(S)/bin/%.a : $(OBJS)
-	-@mkdir -p $(S)/bin
+ifeq ($(suffix $(TARGET)),.a)
 	$(AR) crs $@ $(OBJS)
+else
+	$(XCC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS) $(LDLIBS)
+endif
 
 obj/%.s: %.c
 	-@mkdir -p obj

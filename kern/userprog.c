@@ -108,11 +108,11 @@ static void memcpy_bench() {
 
 	int i;
 	unsigned long long start_time = read_timer();
-	for(i=0; i<(1<<12); i++) {
+	for(i=0; i<(1<<8); i++) {
 		memcpy(buf, buf2, sizeof(buf));
 	}
 	unsigned long long duration = read_timer() - start_time;
-	printk("Did 64MB in %lu milliseconds\n", (unsigned long)(duration/TICKS_PER_MSEC));
+	printk("Did 4MB in %lu milliseconds\n", (unsigned long)(duration/TICKS_PER_MSEC));
 }
 
 static void srr_child() {

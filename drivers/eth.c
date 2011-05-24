@@ -2,6 +2,7 @@
 #include <drivers/eth.h>
 #include <types.h>
 #include <mem.h>
+#include <kern/printk.h>
 
 static uint32_t eth_read(int base, int offset) {
 	return mem32(base + offset);
@@ -54,6 +55,7 @@ static int eth_reset(int base) {
 	/* wakeup */
 	reg = eth_read(base, ETH_PMT_CTRL_OFFSET);
 	if(!(reg & ETH_PMT_CTRL_READY)) {
+		printk("eth: waking up controller\n");
 		/* write to byte test to wake up controller */
 		eth_write(base, ETH_BYTE_TEST_OFFSET, 0x87654321);
 		while(!(eth_read(base, ETH_PMT_CTRL_OFFSET)) & ETH_PMT_CTRL_READY)
@@ -65,12 +67,14 @@ static int eth_reset(int base) {
 
 	/* soft reset */
 	eth_write(base, ETH_HW_CFG_OFFSET, ETH_HW_CFG_SRST);
+	printk("eth: waiting for soft reset\n");
 	while(1) {
 		reg = eth_read(base, ETH_HW_CFG_OFFSET);
 		if(!(reg & ETH_HW_CFG_SRST))
 			break;
 		if(reg & ETH_HW_CFG_SRST_TO) {
 			/* timeout */
+			printk("eth: soft reset timeout\n");
 			return -1;
 		}
 	}
@@ -110,6 +114,7 @@ int eth_init(int base) {
 	if(eth_reset(base) != 0)
 		return -1;
 
+	printk("eth: soft reset complete\n");
 	/* phy reset */
 	reg = eth_read(base, ETH_PMT_CTRL_OFFSET);
 	reg &= 0xFCF; /* clear power management mode and wakeup status */
@@ -117,14 +122,17 @@ int eth_init(int base) {
 	eth_write(base, ETH_PMT_CTRL_OFFSET, reg);
 	while(eth_read(base, ETH_PMT_CTRL_OFFSET) & ETH_PMT_CTRL_PHY_RST)
 		;
+	printk("eth: phy reset complete\n");
 
 	eth_phy_write(base, ETH_MII_BCR, ETH_MII_BCR_RESET);
 	while(eth_phy_read(base, ETH_MII_BCR) & ETH_MII_BCR_RESET)
 		;
+	printk("eth: phy reset (2) complete\n");
 	eth_phy_write(base, ETH_MII_ADVERTISE, 0x01e1);
 	eth_phy_write(base, ETH_MII_BCR, ETH_MII_BCR_ANENABLE | ETH_MII_BCR_ANRESTART);
 	while(!(eth_phy_read(base, ETH_MII_BSR) & ETH_MII_BSR_LSTS))
 		;
+	printk("eth: line up\n");
 
 	/* configuration */
 	// 8<<16 = 8KB TX FIFO
