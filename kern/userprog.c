@@ -60,15 +60,17 @@ static void kyles_wd_timer_test() {
 }
 
 #include <ip.h>
+#define IP(a,b,c,d) (((a)<<24) | ((b)<<16) | ((c)<<8) | d)
 static void udp_test() {
-	mac_addr_t dest = arp_lookup(0x0a000001);
+	mac_addr_t dest = arp_lookup(IP(10,0,0,1));
 	printk("received mac: ");
 	for(int i=0; i<5; i++) {
 		printk("%02x:", dest.addr[i]);
 	}
 	printk("%02x\n", dest.addr[5]);
-	printk("UDP STATUS: %08x\n", send_udp(dest, 0x0a000001, 12345, "abcd", 4));
+	printk("UDP STATUS: %08x\n", send_udp(dest, IP(129,97,134,17), 12345, "abcd", 4));
 }
+#undef IP
 
 #include <kern/backtrace.h>
 #include <lib.h>
@@ -215,7 +217,7 @@ void userprog_init() {
 	ASSERTNOERR(Create(1, memcpy_bench));
 	ASSERTNOERR(Create(0, udp_test));
 
-	ASSERTNOERR(Create(3, kyles_wd_timer_test));
+	//ASSERTNOERR(Create(3, kyles_wd_timer_test));
 
 	ASSERTNOERR(CreateDaemon(4, flash_leds));
 	ASSERTNOERR(Create(4, console_loop));
