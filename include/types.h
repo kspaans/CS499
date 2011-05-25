@@ -27,10 +27,8 @@ struct in_addr {
 	in_addr_t s_addr;
 };
 
-#pragma pack(push, 2)
 typedef struct {
 	uint8_t addr[6];
-} mac_addr_t;
-#pragma pack(pop)
+} __attribute__((packed)) mac_addr_t;
 
 #endif /* TYPES_H */

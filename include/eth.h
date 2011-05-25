@@ -2,15 +2,13 @@
 #define _ETH_H
 #include <types.h>
 
-#pragma pack(push, 2)
-
 struct ethhdr {
 	mac_addr_t dest;
 	mac_addr_t src;
 	uint16_t ethertype;
 #define ET_IPV4 0x0800
 #define ET_ARP 0x0806
-};
+} __attribute__((packed)) ;
 
 
 struct arppkt {
@@ -26,8 +24,6 @@ struct arppkt {
 	in_addr_t arp_spa;
 	mac_addr_t arp_tha;
 	in_addr_t arp_tpa;
-};
-
-#pragma pack(pop)
+} __attribute__((packed)) ;
 
 #endif /* _ETH_H */
