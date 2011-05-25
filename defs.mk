@@ -4,7 +4,7 @@ AS      = $(XPREFIX)as
 LD      = $(XPREFIX)ld
 AR      = $(XPREFIX)ar
 
-ECHO = echo
+ECHO = /bin/echo -e
 
 # Standard options
 CFLAGS  += -pipe -Wall -I$(S)/include -std=gnu99 -O2 -s
@@ -45,33 +45,37 @@ ifeq ($(DEBUG),1)
   CFLAGS += -g -DDEBUG -Wno-unused-function
 endif
 
-RED = 2>&1 1>/dev/null | sed -e "s;^;\x1b[31m$(TOP);" -e "s;$$;\x1b[m;"
+RED = \x1b[31m
+BLUE = \x1b[34m
+GREEN = \x1b[32m
+NOC = \x1b[m
+REDIT = 2>&1 1>/dev/null | sed -e "s;^;$(RED)$(TOP);" -e "s;$$;$(NOC);"
 
 # New pattern rules
 $(TARGET) : $(OBJS) $(LIBS)
 	-@mkdir -p $(S)/bin
 ifeq ($(suffix $(TARGET)),.a)
-	@$(ECHO) "  [AR] $(TOP)$(TARGET)"
-	@$(AR) crs $@ $(OBJS) $(RED)
+	@$(ECHO) "  $(GREEN)[AR] $(TOP)$(TARGET)$(NOC)"
+	@$(AR) crs $@ $(OBJS) $(REDIT)
 else
-	@$(ECHO) "  [CC] $(TOP)$(TARGET)"
-	@$(XCC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS) $(LDLIBS) $(RED)
+	@$(ECHO) "  $(GREEN)[CC] $(TOP)$(TARGET)$(NOC)"
+	@$(XCC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS) $(LDLIBS) $(REDIT)
 endif
 
 obj/%.s: %.c
 	-@mkdir -p obj
 	@$(ECHO) "  [CC] $(TOP)$@"
-	@$(XCC) -S $(CFLAGS) -o $@ $(filter %.c,$^) $(RED)
+	@$(XCC) -S $(CFLAGS) -o $@ $(filter %.c,$^) $(REDIT)
 
 obj/%.o: obj/%.s
 	-@mkdir -p obj
 	@$(ECHO) "  [AS] $(TOP)$@"
-	@$(XCC) -c $(CFLAGS) -o $@ $< $(RED)
+	@$(XCC) -c $(CFLAGS) -o $@ $< $(REDIT)
 
 obj/%.o: %.S
 	-@mkdir -p obj
 	@$(ECHO) "  [AS] $(TOP)$@"
-	@$(XCC) -c $(CFLAGS) -o $@ $(filter %.S,$^) $(RED)
+	@$(XCC) -c $(CFLAGS) -o $@ $(filter %.S,$^) $(REDIT)
 
 # Dep generation should be silent
 obj/%.dep: %.c
