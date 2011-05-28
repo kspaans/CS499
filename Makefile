@@ -8,3 +8,6 @@ clean:
 	@cd drivers && $(MAKE) clean --no-print-directory --no-builtin-rules
 	@cd kern && $(MAKE) clean --no-print-directory --no-builtin-rules
 	-@rm -rf bin
+
+upload: all
+	@cd kern && make upload
