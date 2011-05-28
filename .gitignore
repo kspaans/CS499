@@ -3,9 +3,5 @@ obj
 *.[aos]
 *.elf
 .redo
-utils/compile
-utils/assemble
-utils/link
-utils/archive
 .do_built
 .do_built.dir

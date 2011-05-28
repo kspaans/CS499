@@ -19,8 +19,8 @@ void userprog_init();
 int main() {
 	struct task *next;
 	/* Start up hardware */
-	init_cpumodes();
-	intc_init();
+	init_interrupts();
+
 	timer_init();
 	eth_init(ETH1_BASE);
 
