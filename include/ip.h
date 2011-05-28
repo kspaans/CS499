@@ -29,11 +29,7 @@ enum {
 	((((uint16_t)((x) & 0x00FF)) << 8) | \
 	 (((uint16_t)((x) & 0xFF00)) >> 8))
 
-#define SWAP32(x) \
-	((((uint32_t)((x) & 0x000000FF)) << 24) | \
-	 (((uint32_t)((x) & 0x0000FF00)) << 8) | \
-	 (((uint32_t)((x) & 0x00FF0000)) >> 8) | \
-	 (((uint32_t)((x) & 0xFF000000)) >> 24))
+#define SWAP32(x) __builtin_bswap32(x)
 
 /* standard endian swap functions */
 #define htonl(x) SWAP32(x)

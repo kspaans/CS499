@@ -28,7 +28,7 @@ mac_addr_t arp_lookup(uint32_t addr) {
 	arp.arp_plen = 4;
 	arp.arp_oper = htons(ARP_OPER_REQUEST);
 	arp.arp_sha = eth.src;
-	arp.arp_spa = htonl(0x0a00000b);
+	arp.arp_spa = htonl(IP(10,0,0,eth.src.addr[5]));
 	arp.arp_tpa = htonl(addr);
 	memset(&arp.arp_tha, 0x00, 6);
 
@@ -68,7 +68,7 @@ uint32_t send_udp(mac_addr_t macaddr, uint32_t addr, uint16_t port, const char *
 	ip.ip_ttl = 64;
 	ip.ip_p = IPPROTO_UDP;
 	ip.ip_sum = 0;
-	ip.ip_src.s_addr = htonl(0x0a00000b);
+	ip.ip_src.s_addr = htonl(IP(10,0,0,eth.src.addr[5]));
 	ip.ip_dst.s_addr = htonl(addr);
 	ip.ip_sum = htons(ip_checksum((uint8_t *)&ip, sizeof(struct ip)));
 

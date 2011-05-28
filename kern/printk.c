@@ -5,10 +5,6 @@
 /* Busy-wait I/O */
 static void bw_printfunc(void *unused, const char *str, size_t len) {
 	(void)unused;
-	if(str == NULL) {
-		/* no initialization or finalization required */
-		return;
-	}
 	while(len--) {
 		/* busy wait */
 		if(*str == '\n') {

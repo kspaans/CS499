@@ -197,9 +197,6 @@ int func_vprintf(printfunc_t printfunc, void *data, const char *fmt, va_list va)
 	int len = 0;
 	const char *runstart = NULL;
 
-	/* Let printfunc initialize */
-	printfunc(data, NULL, PF_INIT);
-
 	while(1) {
 		c = *fmt++;
 		if(c && c != '%') {
@@ -355,8 +352,6 @@ int func_vprintf(printfunc_t printfunc, void *data, const char *fmt, va_list va)
 		} while(1);
 	}
 end:
-	/* Let printfunc deinitialize */
-	printfunc(data, NULL, PF_FINI);
 	return len;
 }
 
@@ -369,10 +364,6 @@ int func_printf(printfunc_t printfunc, void *data, const char *fmt, ...) {
 }
 
 static void printfunc_sprintf(void *data, const char *buf, size_t len) {
-	if(buf == NULL) {
-		/* no initialization or finalization required */
-		return;
-	}
 	char *ptr = *(char **)data;
 	while(len--) {
 		*ptr++ = *buf++;

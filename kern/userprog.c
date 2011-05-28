@@ -7,15 +7,13 @@
 #include <syscall.h>
 #include <lib.h>
 
+#include <machine.h>
 #include <drivers/eth.h>
 #include <ip.h>
 #define UDPMTU 1400
 static mac_addr_t gateway_mac;
 static int gateway_mac_init = 0;
 static void printfunc_udp(void *data, const char *buf, size_t len) {
-	if(buf == NULL) {
-		return;
-	}
 	if(!gateway_mac_init) {
 		gateway_mac = arp_lookup(IP(10,0,0,1));
 		gateway_mac_init = 1;
@@ -28,9 +26,15 @@ static void printfunc_udp(void *data, const char *buf, size_t len) {
 #undef UDPMTU
 #define udp_printf(...) func_printf(printfunc_udp, NULL, __VA_ARGS__)
 static void udp_console_loop() {
-	printk("Type characters to send to the remote host\n");
-	udp_printf("<connect>");
-	udp_printf("Hello!\n");
+	printk("Type characters to send to the remote host; Ctrl+D to quit\n");
+
+	mac_addr_t my_mac = eth_mac_addr(ETH1_BASE);
+	udp_printf("Hello from ");
+	for(int i=0; i<5; i++) {
+		udp_printf("%02x:", my_mac.addr[i]);
+	}
+	udp_printf("%02x\n", my_mac.addr[5]);
+
 	for(;;) {
 		char c = getchar();
 		if(c == 4)

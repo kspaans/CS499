@@ -28,9 +28,6 @@
 /* Generic printing functions */
 // Function to send formatted strings to
 typedef void(*printfunc_t)(void *data, const char *str, size_t len);
-/* If printfunc is called with NULL, len defines a control opcode */
-#define PF_INIT 0 /* printfunc initialize */
-#define PF_FINI 1 /* printfunc finalize */
 
 int func_vprintf(printfunc_t printfunc, void *data, const char *fmt, va_list va);
 int func_printf(printfunc_t printfunc, void *data, const char *fmt, ...)
