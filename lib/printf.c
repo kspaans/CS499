@@ -195,16 +195,24 @@ int func_vprintf(printfunc_t printfunc, void *data, const char *fmt, va_list va)
 	pf.data = data;
 	char c;
 	int len = 0;
+	const char *runstart = NULL;
 
-	/* Print an empty string to initialize data */
-	printfunc(data, "", 0);
+	/* Let printfunc initialize */
+	printfunc(data, NULL, PF_INIT);
 
-	while((c=*fmt++)) {
-		if(c != '%') {
-			printfunc(data, &c, 1);
-			len++;
+	while(1) {
+		c = *fmt++;
+		if(c && c != '%') {
+			if(!runstart)
+				runstart = fmt-1;
 			continue;
 		}
+		if(runstart) {
+			printfunc(data, runstart, fmt-runstart-1);
+			runstart = NULL;
+		}
+		if(c == 0)
+			break;
 		pf.flags = 0;
 		pf.base = 10;
 		pf.width = 0;
@@ -287,7 +295,7 @@ int func_vprintf(printfunc_t printfunc, void *data, const char *fmt, va_list va)
 		do {
 			switch(c) {
 			case '\0':
-				return len;
+				goto end;
 			case 'l':
 				pf.longness++;
 				c = *(fmt++);
@@ -346,6 +354,9 @@ int func_vprintf(printfunc_t printfunc, void *data, const char *fmt, va_list va)
 			break;
 		} while(1);
 	}
+end:
+	/* Let printfunc deinitialize */
+	printfunc(data, NULL, PF_FINI);
 	return len;
 }
 
@@ -358,6 +369,10 @@ int func_printf(printfunc_t printfunc, void *data, const char *fmt, ...) {
 }
 
 static void printfunc_sprintf(void *data, const char *buf, size_t len) {
+	if(buf == NULL) {
+		/* no initialization or finalization required */
+		return;
+	}
 	char *ptr = *(char **)data;
 	while(len--) {
 		*ptr++ = *buf++;
