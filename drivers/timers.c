@@ -29,7 +29,7 @@ void timer_init() {
 	// Disable write-posting
 	mem32(GPTIMER3 + TIOCP_CFG) &= ~TIOCP_CFG_POSTED;
 	// Reset counter to 0 on overflow
-	write32(GPTIMER3 + TLDR, 0xff000000);
+	write32(GPTIMER3 + TLDR, 0);
 	// Trigger timer reload
 	write32(GPTIMER3 + TTGR, 0xdeadbeef);
 	// Enable autoreload, start timer
@@ -37,7 +37,7 @@ void timer_init() {
 }
 
 unsigned long long read_timer() {
-	return (gpt3_ovf_count << 24) + mem32(GPTIMER3 + TCRR)-0xff000000;
+	return (gpt3_ovf_count << 32) + mem32(GPTIMER3 + TCRR);
 }
 
 void udelay(int usec) {
