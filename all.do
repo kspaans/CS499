@@ -1,3 +1,5 @@
+#!/bin/bash
+
 export TOP=`pwd`
 
 redo drivers/drivers.a
