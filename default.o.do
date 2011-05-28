@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if [ -e $1.S ] ; then
     FILE=$1.S
 else
