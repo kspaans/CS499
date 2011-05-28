@@ -10,10 +10,13 @@ static struct intcps_vectors {
 
 static isr_func isrs[96];
 
-void intc_intenable(int slot, isr_func handler, int prio) {
+void intc_register(int slot, isr_func handler, int prio) {
 	volatile int *ilr = (int *)(INTC_PHYS_BASE + INTCPS_ILR_OFFSET);
 	ilr[slot] = prio << 2;
 	isrs[slot] = handler;
+}
+
+void intc_intenable(int slot) {
 	intcps_vectors[slot>>5].mir_clear = 1<<(slot & 31);
 }
 
@@ -30,7 +33,6 @@ void intc_init() {
 	for(int i=0; i<96; i++) {
 		isrs[i] = NULL;
 	}
-
 }
 
 void intc_reset() {
@@ -46,7 +48,7 @@ void intc_dispatch() {
 		printk("ERROR: Bad IRQ %d\n", irq);
 		intcps_vectors[irq>>5].mir_set = 1<<(irq & 31);
 	} else {
-		isrs[irq]();
+		isrs[irq](irq);
 	}
 
 	write32(INTC_PHYS_BASE + INTCPS_CONTROL_OFFSET, INTCPS_NEWIRQAGR);

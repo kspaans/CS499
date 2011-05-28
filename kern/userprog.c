@@ -45,12 +45,12 @@ static void udp_console_loop() {
 #undef udp_printf
 
 #include <drivers/leds.h>
+#include <timer.h>
 static void flash_leds() {
 	for(;;) {
 		for(enum leds led = LED1; led <= LED5; led++) {
 			led_set(led, 1);
-			for(volatile int i=0; i<200000; i++)
-				;
+			udelay(100000);
 			led_set(led, 0);
 		}
 		Pass();
@@ -114,28 +114,6 @@ static void udp_test() {
 static void memcpy_bench() {
 	backtrace();
 	int tid = MyTid();
-	printk("memcpy_bench[%d]: testing memcpy\n", tid);
-	/* Test memcpy. */
-	char magichands[128];
-	sprintf(magichands, "abcdefghijklmnopqrstuvwxyz");
-	memcpy(magichands+1, magichands+7, 6);
-	printk("%s\n", magichands);
-
-	sprintf(magichands, "abcdefghijklmnopqrstuvwxyz");
-	memcpy(magichands, magichands+8, 8);
-	printk("%s\n", magichands);
-
-	sprintf(magichands, "abcdefghijklmnopqrstuvwxyz");
-	memcpy(magichands, magichands+9, 9);
-	printk("%s\n", magichands);
-
-	sprintf(magichands, "abcdefghijklmnopqrstuvwxyz");
-	memcpy(magichands, magichands+16, 7);
-	printk("%s\n", magichands);
-	sprintf(magichands, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abXXXXghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abc");
-	memcpy(magichands, magichands+64, 64);
-	printk("%s\n", magichands);
-
 	printk("memcpy_bench[%d]: benchmarking memcpy\n", tid);
 	/* Run some benchmarks! */
 	char buf[1<<14];
@@ -249,7 +227,7 @@ static void srrbench_task() {
 
 /* The first user program */
 void userprog_init() {
-	//ASSERTNOERR(Create(1, memcpy_bench));
+	ASSERTNOERR(Create(1, memcpy_bench));
 	ASSERTNOERR(Create(0, udp_test));
 
 	//ASSERTNOERR(Create(3, kyles_wd_timer_test));

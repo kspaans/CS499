@@ -30,7 +30,8 @@
 void intc_init();
 void intc_reset();
 
-void intc_intenable(int slot, isr_func handler, int prio);
+void intc_register(int slot, isr_func handler, int prio);
+void intc_intenable(int slot);
 void intc_intdisable(int slot);
 void intc_dispatch();
 

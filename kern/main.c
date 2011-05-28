@@ -19,14 +19,15 @@ void userprog_init();
 int main() {
 	struct task *next;
 	/* Start up hardware */
-	init_interrupts();
-
 	timer_init();
 	eth_init(ETH1_BASE);
 
 	/* For some reason, turning on the caches causes the kernel to hang after finishing
-	   the third invocation. Maybe we have to clear the caches here. */
+	   the third invocation. Maybe we have to clear the caches here, or enable the MMU. */
 	//init_cache();
+
+	/* Initialize interrupts */
+	init_interrupts();
 
 	/* Initialize task queues */
 	init_tasks();

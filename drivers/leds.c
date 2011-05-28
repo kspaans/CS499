@@ -2,6 +2,7 @@
 #include <machine.h>
 #include <drivers/leds.h>
 #include <drivers/eth.h> // for ethernet defines
+#include <drivers/gpio.h>
 #include <types.h>
 #include <kern/printk.h>
 
@@ -260,17 +261,6 @@ static void twl4030_led_init(unsigned char ledon_mask) {
 	}
 }
 
-static void gpio_led_set(int gpio, int status) {
-	volatile int *flags, *data;
-	flags = (int *)(GPIO1_BASE + GPIO_OE_OFFSET);
-	data = (int *)(GPIO1_BASE + GPIO_DATAOUT_OFFSET);
-	*flags &= ~(1<<gpio);
-	if(status)
-		*data |= (1<<gpio);
-	else
-		*data &= ~(1<<gpio);
-}
-
 static void eth0_led_set(int pin, int status) {
 	volatile int *flags = (int *)(ETH1_BASE + ETH_GPIO_CFG_OFFSET);
 	int cur = *flags;
@@ -286,10 +276,10 @@ static void eth0_led_set(int pin, int status) {
 void led_set(enum leds led, int status) {
 	switch(led) {
 		case LED1:
-			gpio_led_set(21, status);
+			gpio_set(GPIO_LED1, status);
 			break;
 		case LED2:
-			gpio_led_set(22, status);
+			gpio_set(GPIO_LED2, status);
 			break;
 		case LED3:
 			eth0_led_set(0, status);
