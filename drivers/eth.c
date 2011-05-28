@@ -114,7 +114,9 @@ int eth_init(int base) {
 	if(eth_reset(base) != 0)
 		return -1;
 
-	printk("eth: soft reset complete\n");
+	/* XXX does the phy really need to be reset twice? */
+
+	printk("eth: resetting phy via PMT\n");
 	/* phy reset */
 	reg = eth_read(base, ETH_PMT_CTRL_OFFSET);
 	reg &= 0xFCF; /* clear power management mode and wakeup status */
@@ -122,12 +124,13 @@ int eth_init(int base) {
 	eth_write(base, ETH_PMT_CTRL_OFFSET, reg);
 	while(eth_read(base, ETH_PMT_CTRL_OFFSET) & ETH_PMT_CTRL_PHY_RST)
 		;
-	printk("eth: phy reset complete\n");
 
+	printk("eth: resetting phy via MII\n");
 	eth_phy_write(base, ETH_MII_BCR, ETH_MII_BCR_RESET);
 	while(eth_phy_read(base, ETH_MII_BCR) & ETH_MII_BCR_RESET)
 		;
-	printk("eth: phy reset (2) complete\n");
+
+	printk("eth: waiting for line\n");
 	eth_phy_write(base, ETH_MII_ADVERTISE, 0x01e1);
 	eth_phy_write(base, ETH_MII_BCR, ETH_MII_BCR_ANENABLE | ETH_MII_BCR_ANRESTART);
 	while(!(eth_phy_read(base, ETH_MII_BSR) & ETH_MII_BSR_LSTS))
