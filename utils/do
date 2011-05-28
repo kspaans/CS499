@@ -133,9 +133,13 @@ _do()
 		! test -s "$tmp.tmp2" ||
 		mv "$tmp.tmp2" "$target" 2>/dev/null
 		rm -f "$tmp.tmp2"
-	else
-		echo "do  $DO_DEPTH$target exists." >&2
-	fi
+    fi
+
+    # Removed to make the output a little prettier
+	#else
+	#	#echo "do  $DO_DEPTH$target exists." >&2
+    #    true
+	#fi
 }
 
 
