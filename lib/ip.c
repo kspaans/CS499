@@ -5,7 +5,7 @@
 #include <ip.h>
 #include <string.h>
 
-uint16_t ip_checksum(uint8_t *data, uint16_t len) {
+uint16_t ip_checksum(const uint8_t *data, uint16_t len) {
 	uint32_t sum = 0;
 	int i;
 	for(i=0; i<len; i+=2) {
@@ -51,7 +51,7 @@ mac_addr_t arp_lookup(uint32_t addr) {
 	}
 }
 
-uint32_t send_udp(mac_addr_t macaddr, uint32_t addr, uint16_t port, char *data, uint16_t len) {
+uint32_t send_udp(mac_addr_t macaddr, uint32_t addr, uint16_t port, const char *data, uint16_t len) {
 	struct ethhdr eth;
 	struct ip ip;
 	struct udphdr udp;

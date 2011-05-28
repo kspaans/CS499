@@ -7,6 +7,39 @@
 #include <syscall.h>
 #include <lib.h>
 
+#include <drivers/eth.h>
+#include <ip.h>
+#define UDPMTU 1400
+static mac_addr_t gateway_mac;
+static int gateway_mac_init = 0;
+static void printfunc_udp(void *data, const char *buf, size_t len) {
+	if(buf == NULL) {
+		return;
+	}
+	if(!gateway_mac_init) {
+		gateway_mac = arp_lookup(IP(10,0,0,1));
+		gateway_mac_init = 1;
+	}
+	for(int i=0; i<len; i+=UDPMTU) {
+		int chunk = (i+UDPMTU < len) ? UDPMTU : len-i;
+		send_udp(gateway_mac, IP(10,0,0,1), 7022, buf+i, chunk);
+	}
+}
+#undef UDPMTU
+#define udp_printf(...) func_printf(printfunc_udp, NULL, __VA_ARGS__)
+static void udp_console_loop() {
+	printk("Type characters to send to the remote host\n");
+	udp_printf("<connect>");
+	udp_printf("Hello!\n");
+	for(;;) {
+		char c = getchar();
+		if(c == 4)
+			return;
+		udp_printf("%c", c);
+	}
+}
+#undef udp_printf
+
 #include <drivers/leds.h>
 static void flash_leds() {
 	for(;;) {
@@ -60,7 +93,6 @@ static void kyles_wd_timer_test() {
 }
 
 #include <ip.h>
-#define IP(a,b,c,d) (((a)<<24) | ((b)<<16) | ((c)<<8) | d)
 static void udp_test() {
 	mac_addr_t dest = arp_lookup(IP(10,0,0,1));
 	printk("received mac: ");
@@ -68,9 +100,8 @@ static void udp_test() {
 		printk("%02x:", dest.addr[i]);
 	}
 	printk("%02x\n", dest.addr[5]);
-	printk("UDP STATUS: %08x\n", send_udp(dest, IP(129,97,134,17), 12345, "abcd", 4));
+	printk("UDP STATUS: %08x\n", send_udp(dest, IP(10,0,0,1), 12345, "abcd", 4));
 }
-#undef IP
 
 #include <kern/backtrace.h>
 #include <lib.h>
@@ -214,11 +245,12 @@ static void srrbench_task() {
 
 /* The first user program */
 void userprog_init() {
-	ASSERTNOERR(Create(1, memcpy_bench));
+	//ASSERTNOERR(Create(1, memcpy_bench));
 	ASSERTNOERR(Create(0, udp_test));
 
 	//ASSERTNOERR(Create(3, kyles_wd_timer_test));
 
-	ASSERTNOERR(CreateDaemon(4, flash_leds));
-	ASSERTNOERR(Create(4, console_loop));
+	//ASSERTNOERR(CreateDaemon(4, flash_leds));
+	//ASSERTNOERR(Create(4, console_loop));
+	ASSERTNOERR(Create(4, udp_console_loop));
 }

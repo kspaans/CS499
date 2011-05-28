@@ -143,23 +143,28 @@ int eth_init(int base) {
 	eth_write(base, ETH_TX_CFG_OFFSET, ETH_TX_CFG_ON);
 	eth_mac_write(base, ETH_MAC_MAC_CR, ETH_MAC_TXEN | ETH_MAC_RXEN);
 
-	/* delay for 0.25s to wait for the stagecoach ks8999 switch */
-	volatile int loop = 750000;
+	/* delay for 0.5s to wait for the stagecoach ks8999 switch */
+	volatile int loop = 1500000;
 	while(loop-->0)
 		;
 
 	return 0;
 }
 
-static void eth_tx_aligned(int base, uint32_t *buf, uint16_t offset, uint16_t nbytes, int first, int last, uint32_t btag) {
+static void eth_tx_aligned(int base, const uint32_t *buf, uint16_t offset, uint16_t nbytes, int first, int last, uint32_t btag) {
+	int ndw = (nbytes+offset+3)>>2;
+
+	/* wait until enough words are available in the FIFO */
+	while((eth_read(base, ETH_TX_FIFO_INF_OFFSET) & 0xffff) < ((ndw<<2)+8))
+		;
+
 	eth_write(base, ETH_TX_FIFO_OFFSET, (offset << 16) | (first << 13) | (last << 12) | nbytes);
 	eth_write(base, ETH_TX_FIFO_OFFSET, btag);
-	int ndw = (nbytes+offset+3)>>2;
 	while(ndw-->0)
 		eth_write(base, ETH_TX_FIFO_OFFSET, *buf++);
 }
 
-void eth_tx(int base, void *buf, uint16_t nbytes, int first, int last, uint32_t btag) {
+void eth_tx(int base, const void *buf, uint16_t nbytes, int first, int last, uint32_t btag) {
 	eth_tx_aligned(base, (uint32_t *)((uint32_t)buf & ~3), (uint32_t)buf & 3, nbytes, first, last, btag);
 }
 

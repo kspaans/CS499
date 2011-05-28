@@ -70,7 +70,7 @@
 #define MAKE_BTAG(tag,len) (((tag) << 16) | ((len) & 0x7ff))
 
 int eth_init(int base);
-void eth_tx(int base, void *buf, uint16_t nbytes, int first, int last, uint32_t btag);
+void eth_tx(int base, const void *buf, uint16_t nbytes, int first, int last, uint32_t btag);
 void eth_rx(int base, uint32_t *buf, uint16_t nbytes);
 uint32_t eth_rx_wait_sts(int base);
 uint32_t eth_tx_wait_sts(int base);
