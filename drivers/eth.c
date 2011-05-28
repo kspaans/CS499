@@ -1,5 +1,6 @@
 #include <machine.h>
 #include <drivers/eth.h>
+#include <timer.h>
 #include <types.h>
 #include <mem.h>
 #include <kern/printk.h>
@@ -143,10 +144,8 @@ int eth_init(int base) {
 	eth_write(base, ETH_TX_CFG_OFFSET, ETH_TX_CFG_ON);
 	eth_mac_write(base, ETH_MAC_MAC_CR, ETH_MAC_TXEN | ETH_MAC_RXEN);
 
-	/* delay for 0.5s to wait for the stagecoach ks8999 switch */
-	volatile int loop = 1500000;
-	while(loop-->0)
-		;
+	/* delay for 0.3s to wait for the stagecoach ks8999 switch */
+	udelay(300000);
 
 	return 0;
 }
