@@ -29,9 +29,6 @@ fi
 # Do not link in glibc
 LDFLAGS="-nostdlib -s"
 
-# Dump link map for inspection
-LDFLAGS+=" -Wl"
-
 # Custom linker script
 LDFLAGS+=" -T ${TOP}/omap3.ld"
 
