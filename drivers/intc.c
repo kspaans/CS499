@@ -16,6 +16,14 @@ void intc_register(int slot, isr_func handler, int prio) {
 	isrs[slot] = handler;
 }
 
+void intc_set_fiq(int slot, int fiq) {
+	volatile int *ilr = (int *)(INTC_PHYS_BASE + INTCPS_ILR_OFFSET);
+	if(fiq)
+		ilr[slot] |= INTCPS_ILR_FIQ;
+	else
+		ilr[slot] &= ~INTCPS_ILR_FIQ;
+}
+
 void intc_intenable(int slot) {
 	intcps_vectors[slot>>5].mir_clear = 1<<(slot & 31);
 }

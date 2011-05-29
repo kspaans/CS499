@@ -14,6 +14,7 @@
 
 /* Watchdog timer */
 #define WDT2_PHYS_BASE 0x48314000
+#define WDT3_PHYS_BASE 0x49030000
 
 /* Timers (OMAP3 chapter 16) */
 #define GPTIMER1 0x48318000
@@ -57,6 +58,7 @@ extern const int gpio_bases[6];
 #define IRQ_GPIO4 32
 #define IRQ_GPIO5 33
 #define IRQ_GPIO6 34
+#define IRQ_WDT3 36
 #define IRQ_GPT1 37
 #define IRQ_GPT2 38
 #define IRQ_GPT3 39

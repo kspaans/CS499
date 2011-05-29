@@ -23,6 +23,7 @@
 #define INTCPS_THRESHOLD_OFFSET 0x0068
 #define INTCPS_VECTORS_OFFSET 0x0080
 #define INTCPS_ILR_OFFSET 0x100
+# define INTCPS_ILR_FIQ 0x1
 
 #define PRIO_HIGHEST 0x00
 #define PRIO_LOWEST 0x3f
@@ -31,6 +32,7 @@ void intc_init();
 void intc_reset();
 
 void intc_register(int slot, isr_func handler, int prio);
+void intc_set_fiq(int slot, int fiq);
 void intc_intenable(int slot);
 void intc_intdisable(int slot);
 void intc_dispatch();

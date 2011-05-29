@@ -47,6 +47,7 @@ static void udp_console_loop() {
 #include <drivers/leds.h>
 #include <timer.h>
 static void flash_leds() {
+	printk("Now flashing the blinkenlights.\n");
 	for(;;) {
 		for(enum leds led = LED1; led <= LED5; led++) {
 			led_set(led, 1);
@@ -64,7 +65,7 @@ static void console_loop() {
 	flags = (uint32_t *)(UART3_PHYS_BASE + UART_LSR_OFFSET);
 	data = (uint32_t *)(UART3_PHYS_BASE + UART_RBR_OFFSET);
 
-	printk("Now flashing the blinkenlights; press q to quit.\n");
+	printk("Press q to quit.\n");
 	for(;;) {
 		if(*flags & UART_DRS_MASK) {
 			char c = getchar();
@@ -72,27 +73,6 @@ static void console_loop() {
 				return;
 		}
 		Pass();
-	}
-}
-
-#include <machine.h>
-#include <drivers/wd_timer.h>
-#include <mem.h>
-static void kyles_wd_timer_test() {
-	printk("The WD_SYSCONFIG status register looks like %x\n", read32(WDT2_PHYS_BASE + 0x10));
-	printk("The WIER status register looks like %x.\n", read32(0x4831401C));
-	//write32(0x4831401C, 0x1);
-	printk("The WIER status register's now like %x.\n", read32(0x4831401C));
-	printk("The time register is currently %x\n", read_wdt());
-	//load_wdt(0xFFFF0ACE); // about 4s with default settings
-	printk("The time register is now %x\n", read_wdt());
-	enable_wdt();
-	for (;;) {
-		printk("Timer register is %x\n", read_wdt());
-		//if (read32(0x48314028) == 0xFFFFFFFF) {
-		printk("PRM_RSTST register is %x\n", read32(0x48307258));
-		//printk("PRM_RSTST register is %x\n", read32(0x48307258));}
-		if (getchar() == 'q') break;
 	}
 }
 
@@ -230,9 +210,7 @@ void userprog_init() {
 	ASSERTNOERR(Create(1, memcpy_bench));
 	ASSERTNOERR(Create(0, udp_test));
 
-	//ASSERTNOERR(Create(3, kyles_wd_timer_test));
-
-	//ASSERTNOERR(CreateDaemon(4, flash_leds));
+	ASSERTNOERR(CreateDaemon(4, flash_leds));
 	//ASSERTNOERR(Create(4, console_loop));
 	ASSERTNOERR(Create(4, udp_console_loop));
 }

@@ -1,6 +1,7 @@
 #include <machine.h>
 #include <drivers/eth.h>
 #include <drivers/intc.h>
+#include <drivers/gpio.h>
 #include <drivers/timers.h>
 #include <kern/printk.h>
 #include <kern/task.h>
@@ -18,15 +19,21 @@ void userprog_init();
 
 int main() {
 	struct task *next;
+
+	/* Basic hardware initialization */
+	init_cpumodes(); // set up CPU modes for interrupt handling
+	intc_init(); // initialize interrupt controller
+	gpio_init(); // initialize gpio interrupt system
+
 	/* Start up hardware */
-	timer_init();
+	timers_init(); // must come first, since it initializes the watchdog
 	eth_init(ETH1_BASE);
 
 	/* For some reason, turning on the caches causes the kernel to hang after finishing
 	   the third invocation. Maybe we have to clear the caches here, or enable the MMU. */
 	//init_cache();
 
-	/* Initialize interrupts */
+	/* Initialize other interrupts */
 	init_interrupts();
 
 	/* Initialize task queues */
