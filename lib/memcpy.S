@@ -6,6 +6,7 @@ memcpy:
 	@ if len is zero, don't copy anything
 	cmp	r2, #0
 	bxeq	lr
+	push	{r0}
 	@ check (int)dest & 3
 	tst	r0, #3
 	bne	.byteloop
@@ -18,6 +19,7 @@ memcpy:
 	strb	r3, [r0], #1
 	subs	r2, r2, #1
 	bne	.byteloop
+	pop	{r0}
 	bx	lr
 .alignedcopy:
 	@ copy the aligned region (up to the possibly unaligned tail)
@@ -28,6 +30,7 @@ memcpy:
 	@ check for an unaligned tail
 	bic	r3, r2, #3
 	ands	r2, r2, #3
+	popeq	{r0}
 	bxeq	lr
 	add	r0, r0, r3
 	add	r1, r1, r3
