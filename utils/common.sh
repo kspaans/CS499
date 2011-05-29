@@ -5,7 +5,7 @@ LD="${XPREFIX}ld"
 AR="${XPREFIX}ar"
 
 # Standard options
-CFLAGS="-pipe -Wall -I${TOP}/include -std=gnu99 -O2 -s"
+CFLAGS="-pipe -Wall -I${TOP}/include -std=gnu99 -O2"
 
 # ARMv7 instruction set, Cortex-A8 tuning
 CFLAGS+=" -march=armv7-a -mtune=cortex-a8"
@@ -27,7 +27,7 @@ if [ "${DEBUG}" != "" ] ; then
 fi
 
 # Do not link in glibc
-LDFLAGS="-nostdlib -s"
+LDFLAGS="-nostdlib"
 
 # Custom linker script
 LDFLAGS+=" -T ${TOP}/omap3.ld"
