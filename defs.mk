@@ -7,7 +7,7 @@ AR      = $(XPREFIX)ar
 ECHO = /bin/echo -e
 
 # Standard options
-CFLAGS  += -pipe -Wall -I$(S)/include -std=gnu99 -O2 -s
+CFLAGS  += -pipe -Wall -I$(S)/include -std=gnu99 -O2
 
 # ARMv7 instruction set, Cortex-A8 tuning
 CFLAGS  += -march=armv7-a -mtune=cortex-a8
@@ -26,7 +26,7 @@ CFLAGS  += -DSUPERVISOR_TASKS
 
 
 # Do not link in glibc
-LDFLAGS += -nostdlib -s
+LDFLAGS += -nostdlib
 
 # Dump link map for inspection
 LDFLAGS += -Wl,-Map=$@.map
