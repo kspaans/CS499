@@ -94,6 +94,29 @@ static void udp_test() {
 static void memcpy_bench() {
 	backtrace();
 	int tid = MyTid();
+	printk("memcpy_bench[%d]: testing memcpy\n", tid);
+	/* Test memcpy. */
+	char magichands[128];
+	sprintf(magichands, "abcdefghijklmnopqrstuvwxyz");
+	memcpy(magichands + 1, magichands + 7, 6);
+	printk("%s\n", magichands);
+
+	sprintf(magichands, "abcdefghijklmnopqrstuvwxyz");
+	memcpy(magichands, magichands + 8, 8);
+	printk("%s\n", magichands);
+
+	sprintf(magichands, "abcdefghijklmnopqrstuvwxyz");
+	memcpy(magichands, magichands + 9, 9);
+	printk("%s\n", magichands);
+
+	sprintf(magichands, "abcdefghijklmnopqrstuvwxyz");
+	memcpy(magichands, magichands + 16, 7);
+	printk("%s\n", magichands);
+	sprintf(
+			magichands,
+			"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abXXXXghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abc");
+	memcpy(magichands, magichands + 64, 64);
+	printk("%s\n", magichands);
 	printk("memcpy_bench[%d]: benchmarking memcpy\n", tid);
 	/* Run some benchmarks! */
 	char buf[1<<14];
