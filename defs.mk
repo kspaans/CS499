@@ -69,7 +69,6 @@ obj/%.s: %.c
 
 obj/%.o: obj/%.s
 	-@mkdir -p obj
-	@$(ECHO) "  [AS] $(TOP)$@"
 	@$(XCC) -c $(CFLAGS) -o $@ $< $(REDIT)
 
 obj/%.o: %.S

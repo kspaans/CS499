@@ -84,3 +84,11 @@ void *memset(void *p, int b, size_t n) {
 		*c++ = b;
 	return p;
 }
+
+/* _memcpy is implemented in assembly in libs.S */
+void _memcpy(void *d, const void *s, size_t n);
+
+void *memcpy(void *d, const void *s, size_t n) {
+	_memcpy(d, s, n);
+	return d;
+}

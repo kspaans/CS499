@@ -13,9 +13,8 @@ get_user_psr:
 #else
 	orr   r0, r0, #0x10
 #endif
-	@ Enable IRQs, disable FIQs
-	bic   r0, r0, #0xc0
-	orr   r0, r0, #0x40	@ 0x80=IRQ disable, 0x40=FIQ disable
+	@ Enable IRQs, enable FIQs
+	bic   r0, r0, #0xc0	@ 0x80=IRQ disable, 0x40=FIQ disable
 	@ Clear condition codes
 	bic   r0, r0, #0xf0000000
 	bx    lr
@@ -33,6 +32,7 @@ irq_stack_ptr:
 @ void init_cpumodes()
 init_cpumodes:
 	mrs   r0, cpsr
+	bic   r0, r0, #0x40	@ 0x40=FIQ disable
 	bic   r1, r0, #0x1f
 	ldr   r3, irq_stack_ptr
 	@ FIQ mode
@@ -181,6 +181,14 @@ irq_enter:
 	@ Return to main
 	bx    lr
 
+@ PRM reset.
+.global prm_reset
+prm_reset:
+	ldr r0, prm_rstctrl
+	mov r1, #6 @ RST_DPLL3 | RST_GS
+	str r1, [r0]
+prm_rstctrl:
+	.word 0x48307250 @ PRM_RSTCTRL
 
 .section .vectors, "ax", %progbits
 vec_undefined:
@@ -211,4 +219,4 @@ vec_unused_addr:
 vec_irq_addr:
 	.word irq_enter
 vec_fiq_addr:
-	.word irq_enter
+	.word prm_reset

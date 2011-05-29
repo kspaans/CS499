@@ -6,38 +6,25 @@
 #include <machine.h>
 #include <mem.h>
 
+/* In this file are the interrupts which need to be handled by tasks
+	(as opposed to autonomously, as is the case with some timers). */
 #include <drivers/eth.h>
 static void eth_isr(int irqpin) {
 }
 static void init_eth_irq() {
+	gpio_register(GPIO_ETH1_IRQ, eth_isr, GPIOIRQ_LEVELDETECT1);
 }
 
 #include <drivers/uart.h>
 static void uart_isr(int irq) {
 }
 static void init_uart_irq() {
-}
-
-#include <drivers/timers.h>
-extern volatile unsigned long long gpt3_ovf_count;
-static void timer3_isr(int irq) {
-	++gpt3_ovf_count;
-	// clear interrupt
-	write32(GPTIMER3 + TISR, TI_OVF);
-}
-static void init_timers_irq() {
-	intc_register(IRQ_GPT3, timer3_isr, 0);
-	// Enable overflow interrupt
-	mem32(GPTIMER3 + TIER) |= TI_OVF;
-	intc_intenable(IRQ_GPT3);
+	intc_register(IRQ_UART3, uart_isr, 1);
 }
 
 void init_interrupts() {
-	init_cpumodes();
-	intc_init();
-	gpio_init();
-
-	init_timers_irq();
+	init_eth_irq();
+	init_uart_irq();
 }
 
 void task_irq() {
