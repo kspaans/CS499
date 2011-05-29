@@ -3,6 +3,7 @@
 #include <drivers/leds.h>
 #include <drivers/eth.h> // for ethernet defines
 #include <drivers/gpio.h>
+#include <timer.h> // for udelay
 #include <types.h>
 #include <kern/printk.h>
 
@@ -113,12 +114,6 @@ static struct i2c {
 	unsigned short systest;	/* 0x3c */
 	unsigned short res15;
 } *i2c_base = (struct i2c *)I2C_DEFAULT_BASE;
-
-static void udelay(unsigned long us) {
-	volatile int i = us*3;
-	while(i-->0)
-		;
-}
 
 static int i2c_write_byte (uint8_t devaddr, uint8_t regoffset, uint8_t value)
 {

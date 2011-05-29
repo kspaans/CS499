@@ -28,6 +28,7 @@ int main() {
 	/* Start up hardware */
 	timers_init(); // must come first, since it initializes the watchdog
 	eth_init(ETH1_BASE);
+	uart_init();
 
 	/* For some reason, turning on the caches causes the kernel to hang after finishing
 	   the third invocation. Maybe we have to clear the caches here, or enable the MMU. */
