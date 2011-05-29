@@ -1,8 +1,8 @@
 	.align	2
-	.global	memcpy
-	.type	memcpy, %function
-@ void memcpy(void *d, const void *s, size_t size)
-memcpy:
+	.global	_memcpy
+	.type	_memcpy, %function
+@ void _memcpy(void *d, const void *s, size_t size)
+_memcpy:
 	@ if len is zero, don't copy anything
 	cmp	r2, #0
 	bxeq	lr
