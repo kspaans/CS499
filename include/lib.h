@@ -36,6 +36,32 @@ QUEUE(char,charqueue)
 QUEUE(int,intqueue)
 #undef QUEUE
 
+/* Hash tables */
+struct ht_item {
+	int key;
+	void *value;
+	char deleted;
+	char valid;
+};
+
+typedef uint32_t (*ht_hashfunc)(int key);
+typedef int (*ht_cmpfunc)(int key1, int key2);
+
+typedef struct {
+	struct ht_item *arr;
+	int count;
+	int max;
+	ht_hashfunc hashfunc;
+	ht_cmpfunc cmpfunc;
+} hashtable;
+
+#define HT_NOKEY -1 // key not found
+#define HT_NOMEM -2 // out of memory
+void hashtable_init(hashtable *ht, struct ht_item *arr, int max, ht_hashfunc hashfunc, ht_cmpfunc cmpfunc);
+int hashtable_get(hashtable *ht, int key, void **value);
+int hashtable_put(hashtable *ht, int key, void *value);
+int hashtable_del(hashtable *ht, int key);
+
 /* Generic printing functions */
 // Function to send formatted strings to
 typedef void(*printfunc_t)(void *data, const char *str, size_t len);
