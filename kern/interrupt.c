@@ -5,6 +5,19 @@
 #include <kern/printk.h>
 #include <machine.h>
 #include <mem.h>
+#include <event.h>
+#include <kern/task.h>
+
+#include <drivers/timers.h>
+static void clock_isr(int irq) {
+	event_unblock_all(EVENT_CLOCK_TICK, 0);
+	timer_intreset(GPTIMER5);
+}
+static void init_clock_irq() {
+	intc_register(IRQ_GPT5, clock_isr, 0);
+	timer_go(GPTIMER5, -26000, 1);
+	intc_intenable(IRQ_GPT5);
+}
 
 /* In this file are the interrupts which need to be handled by tasks
 	(as opposed to autonomously, as is the case with some timers). */
@@ -37,6 +50,7 @@ static void init_uart_irq() {
 }
 
 void init_interrupts() {
+	init_clock_irq();
 	init_eth_irq();
 	init_uart_irq();
 }

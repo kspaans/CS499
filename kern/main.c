@@ -9,6 +9,8 @@
 #include <lib.h>
 #include <syscall.h>
 
+#include <server/clock.h>
+
 void idle() {
 	/* Todo: use the ARM wait-for-interrupt instruction */
 	while (1)
@@ -40,6 +42,11 @@ int main() {
 
 	/* Initialize task queues */
 	init_tasks();
+
+	/* Setup servers */
+	clockserver_tid = reserve_tid();
+	do_Create(NULL, 0, clockserver_task, TASK_DAEMON, clockserver_tid);
+	syscall_CreateDaemon(NULL, 0, clockserver_notifier);
 
 	/* Initialize idle task */
 	int idle_tid = syscall_CreateDaemon(NULL, 7, idle);

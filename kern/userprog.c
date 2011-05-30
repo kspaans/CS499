@@ -51,16 +51,15 @@ static void udp_console_loop() {
 #undef udp_printf
 
 #include <drivers/leds.h>
-#include <timer.h>
+#include <server/clock.h>
 static void flash_leds() {
 	printk("Now flashing the blinkenlights.\n");
 	for(;;) {
 		for(enum leds led = LED1; led <= LED5; led++) {
 			led_set(led, 1);
-			udelay(100000);
+			msleep(100);
 			led_set(led, 0);
 		}
-		Pass();
 	}
 }
 
@@ -96,7 +95,7 @@ static void udp_test() {
 #include <kern/backtrace.h>
 #include <lib.h>
 #include <string.h>
-#include <drivers/timers.h>
+#include <timer.h>
 static void memcpy_bench() {
 	backtrace();
 	int tid = MyTid();

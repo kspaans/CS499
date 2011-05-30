@@ -1,13 +1,17 @@
+#include <lib.h>
+#include <errno.h>
+#include <event.h>
 #include <syscall.h>
 #include <server/clock.h>
+#include <kern/printk.h>
 
 void msleep(int msec) {
 	if(msec <= 0) return;
-	Send(tid_clockserver, CLOCK_DELAY_MSG, &msec, sizeof(msec), NULL, 0);
+	Send(clockserver_tid, CLOCK_DELAY_MSG, &msec, sizeof(msec), NULL, 0);
 }
 
 int Time() {
-	return Send(tid_clockserver, CLOCK_TIME_MSG, NULL, 0, NULL, 0);
+	return Send(clockserver_tid, CLOCK_TIME_MSG, NULL, 0, NULL, 0);
 }
 
 typedef struct {
@@ -52,7 +56,7 @@ static void delayinfoheap_push(delayinfo *delays, int *n, delayinfo value) {
 
 #define DELAYS 5000
 
-void task_clockserver() {
+void clockserver_task() {
 	int tid;
 	int rcvlen;
 	int rcvdata;
@@ -68,7 +72,7 @@ void task_clockserver() {
 		}
 		switch(msgcode) {
 		case CLOCK_NOTIFY_MSG:
-			ReplyStatus(current_info.tid, 0);
+			ReplyStatus(tid, 0);
 			time++;
 			while (num_delays > 0 && delays[0].time <= time) {
 				delayinfo current_info = delayinfoheap_pop(delays, &num_delays);
@@ -100,5 +104,12 @@ void task_clockserver() {
 			ReplyStatus(tid, ERR_REPLY_BADREQ);
 			break;
 		}
+	}
+}
+
+void clockserver_notifier() {
+	while(1) {
+		AwaitEvent(EVENT_CLOCK_TICK);
+		Send(clockserver_tid, CLOCK_NOTIFY_MSG, NULL, 0, NULL, 0);
 	}
 }
