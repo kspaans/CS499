@@ -8,6 +8,7 @@
 #define ERR_SEND_BADTID      -1 /* task id is impossible */
 #define ERR_SEND_NOSUCHTID   -2 /* task id is not an existing task */
 #define ERR_SEND_SRRFAIL     -3 /* send-receive-reply transaction is incomplete */
+#define ERR_SEND_NOSPACE     -4 /* insufficient space for the entire sent message in receiver's buffer */
 
 #define ERR_RECEIVE_SRRFAIL  -1 /* [UNDOCUMENTED] temporary value to indicate that Receive has not yet returned */
 

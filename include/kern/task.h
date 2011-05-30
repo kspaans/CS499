@@ -4,6 +4,7 @@
 #include <task.h>
 
 typedef void* useraddr_t;
+typedef const void* const_useraddr_t;
 
 /* Number of non-daemon tasks. The system exits when no non-daemon tasks remain. */
 extern int nondaemon_count;
@@ -19,7 +20,7 @@ extern int nondaemon_count;
 /* Size of the stack allocated to each task */
 #define TASK_STACKSIZE      65536 /* 64 KB */
 
-#define STACK_ARG(task, n)  (*((int *)task->regs.sp + (n-5)))
+#define STACK_ARG(task, n)  (*(((int *)task->regs.sp) + (n-4)))
 
 /* NOTE: Changes to the regs stucture MUST be reflected in switch.S. */
 struct regs {
@@ -37,19 +38,24 @@ typedef struct {
 	struct task* end;
 } taskqueue;
 
-struct tasksrr {
-	/* Receive queue: holds tasks which have sent to this one
-	 * but which haven't been received by this task yet */
-	taskqueue recv_queue;
-	/* Send/Receive buffer */
-	useraddr_t sendrecv_buf;
-	int sendrecv_len;
-	/* Reply buffer */
-	useraddr_t reply_buf;
-	int reply_len;
-	/* Receive TID */
-	useraddr_t recv_tidptr;
-	int target_tid;
+union tasksrr {
+	struct {
+		int tid;
+		int code;
+		const_useraddr_t buf;
+		int len;
+		useraddr_t rbuf;
+		int rlen;
+	} send;
+	struct {
+		useraddr_t tidptr;
+		useraddr_t codeptr;
+		useraddr_t buf;
+		int len;
+	} recv;
+	struct {
+		int id;
+	} event;
 };
 
 struct task {
@@ -61,7 +67,10 @@ struct task {
 	int daemon;
 	int stack_start;
 	enum taskstate state;
-	struct tasksrr srr;
+	/* Receive queue: holds tasks which have sent to this one
+	 * but which haven't been received by this task yet */
+	taskqueue recv_queue;
+	union tasksrr srr;
 
 	/* for putting tasks in queues */
 	struct task *prevtask;
@@ -105,9 +114,9 @@ int syscall_MyTid(struct task *task);
 int syscall_MyParentTid(struct task *task);
 void syscall_Pass(struct task *task);
 void syscall_Exit(struct task *task);
-int syscall_Send(struct task *task, int tid, useraddr_t msg, int msglen, useraddr_t reply, int replylen);
-int syscall_Receive(struct task *task, useraddr_t tid, useraddr_t msg, int msglen);
-int syscall_Reply(struct task *task, int tid, useraddr_t reply, int replylen);
+int syscall_Send(struct task *task, int tid, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen);
+int syscall_Receive(struct task *task, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen);
+int syscall_Reply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen);
 int syscall_AwaitEvent(struct task* task, int eventid);
 int syscall_TaskStat(struct task* task, int tid, useraddr_t stat);
 /* Kernel-internal calls */

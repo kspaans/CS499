@@ -129,7 +129,7 @@ int do_Create(struct task *task, int priority, void (*code)(), int daemon, int t
 	newtask->daemon = (daemon == TASK_DAEMON);
 	newtask->state = TASK_RUNNING;
 	newtask->stack_start = (int)newtask_stack;
-	taskqueue_init(&(newtask->srr.recv_queue));
+	taskqueue_init(&newtask->recv_queue);
 
 	/* Set up registers. */
 	newtask->regs.pc = (int)task_run;
@@ -171,8 +171,8 @@ void syscall_Exit(struct task *task) {
 		nondaemon_count--;
 	/* Clean out the send queue. */
 	struct task *sender;
-	while(task->srr.recv_queue.start != NULL) {
-		sender = taskqueue_pop(&(task->srr.recv_queue));
+	while(task->recv_queue.start != NULL) {
+		sender = taskqueue_pop(&task->recv_queue);
 		if(sender->state != TASK_RECV_BLOCKED) {
 			printk("KERNEL FATAL: Exiting task had a non-blocked task on receive queue.\n");
 		} else {
@@ -194,65 +194,80 @@ void syscall_Exit(struct task *task) {
  *   - Requires Destroy to maintain a list of its children
  */
 
-/* Handle a receive transaction; return the Receive call return value */
-static int handle_receive(struct task *receiver) {
-	if(receiver->state != TASK_SEND_BLOCKED) {
-		printk("KERNEL FATAL: handle_receive called on a non-blocked task\n");
-		return ERR_RECEIVE_SRRFAIL;
+/* Handle a receive transaction.
+   Returns 0 if the sender unblocks and 1 if the receiver unblocks. */
+static int handle_receive(struct task *receiver, struct task *sender) {
+	/* Copy the message */
+	if(receiver->srr.recv.buf && sender->srr.send.buf) {
+		if(receiver->srr.recv.len < sender->srr.send.len) {
+			/* Unblock sender and tell him the send failed */
+			sender->regs.r0 = ERR_SEND_NOSPACE;
+			sender->state = TASK_RUNNING;
+			return 0;
+		}
+		memcpy(receiver->srr.recv.buf, sender->srr.send.buf, sender->srr.send.len);
 	}
-	if(receiver->srr.recv_queue.start == NULL)
-		return ERR_RECEIVE_SRRFAIL;
-	struct task *sender = taskqueue_pop(&(receiver->srr.recv_queue));
-	if(sender->state != TASK_RECV_BLOCKED) {
-		printk("KERNEL FATAL: Task had a non-blocked task on receive queue.\n");
-		return ERR_RECEIVE_SRRFAIL;
-	}
-	/* Copy the message. */
-	if(receiver->srr.sendrecv_len < sender->srr.sendrecv_len) {
-		memcpy(receiver->srr.sendrecv_buf, sender->srr.sendrecv_buf, receiver->srr.sendrecv_len);
-	} else {
-		memcpy(receiver->srr.sendrecv_buf, sender->srr.sendrecv_buf, sender->srr.sendrecv_len);
-	}
-	memcpy(receiver->srr.recv_tidptr, (void *)&(sender->tid), sizeof(int));
+
+	/* Copy the status data */
+	if(receiver->srr.recv.tidptr)
+		memcpy(receiver->srr.recv.tidptr, (void *)&sender->tid, sizeof(int));
+	if(receiver->srr.recv.codeptr)
+		memcpy(receiver->srr.recv.codeptr, (void *)&sender->srr.send.code, sizeof(int));
+
 	sender->state = TASK_REPLY_BLOCKED;
+	receiver->regs.r0 = sender->srr.send.len;
 	receiver->state = TASK_RUNNING;
-	/* return the length of the sent message. Receiver needs to check that the buffer it provided was big enough. */
-	return sender->srr.sendrecv_len;
+	return 1;
 }
 
 /* Message passing */
-int syscall_Send(struct task *task, int tid, useraddr_t msg, int msglen, useraddr_t reply, int replylen) {
+int syscall_Send(struct task *sender, int tid, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen) {
 	struct task *receiver = get_task(tid);
 	if(receiver == NULL)
 		return ERR_SEND_BADTID;
 	if(receiver->tid != tid || receiver->state == TASK_DEAD)
 		return ERR_SEND_NOSUCHTID;
-	task->state = TASK_RECV_BLOCKED;
-	task->srr.sendrecv_buf = msg;
-	task->srr.sendrecv_len = msglen;
-	task->srr.reply_buf = reply;
-	task->srr.reply_len = replylen;
-	task->srr.target_tid = tid;
-	taskqueue_push(&(receiver->srr.recv_queue), task);
-	/* Handle receiver */
+
+	sender->state = TASK_RECV_BLOCKED;
+	sender->srr.send.tid = tid;
+	sender->srr.send.code = msgcode;
+	sender->srr.send.buf = msg;
+	sender->srr.send.len = msglen;
+	sender->srr.send.rbuf = reply;
+	sender->srr.send.rlen = replylen;
 	if(receiver->state == TASK_SEND_BLOCKED) {
-		receiver->regs.r0 = handle_receive(receiver);
-		/* and allow receiver to run, if they can */
-		task_enqueue(receiver);
+		if(handle_receive(receiver, sender))
+			task_enqueue(receiver); // receiver unblocked
+		else
+			return sender->regs.r0; // sender unblocked
+	} else {
+		taskqueue_push(&receiver->recv_queue, sender);
 	}
 	/* Return SRRFAIL here. Real return value will be posted by syscall_Reply. */
 	return ERR_SEND_SRRFAIL;
 }
 
-int syscall_Receive(struct task *task, useraddr_t tid, useraddr_t msg, int msglen) {
-	task->state = TASK_SEND_BLOCKED;
-	task->srr.recv_tidptr = tid;
-	task->srr.sendrecv_buf = msg;
-	task->srr.sendrecv_len = msglen;
-	return handle_receive(task);
+int syscall_Receive(struct task *receiver, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen) {
+	receiver->state = TASK_SEND_BLOCKED;
+	receiver->srr.recv.tidptr = tid;
+	receiver->srr.recv.codeptr = msgcode;
+	receiver->srr.recv.buf = msg;
+	receiver->srr.recv.len = msglen;
+	while(receiver->recv_queue.start != NULL) {
+		struct task *sender = taskqueue_pop(&receiver->recv_queue);
+		if(sender->state != TASK_RECV_BLOCKED) {
+			printk("KERNEL FATAL: Task had a non-blocked task on receive queue.\n");
+			return ERR_RECEIVE_SRRFAIL;
+		}
+		if(handle_receive(receiver, sender))
+			return receiver->regs.r0; // receiver unblocked
+		else
+			task_enqueue(sender); // sender unblocked
+	}
+	return ERR_RECEIVE_SRRFAIL;
 }
 
-int syscall_Reply(struct task *task, int tid, useraddr_t reply, int replylen) {
+int syscall_Reply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen) {
 	struct task *sender = get_task(tid);
 	if(sender == NULL)
 		return ERR_REPLY_BADTID;
@@ -260,17 +275,18 @@ int syscall_Reply(struct task *task, int tid, useraddr_t reply, int replylen) {
 		return ERR_REPLY_NOSUCHTID;
 	if(sender->state != TASK_REPLY_BLOCKED)
 		return ERR_REPLY_NOTBLOCKED;
-	int ret;
+
+	int ret = 0;
 	/* Copy the message. */
-	if(sender->srr.reply_len < replylen) {
-		memcpy(sender->srr.reply_buf, reply, sender->srr.reply_len);
-		ret = ERR_REPLY_NOSPACE;
-	} else {
-		memcpy(sender->srr.reply_buf, reply, replylen);
-		ret = 0;
+	if(sender->srr.send.rbuf && reply) {
+		if(sender->srr.send.rlen < replylen) {
+			ret = status = ERR_REPLY_NOSPACE;
+		} else {
+			memcpy(sender->srr.send.rbuf, reply, replylen);
+		}
 	}
 	/* Push sender return value and unblock it */
-	sender->regs.r0 = replylen;
+	sender->regs.r0 = status;
 	sender->state = TASK_RUNNING;
 	task_enqueue(sender);
 	return ret;
@@ -296,7 +312,7 @@ int syscall_AwaitEvent(struct task *task, int eventid) {
 		return ERR_AWAITEVENT_INVALIDEVENT;
 	}
 	task->state = TASK_EVENT_BLOCKED;
-	task->srr.target_tid = eventid;
+	task->srr.event.id = eventid;
 	taskqueue_push(&eventqueues[eventid], task);
 
 	// Return SRRFAIL... Real value will be posted when unblocked.
@@ -327,8 +343,10 @@ int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
 			st.srrtid = -1;
 		} else if(st.state == TASK_SEND_BLOCKED) {
 			st.srrtid = 0;
+		} else if(st.state == TASK_EVENT_BLOCKED) {
+			st.srrtid = othertask->srr.event.id;
 		} else {
-			st.srrtid = othertask->srr.target_tid;
+			st.srrtid = othertask->srr.send.tid;
 		}
 	}
 	memcpy(stat, (void *)&st, sizeof(struct task_stat));
@@ -339,10 +357,10 @@ void task_syscall(int code, struct task *task) {
 	int ret;
 	switch (code) {
 	case SYS_CREATE:
-		ret = syscall_Create(task, task->regs.r0, (void *) task->regs.r1);
+		ret = syscall_Create(task, task->regs.r0, (void *)task->regs.r1);
 		break;
 	case SYS_CREATEDAEMON:
-		ret = syscall_CreateDaemon(task, task->regs.r0, (void *) task->regs.r1);
+		ret = syscall_CreateDaemon(task, task->regs.r0, (void *)task->regs.r1);
 		break;
 	case SYS_MYTID:
 		ret = syscall_MyTid(task);
@@ -359,22 +377,24 @@ void task_syscall(int code, struct task *task) {
 		ret = 0;
 		break;
 	case SYS_SEND:
-		ret = syscall_Send(task, task->regs.r0, (useraddr_t) task->regs.r1,
-				task->regs.r2, (useraddr_t) task->regs.r3, STACK_ARG(task, 5));
+		ret = syscall_Send(task, /*tid*/task->regs.r0, /*msgcode*/task->regs.r1,
+				/*msg*/(useraddr_t)task->regs.r2, /*msglen*/task->regs.r3,
+				/*reply*/(useraddr_t)STACK_ARG(task, 4), /*replylen*/STACK_ARG(task, 5));
 		break;
 	case SYS_RECEIVE:
-		ret = syscall_Receive(task, (useraddr_t) task->regs.r0,
-				(useraddr_t) task->regs.r1, task->regs.r2);
+		ret = syscall_Receive(task, /*tid*/(useraddr_t)task->regs.r0,
+				/*msgcode*/(useraddr_t)task->regs.r1,
+				/*msg*/(useraddr_t)task->regs.r2, /*msglen*/task->regs.r3);
 		break;
 	case SYS_REPLY:
-		ret = syscall_Reply(task, task->regs.r0, (useraddr_t) task->regs.r1,
-				task->regs.r2);
+		ret = syscall_Reply(task, /*tid*/task->regs.r0, /*status*/task->regs.r1,
+				/*reply*/(useraddr_t)task->regs.r2, /*replylen*/task->regs.r3);
 		break;
 	case SYS_AWAITEVENT:
 		ret = syscall_AwaitEvent(task, task->regs.r0);
 		break;
 	case SYS_TASKSTAT:
-		ret = syscall_TaskStat(task, task->regs.r0, (useraddr_t) task->regs.r1);
+		ret = syscall_TaskStat(task, task->regs.r0, (useraddr_t)task->regs.r1);
 		break;
 	default:
 		ret = ERR_BADCALL;

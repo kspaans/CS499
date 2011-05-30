@@ -117,26 +117,20 @@ static void memcpy_bench() {
 static void srr_child() {
 	char buf[4];
 	int i, j;
-	for(i=0; i<9; i++) {
+	for(i=0; i<5; i++) {
 		int tid;
-		int len = Receive(&tid, buf, sizeof(buf));
+		int len = Receive(&tid, NULL, buf, sizeof(buf));
 		printk("  Child Received, with retval %d\n", len);
 		if(len < 0) {
 			printk("RECEIVE FAILED: %d\n", len);
-			Reply(tid, "FAILED", 6);
+			Reply(tid, 6, "FAILED", 6);
 			continue;
 		}
-		if(len > sizeof(buf)) {
-			printk("  Child got TRUNCATED Receive: ");
-			for(j=0; j<sizeof(buf); j++)
-				putchar(buf[j]);
-		} else {
-			printk("  Child got Receive: ");
-			for(j=0; j<len; j++)
-				putchar(buf[j]);
-		}
+		printk("  Child got Receive: ");
+		for(j=0; j<len; j++)
+			putchar(buf[j]);
 		printk("\n");
-		int ret = Reply(tid, "0123456789", i);
+		int ret = Reply(tid, i, "0123456789", i);
 		if(ret < 0) {
 			printk("  Child Reply FAILED: %d\n", ret);
 		} else {
@@ -151,8 +145,8 @@ static void srr_task() {
 	int child = Create(1, srr_child);
 	char buf[4];
 	int i, j;
-	for(i=0; i<10; i++) {
-		int len = Send(child, "abcdefghijklmno", i, buf, sizeof(buf));
+	for(i=0; i<5; i++) {
+		int len = Send(child, 0, "abcdefghijklmno", i, buf, sizeof(buf));
 		printk(" Parent Sent, with retval %d\n", len);
 		if(len < 0) {
 			printk(" Parent Send failed: %d\n", len);
@@ -177,12 +171,12 @@ static void srrbench_child() {
 	int tid;
 	int i;
 	for(i=0; i<SRR_RUNS; i++) {
-		Receive(&tid, buf, 4);
-		Reply(tid, buf, 4);
+		Receive(&tid, NULL, buf, 4);
+		Reply(tid, 4, buf, 4);
 	}
 	for(i=0; i<SRR_RUNS; i++) {
-		Receive(&tid, buf, 64);
-		Reply(tid, buf, 64);
+		Receive(&tid, NULL, buf, 64);
+		Reply(tid, 64, buf, 64);
 	}
 }
 
@@ -205,16 +199,18 @@ static void srrbench_task() {
 	unsigned long long start, elapsed;
 
 	BENCH("Pass", Pass())
-	BENCH("4-bytes", Send(child, buf, 4, buf, 4))
-	BENCH("64-bytes", Send(child, buf, 64, buf, 64))
+	BENCH("4-bytes", Send(child, 0, buf, 4, buf, 4))
+	BENCH("64-bytes", Send(child, 0, buf, 64, buf, 64))
 
 	printk("srrbench_task[%d]: benchmark finished.\n", tid);
 }
 
 /* The first user program */
 void userprog_init() {
-	ASSERTNOERR(Create(1, memcpy_bench));
 	ASSERTNOERR(Create(0, udp_test));
+	ASSERTNOERR(Create(1, memcpy_bench));
+	//ASSERTNOERR(Create(2, srr_task));
+	//ASSERTNOERR(Create(3, srrbench_task));
 
 	ASSERTNOERR(CreateDaemon(4, flash_leds));
 	//ASSERTNOERR(Create(4, console_loop));

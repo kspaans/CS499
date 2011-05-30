@@ -7,9 +7,9 @@
 	.global kern_##funcname; \
 	.type funcname, %function; \
 funcname: \
-	stmfd sp!, {lr}; \
+	mov ip, lr; \
 	swi	HASH callno; \
-	ldmfd sp!, {lr}; \
+	mov lr, ip; \
 	bx	lr;
 #else
 #define SYSCALL(funcname, callno) \
