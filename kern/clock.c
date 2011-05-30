@@ -89,7 +89,7 @@ void clockserver_task() {
 			if (rcvdata <= time) {
 				ReplyStatus(tid, 0);
 			} else if (num_delays == DELAYS) {
-				ReplyStatus(tid, ERR_REPLY_NOSPACE);
+				ReplyStatus(tid, ERR_REPLY_NOMEM);
 			} else {
 				delayinfo current_info;
 				current_info.tid = tid;

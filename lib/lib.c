@@ -9,6 +9,22 @@ void raise() {}
 // (unwind functionality is loaded by long long division)
 char __aeabi_unwind_cpp_pr0[0];
 
+/* Circular buffers */
+#define QUEUE(T,Q) \
+	void Q##_init(Q *q, T *arr, int max) \
+		{ q->idx=q->len=0; q->max=max; q->arr=arr; } \
+	void Q##_push(Q *q, T v) \
+		{ q->arr[(q->idx+q->len)%q->max] = v; ++q->len; } \
+	T Q##_pop(Q *q) \
+		{ T v = q->arr[q->idx]; q->idx = (q->idx+1)%q->max; --q->len; return v; } \
+	int Q##_empty(Q *q) \
+		{ return q->len == 0; } \
+	int Q##_full(Q *q) \
+		{ return q->len == q->max; }
+QUEUE(char,charqueue)
+QUEUE(int,intqueue)
+#undef QUEUE
+
 /* Argument parsing */
 int parse_args(char *buf, char **argv, int argv_len) {
 	int argc = 0;

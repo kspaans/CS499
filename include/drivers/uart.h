@@ -49,6 +49,8 @@
 #define UART_SCR_OFFSET 0x40 // R/W, mode A/B/op
 # define UART_SCR_RX_TRIG_GRANU1 0x80
 # define UART_SCR_TX_TRIG_GRANU1 0x40
+#define UART_SSR_OFFSET 0x44 // R/O, mode A/B/op
+# define UART_SSR_TX_FIFO_FULL 0x01
 #define UART_SYSC_OFFSET 0x54 // R/W, mode A/B/op
 # define UART_SYSC_SOFTRESET 0x02
 #define UART_SYSS_OFFSET 0x58 // R/O, mode A/B/op
@@ -58,6 +60,10 @@ void uart_init();
 int uart_intstatus();
 void uart_intenable(int interrupt);
 void uart_intdisable(int interrupt);
+int uart_txfull();
+int uart_rxempty();
+void uart_tx(int c);
+int uart_rx();
 int uart_getc();
 void uart_putc(char c);
 

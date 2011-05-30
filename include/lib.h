@@ -25,6 +25,17 @@
 	} \
 }
 
+/* Circular buffers */
+#define QUEUE(T,Q) typedef struct { T *arr; int idx, len, max; } Q; \
+	void Q##_init(Q *q, T *arr, int max); \
+	void Q##_push(Q *q, T v); \
+	T Q##_pop(Q *q); \
+	int Q##_empty(Q *q); \
+	int Q##_full(Q *q);
+QUEUE(char,charqueue)
+QUEUE(int,intqueue)
+#undef QUEUE
+
 /* Generic printing functions */
 // Function to send formatted strings to
 typedef void(*printfunc_t)(void *data, const char *str, size_t len);

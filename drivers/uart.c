@@ -56,6 +56,22 @@ void uart_intdisable(int interrupt) {
 	mem32(UART3_PHYS_BASE + UART_IER_OFFSET) &= ~interrupt;
 }
 
+int uart_txfull() {
+	return mem32(UART3_PHYS_BASE + UART_SSR_OFFSET) & UART_SSR_TX_FIFO_FULL;
+}
+
+int uart_rxempty() {
+	return !(mem32(UART3_PHYS_BASE + UART_LSR_OFFSET) & UART_DRS_MASK);
+}
+
+void uart_tx(int c) {
+	write32(UART3_PHYS_BASE + UART_THR_OFFSET, c);
+}
+
+int uart_rx() {
+	return read32(UART3_PHYS_BASE + UART_RHR_OFFSET);
+}
+
 int uart_getc() {
 	volatile uint32_t *flags, *data;
 	flags = (uint32_t *)(UART3_PHYS_BASE + UART_LSR_OFFSET);
