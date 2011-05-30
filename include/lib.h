@@ -10,17 +10,17 @@
 #define STRINGIFY2(x) STRINGIFY(x)
 #define ASSERT(str, a, b) { \
 	if((a) != (b)) { \
-		printk("\033[1;41mAssert \"" #a " == " #b "\" failed at " __FILE__ ":" STRINGIFY2(__LINE__) ": "); \
-		printk("%s: ", str); \
-		printk( #a "=%d, " #b "=%d\033[m\n", (int)(a), (int)(b)); \
+		printf("\033[1;41mAssert \"" #a " == " #b "\" failed at " __FILE__ ":" STRINGIFY2(__LINE__) ": "); \
+		printf("%s: ", str); \
+		printf( #a "=%d, " #b "=%d\033[m\n", (int)(a), (int)(b)); \
 		Exit(); \
 	} \
 }
 #define ASSERTNOERR(ret) { \
 	int rval = (ret); \
 	if(rval < 0) { \
-		printk("\033[1;41mAssert \"" #ret " >= 0\" failed at " __FILE__ ":" STRINGIFY2(__LINE__) ": "); \
-		printk("Return value %d\033[m\n", rval); \
+		printf("\033[1;41mAssert \"" #ret " >= 0\" failed at " __FILE__ ":" STRINGIFY2(__LINE__) ": "); \
+		printf("Return value %d\033[m\n", rval); \
 		Exit(); \
 	} \
 }

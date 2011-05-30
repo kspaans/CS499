@@ -3,7 +3,6 @@
 #include <event.h>
 #include <syscall.h>
 #include <server/clock.h>
-#include <kern/printk.h>
 
 void msleep(int msec) {
 	if(msec <= 0) return;
@@ -67,7 +66,7 @@ void clockserver_task() {
 	while(1) {
 		rcvlen = Receive(&tid, &msgcode, &rcvdata, sizeof(rcvdata));
 		if(rcvlen < 0) {
-			printk("ERROR: Clock server receive failed\n");
+			printf("ERROR: Clock server receive failed\n");
 			continue;
 		}
 		switch(msgcode) {
@@ -81,7 +80,7 @@ void clockserver_task() {
 			break;
 		case CLOCK_DELAY_MSG:
 			if(rcvlen < sizeof(int)) {
-				printk("Bad clock message");
+				printf("Bad clock message");
 				ReplyStatus(tid, ERR_REPLY_BADREQ);
 				break;
 			}
