@@ -9,7 +9,7 @@
 #define CHUNK_SIZE 256
 #define TX_BUF_MAX 32768
 #define RX_BUF_MAX 16384
-#define RX_TIDS_MAX 4096
+#define RX_TIDS_MAX 64
 
 static void console_printfunc(void *unused, const char *buf, size_t len) {
 	(void)unused;
@@ -126,10 +126,17 @@ void consolerx_task() {
 		switch(msgcode) {
 		case CONSOLE_RX_NOTIFY_MSG:
 			ReplyStatus(tid, 0);
-			while(!uart_rxempty())
+			while(!uart_rxempty()) {
+				if(charqueue_full(&chq))
+					charqueue_pop(&chq);
 				charqueue_push(&chq, uart_rx());
+			}
 			break;
 		case CONSOLE_RX_REQ_MSG:
+			if(intqueue_full(&tidq)) {
+				ReplyStatus(tid, ERR_REPLY_NOMEM);
+				continue;
+			}
 			intqueue_push(&tidq, tid);
 			break;
 		default:
