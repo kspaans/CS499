@@ -13,6 +13,7 @@
 # define UART_RHR_IT 0x01
 #define UART_DLH_OFFSET 0x04 // R/W, mode A/B
 #define UART_IIR_OFFSET 0x08 // R/O, mode A/op
+# define UART_IIR_RXTO (6 << 1)
 # define UART_IIR_RHR (2 << 1)
 # define UART_IIR_THR (1 << 1)
 # define UART_IIR_IT_MASK 0x3f

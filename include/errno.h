@@ -16,6 +16,7 @@
 #define ERR_REPLY_NOSUCHTID  -2 /* task id is not an existing task */
 #define ERR_REPLY_NOTBLOCKED -3 /* task is not reply blocked */
 #define ERR_REPLY_NOSPACE    -4 /* insufficient space for the entire reply in sender's reply buffer */
+#define ERR_REPLY_BADREQ     -5 /* request invalid */
 
 #define ERR_AWAITEVENT_INVALIDEVENT -1 /* eventid is invalid */
 #define ERR_AWAITEVENT_CORRUPTEDDATA -2 /* corrupted volatile data */

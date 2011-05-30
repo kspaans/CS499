@@ -18,6 +18,7 @@ int Send(int tid, int msgcode, char *msg, int msglen, char *reply, int replylen)
 int Receive(int *tid, int *msgcode, char *msg, int msglen);
 /* Reply to a message. status will be returned as the return value from Send. */
 int Reply(int tid, int status, char *reply, int replylen);
+#define ReplyStatus(tid,status) Reply(tid,status,NULL,0)
 int AwaitEvent(int eventid);
 int TaskStat(int tid, struct task_stat *stat);
 

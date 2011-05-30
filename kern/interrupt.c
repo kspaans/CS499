@@ -20,6 +20,7 @@ int udp_printf(const char *fmt, ...);
 static void uart_isr(int irq) {
 	udp_printf("HI intstatus %d!\n", uart_intstatus());
 	switch(uart_intstatus() & UART_IIR_IT_MASK) {
+	case UART_IIR_RXTO:
 	case UART_IIR_RHR:
 		uart_intdisable(UART_RHR_IT);
 		break;
