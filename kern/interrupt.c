@@ -29,19 +29,19 @@ static void init_eth_irq() {
 }
 
 #include <drivers/uart.h>
-int udp_printf(const char *fmt, ...);
 static void uart_isr(int irq) {
-	udp_printf("HI intstatus %d!\n", uart_intstatus());
 	switch(uart_intstatus() & UART_IIR_IT_MASK) {
 	case UART_IIR_RXTO:
 	case UART_IIR_RHR:
+		event_unblock_all(EVENT_CONSOLE_RECEIVE, 0);
 		uart_intdisable(UART_RHR_IT);
 		break;
 	case UART_IIR_THR:
+		event_unblock_all(EVENT_CONSOLE_TRANSMIT, 0);
 		uart_intdisable(UART_THR_IT);
 		break;
 	default:
-		udp_printf("Bad intstatus %d!\n", uart_intstatus());
+		break;
 	}
 }
 static void init_uart_irq() {

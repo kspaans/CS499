@@ -10,6 +10,7 @@
 #include <syscall.h>
 
 #include <server/clock.h>
+#include <server/console.h>
 
 void idle() {
 	/* Todo: use the ARM wait-for-interrupt instruction */
@@ -45,8 +46,14 @@ int main() {
 
 	/* Setup servers */
 	clockserver_tid = reserve_tid();
+	consoletx_tid = reserve_tid();
+	consolerx_tid = reserve_tid();
 	do_Create(NULL, 0, clockserver_task, TASK_DAEMON, clockserver_tid);
+	do_Create(NULL, 0, consoletx_task, TASK_DAEMON, consoletx_tid);
+	do_Create(NULL, 0, consolerx_task, TASK_DAEMON, consolerx_tid);
 	syscall_CreateDaemon(NULL, 0, clockserver_notifier);
+	syscall_CreateDaemon(NULL, 0, consoletx_notifier);
+	syscall_CreateDaemon(NULL, 0, consolerx_notifier);
 
 	/* Initialize idle task */
 	int idle_tid = syscall_CreateDaemon(NULL, 7, idle);

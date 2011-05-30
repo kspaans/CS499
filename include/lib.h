@@ -33,6 +33,11 @@ int func_vprintf(printfunc_t printfunc, void *data, const char *fmt, va_list va)
 int func_printf(printfunc_t printfunc, void *data, const char *fmt, ...)
 	__attribute__ ((format (printf, 3, 4)));
 
+/* printf defined in server/console.c */
+int vprintf(const char *fmt, va_list va);
+int printf(const char *fmt, ...)
+	__attribute__ ((format (printf, 1, 2)));
+
 int vsprintf(char *buf, const char *fmt, va_list va);
 int sprintf(char *buf, const char *fmt, ...)
 	__attribute__ ((format (printf, 2, 3)));
