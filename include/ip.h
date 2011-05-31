@@ -65,10 +65,11 @@ struct udphdr {
 	uint16_t	uh_sum;			/* udp checksum */
 };
 
+#define UDPMTU 1400 // maximum size of udp payload
+
 uint16_t ip_checksum(const uint8_t *data, uint16_t len);
+uint32_t my_ip;
 
 #define IP(a,b,c,d) (((a)<<24) | ((b)<<16) | ((c)<<8) | d)
-mac_addr_t arp_lookup(uint32_t addr);
-uint32_t send_udp(mac_addr_t macaddr, uint32_t addr, uint16_t port, const char *data, uint16_t len);
 
 #endif /* _IP_H */

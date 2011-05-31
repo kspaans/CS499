@@ -8,6 +8,7 @@
 #include <kern/task.h>
 #include <lib.h>
 #include <syscall.h>
+#include <ip.h>
 
 #include <servers/clock.h>
 #include <servers/console.h>
@@ -32,8 +33,11 @@ int main() {
 
 	/* Start up hardware */
 	timers_init(); // must come first, since it initializes the watchdog
-	eth_init(ETH1_BASE);
+	eth_init();
 	uart_init();
+
+	/* silly IP hack for now */
+	my_ip = IP(10,0,0,my_mac.addr[5]);
 
 	/* For some reason, turning on the caches causes the kernel to hang after finishing
 	   the third invocation. Maybe we have to clear the caches here, or enable the MMU. */

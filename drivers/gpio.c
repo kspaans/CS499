@@ -65,6 +65,12 @@ void gpio_init() {
 	intc_register(IRQ_GPIO4, gpio_irq, 0);
 	intc_register(IRQ_GPIO5, gpio_irq, 0);
 	intc_register(IRQ_GPIO6, gpio_irq, 0);
+	intc_intenable(IRQ_GPIO1);
+	intc_intenable(IRQ_GPIO2);
+	intc_intenable(IRQ_GPIO3);
+	intc_intenable(IRQ_GPIO4);
+	intc_intenable(IRQ_GPIO5);
+	intc_intenable(IRQ_GPIO6);
 }
 
 void gpio_set(int pin, int value) {

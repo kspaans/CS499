@@ -23,9 +23,17 @@ static void init_clock_irq() {
 	(as opposed to autonomously, as is the case with some timers). */
 #include <drivers/eth.h>
 static void eth_isr(int irqpin) {
+	if(eth_intstatus() & ETH_INT_RSFL) {
+		event_unblock_all(EVENT_ETH_RECEIVE, 0);
+		eth_intreset(ETH_INT_RSFL);
+		eth_intdisable(ETH_INT_RSFL);
+	}
 }
 static void init_eth_irq() {
-	gpio_register(GPIO_ETH1_IRQ, eth_isr, GPIOIRQ_LEVELDETECT1);
+	eth_set_rxlevel(0); // interrupt if RX level > 0
+	eth_intenable(ETH_INT_RSFL);
+	gpio_register(GPIO_ETH1_IRQ, eth_isr, GPIOIRQ_LEVELDETECT0);
+	gpio_intenable(GPIO_ETH1_IRQ);
 }
 
 #include <drivers/uart.h>
@@ -45,6 +53,7 @@ static void uart_isr(int irq) {
 	}
 }
 static void init_uart_irq() {
+	uart_intenable(UART_RHR_IT | UART_THR_IT);
 	intc_register(IRQ_UART3, uart_isr, 1);
 	intc_intenable(IRQ_UART3);
 }

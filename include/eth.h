@@ -26,4 +26,6 @@ struct arppkt {
 	in_addr_t arp_tpa;
 } __attribute__((packed)) ;
 
+mac_addr_t my_mac;
+
 #endif /* _ETH_H */

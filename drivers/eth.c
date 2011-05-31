@@ -110,7 +110,7 @@ mac_addr_t eth_mac_addr(int base) {
 	return res;
 }
 
-int eth_init(int base) {
+int eth_dev_init(int base) {
 	uint32_t reg;
 	if(eth_reset(base) != 0)
 		return -1;
@@ -144,10 +144,51 @@ int eth_init(int base) {
 	eth_write(base, ETH_TX_CFG_OFFSET, ETH_TX_CFG_ON);
 	eth_mac_write(base, ETH_MAC_MAC_CR, ETH_MAC_TXEN | ETH_MAC_RXEN);
 
+	return 0;
+}
+
+int eth_init() {
+	int res = eth_dev_init(ETH1_BASE);
+	if(res < 0)
+		return res;
+
+	eth_write(ETH1_BASE, ETH_INT_EN_OFFSET, 0);
+	eth_write(ETH1_BASE, ETH_INT_STS_OFFSET, 0xFFFFFFFF);
+
 	/* delay for 0.3s to wait for the stagecoach ks8999 switch */
 	udelay(300000);
 
+	my_mac = eth_mac_addr(ETH1_BASE);
 	return 0;
+}
+
+void eth_set_rxlevel(int level) {
+	int reg = read32(ETH1_BASE + ETH_FIFO_INT_OFFSET);
+	reg = (reg & 0xFFFFFF00) | level;
+	write32(ETH1_BASE + ETH_FIFO_INT_OFFSET, reg);
+}
+
+void eth_set_txlevel(int level) {
+	int reg = read32(ETH1_BASE + ETH_FIFO_INT_OFFSET);
+	reg = (reg & 0xFF00FFFF) | (level << 16);
+	write32(ETH1_BASE + ETH_FIFO_INT_OFFSET, reg);
+}
+
+int eth_intstatus() {
+	return read32(ETH1_BASE + ETH_INT_STS_OFFSET);
+}
+
+void eth_intenable(int interrupt) {
+	mem32(ETH1_BASE + ETH_IRQ_CFG_OFFSET) |= ETH_IRQ_EN;
+	mem32(ETH1_BASE + ETH_INT_EN_OFFSET) |= interrupt;
+}
+
+void eth_intreset(int interrupt) {
+	mem32(ETH1_BASE + ETH_INT_STS_OFFSET) = interrupt;
+}
+
+void eth_intdisable(int interrupt) {
+	mem32(ETH1_BASE + ETH_INT_EN_OFFSET) &= ~interrupt;
 }
 
 static void eth_tx_aligned(int base, const uint32_t *buf, uint16_t offset, uint16_t nbytes, int first, int last, uint32_t btag) {

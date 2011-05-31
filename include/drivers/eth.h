@@ -13,10 +13,25 @@
 #define ETH_RX_STS_PEEK_OFFSET 0x44
 #define ETH_TX_STS_FIFO_OFFSET 0x48
 #define ETH_TX_STS_PEEK_OFFSET 0x4C
+# define ETH_TX_STS_LOST_CARRIER (1<<11)
+# define ETH_TX_STS_NO_CARRIER (1<<10)
+# define ETH_TX_STS_LATE_COLLISION (1<<9)
+# define ETH_TX_STS_EXCESS_COLLISION (1<<8)
+# define ETH_TX_STS_EXCESS_DEFER (1<<2)
+# define ETH_TX_STS_ERROR ((1<<11)|(1<<9)|(1<<8)|(1<<2))
 #define ETH_ID_REV_OFFSET 0x50
 #define ETH_IRQ_CFG_OFFSET 0x54
+# define ETH_IRQ_EN (1<<8)
+# define ETH_IRQ_INT (1<<12)
 #define ETH_INT_STS_OFFSET 0x58
 #define ETH_INT_EN_OFFSET 0x5C
+# define ETH_INT_RSFL (1<<3) // RX Status Level
+# define ETH_INT_RSFF (1<<4) // RX Status Full
+# define ETH_INT_TSFL (1<<7) // TX Status Level
+# define ETH_INT_TSFF (1<<8) // TX Status Full
+# define ETH_INT_TDFA (1<<9) // TX Data Available
+# define ETH_INT_RXE (1<<13) // RX Error
+# define ETH_INT_TXE (1<<14) // TX Error
 #define ETH_RESERVED_OFFSET 0x60
 #define ETH_BYTE_TEST_OFFSET 0x64
 #define ETH_FIFO_INT_OFFSET 0x68
@@ -69,7 +84,13 @@
 
 #define MAKE_BTAG(tag,len) (((tag) << 16) | ((len) & 0x7ff))
 
-int eth_init(int base);
+int eth_init();
+void eth_set_rxlevel(int level);
+void eth_set_txlevel(int level);
+int eth_intstatus();
+void eth_intreset(int interrupt);
+void eth_intenable(int interrupt);
+void eth_intdisable(int interrupt);
 void eth_tx(int base, const void *buf, uint16_t nbytes, int first, int last, uint32_t btag);
 void eth_rx(int base, uint32_t *buf, uint16_t nbytes);
 uint32_t eth_rx_wait_sts(int base);

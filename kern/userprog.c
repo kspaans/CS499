@@ -6,34 +6,11 @@
 #include <syscall.h>
 #include <lib.h>
 
-#include <machine.h>
-#include <drivers/eth.h>
-#include <ip.h>
-#define UDPMTU 1400
-static mac_addr_t gateway_mac;
-static int gateway_mac_init = 0;
-static void printfunc_udp(void *data, const char *buf, size_t len) {
-	if(!gateway_mac_init) {
-		gateway_mac = arp_lookup(IP(10,0,0,1));
-		gateway_mac_init = 1;
-	}
-	for(int i=0; i<len; i+=UDPMTU) {
-		int chunk = (i+UDPMTU < len) ? UDPMTU : len-i;
-		send_udp(gateway_mac, IP(10,0,0,1), 7022, buf+i, chunk);
-	}
-}
-#undef UDPMTU
-int udp_printf(const char *fmt, ...) {
-	va_list va;
-	va_start(va, fmt);
-	int ret = func_vprintf(printfunc_udp, NULL, fmt, va);
-	va_end(va);
-	return ret;
-}
+#include <eth.h>
+#include <servers/net.h>
 static void udp_console_loop() {
 	printf("Type characters to send to the remote host; Ctrl+D to quit\n");
 
-	mac_addr_t my_mac = eth_mac_addr(ETH1_BASE);
 	udp_printf("Hello from ");
 	for(int i=0; i<5; i++) {
 		udp_printf("%02x:", my_mac.addr[i]);
@@ -77,17 +54,6 @@ static void console_loop() {
 		}
 		Pass();
 	}
-}
-
-#include <ip.h>
-static void udp_test() {
-	mac_addr_t dest = arp_lookup(IP(10,0,0,1));
-	printf("received mac: ");
-	for(int i=0; i<5; i++) {
-		printf("%02x:", dest.addr[i]);
-	}
-	printf("%02x\n", dest.addr[5]);
-	printf("UDP STATUS: %08x\n", send_udp(dest, IP(10,0,0,1), 12345, "abcd", 4));
 }
 
 #include <kern/backtrace.h>
@@ -233,7 +199,6 @@ static void hashtable_test() {
 
 /* The first user program */
 void userprog_init() {
-	ASSERTNOERR(Create(0, udp_test));
 	//ASSERTNOERR(Create(0, hashtable_test));
 	ASSERTNOERR(Create(1, memcpy_bench));
 	//ASSERTNOERR(Create(2, srr_task));

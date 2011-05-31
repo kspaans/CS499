@@ -38,8 +38,6 @@ void uart_init() {
 	uart_mode_op();
 	/* configure 8 bits, no parity, 1 stop bit */
 	write32(UART3_PHYS_BASE + UART_LCR_OFFSET, UART_CHARLEN_8);
-	/* enable interrupts */
-	write32(UART3_PHYS_BASE + UART_IER_OFFSET, UART_RHR_IT | UART_THR_IT);
 	/* set final divisor to 16 and activate device */
 	write32(UART3_PHYS_BASE + UART_MDR1_OFFSET, UART_MODE_UART16x);
 }
