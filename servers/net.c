@@ -206,7 +206,7 @@ static void ethrx_dispatch(uint32_t sts) {
 		struct {
 			struct ethhdr eth;
 			struct ip ip;
-		} pkt;
+		} __attribute__((packed)) pkt;
 		char raw[FRAME_MAX];
 	} frame;
 	uint32_t len = (sts >> 16) & 0x3fff;
@@ -217,14 +217,15 @@ static void ethrx_dispatch(uint32_t sts) {
 		Send(arpserver_tid, ARP_DISPATCH_MSG, &frame, sizeof(struct ethhdr) + sizeof(struct arppkt), NULL, 0);
 		break;
 	case ET_IPV4:
-		switch(ntohs(frame.pkt.ip.ip_p)) {
+		switch(frame.pkt.ip.ip_p) {
 		case IPPROTO_UDP:
 			Send(udprx_tid, UDP_RX_DISPATCH_MSG, &frame, len, NULL, 0);
 			break;
 		default:
-			printf("unknown IP proto %d\n", ntohs(frame.pkt.ip.ip_p));
+			printf("unknown IP proto %d\n", frame.pkt.ip.ip_p);
 			break;
 		}
+		break;
 	default:
 		printf("unknown ethertype %d\n", ntohs(frame.pkt.eth.ethertype));
 		break;
@@ -289,7 +290,7 @@ static void arpserver_task() {
 		struct {
 			struct ethhdr eth;
 			struct arppkt arp;
-		} pkt;
+		} __attribute__((packed)) pkt;
 		uint32_t addr;
 	} msg;
 	int tid, rcvlen, msgcode;
