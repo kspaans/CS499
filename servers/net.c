@@ -312,7 +312,7 @@ static void arpserver_task() {
 		case ARP_DISPATCH_MSG:
 			ReplyStatus(tid, 0);
 			arpserver_store(mac_arr, &ipq, &addrmap, ntohl(msg.pkt.arp.arp_spa), msg.pkt.arp.arp_sha);
-			if(ntohs(msg.pkt.arp.arp_oper == ARP_OPER_REQUEST)
+			if(ntohs(msg.pkt.arp.arp_oper) == ARP_OPER_REQUEST
 				&& ntohl(msg.pkt.arp.arp_tpa) == my_ip) {
 				send_arp_reply(ntohl(msg.pkt.arp.arp_spa), msg.pkt.arp.arp_sha);
 			}
