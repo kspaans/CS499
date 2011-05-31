@@ -35,7 +35,7 @@ enum {
 #define htonl(x) SWAP32(x)
 #define htons(x) SWAP16(x)
 #define ntohl(x) SWAP32(x)
-#define ntohs(s) SWAP16(x)
+#define ntohs(x) SWAP16(x)
 
 struct ip {
 #define IPVERSION       4

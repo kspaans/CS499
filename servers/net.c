@@ -4,10 +4,13 @@
 #include <event.h>
 #include <syscall.h>
 #include <task.h>
+
 #include <eth.h>
 #include <ip.h>
 #include <machine.h>
 #include <drivers/eth.h>
+#include <mem.h>
+
 #include <servers/clock.h>
 #include <servers/net.h>
 
@@ -15,6 +18,8 @@ static int ethrx_tid; // general Ethernet receiver
 static int arpserver_tid; // ARP server (MAC cache, ARP responder)
 static int udprx_tid; // UDP receiver server
 static int udpconrx_tid; // UDP-based console receiver
+
+#define FRAME_MAX 1600
 
 #define UDPCON_CLIENT_PORT 26845
 #define UDPCON_SERVER_PORT 26846
@@ -51,13 +56,13 @@ int arp_lookup(uint32_t ip_addr, mac_addr_t *mac_addr, int timeout_msec) {
 		return arp_lookup(GATEWAY_IP, mac_addr, timeout_msec);
 	int count = 0;
 	while(1) {
-		int res = Send(arpserver_tid, ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), &mac_addr, sizeof(mac_addr_t));
+		int res = Send(arpserver_tid, ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), mac_addr, sizeof(mac_addr_t));
 		if(res == ERR_ARP_PENDING) {
 			if(count >= timeout_msec) {
 				return ERR_ARP_TIMEOUT;
 			} else {
-				msleep(10);
-				count += 10;
+				msleep(50);
+				count += 50;
 			}
 		} else {
 			return res;
@@ -65,7 +70,7 @@ int arp_lookup(uint32_t ip_addr, mac_addr_t *mac_addr, int timeout_msec) {
 	}
 }
 
-static int send_arp_req(uint32_t addr) {
+static int send_arp_request(uint32_t addr) {
 	struct ethhdr eth;
 	struct arppkt arp;
 
@@ -196,8 +201,37 @@ int udp_printf(const char *fmt, ...) {
 	return ret;
 }
 
+static void ethrx_dispatch(uint32_t sts) {
+	union {
+		struct {
+			struct ethhdr eth;
+			struct ip ip;
+		} pkt;
+		char raw[FRAME_MAX];
+	} frame;
+	uint32_t len = (sts >> 16) & 0x3fff;
+	eth_rx(ETH1_BASE, (uint32_t *)&frame, len);
+
+	switch(ntohs(frame.pkt.eth.ethertype)) {
+	case ET_ARP:
+		Send(arpserver_tid, ARP_DISPATCH_MSG, &frame, sizeof(struct ethhdr) + sizeof(struct arppkt), NULL, 0);
+		break;
+	case ET_IPV4:
+		switch(ntohs(frame.pkt.ip.ip_p)) {
+		case IPPROTO_UDP:
+			Send(udprx_tid, UDP_RX_DISPATCH_MSG, &frame, len, NULL, 0);
+			break;
+		default:
+			printf("unknown IP proto %d\n", ntohs(frame.pkt.ip.ip_p));
+			break;
+		}
+	default:
+		printf("unknown ethertype %d\n", ntohs(frame.pkt.eth.ethertype));
+		break;
+	}
+}
+
 static void ethrx_task() {
-	/* TODO */
 	int tid, rcvlen, msgcode;
 
 	while(1) {
@@ -206,6 +240,12 @@ static void ethrx_task() {
 			continue;
 		switch(msgcode) {
 		case ETH_RX_NOTIFY_MSG:
+			ReplyStatus(tid, 0);
+			while(read32(ETH1_BASE + ETH_RX_FIFO_INF_OFFSET) & 0x00ff0000) {
+				ethrx_dispatch(read32(ETH1_BASE + ETH_RX_STS_FIFO_OFFSET));
+			}
+			eth_intenable(ETH_INT_RSFL);
+			break;
 		default:
 			ReplyStatus(tid, ERR_REPLY_BADREQ);
 			continue;
@@ -220,17 +260,73 @@ static void ethrx_notifier() {
 	}
 }
 
+static void arpserver_store(mac_addr_t *mac_arr, intqueue *ipq, hashtable *addrmap, uint32_t addr, mac_addr_t macaddr) {
+	mac_addr_t *loc;
+	if(hashtable_get(addrmap, addr, (void **)&loc) >= 0) {
+		*loc = macaddr;
+	} else if(intqueue_full(ipq)) {
+		/* Free up an old entry */
+		int old_addr = intqueue_front(ipq);
+		if(hashtable_get(addrmap, old_addr, (void **)&loc) < 0)
+			return;
+		hashtable_del(addrmap, old_addr);
+		if(hashtable_put(addrmap, addr, loc) < 0)
+			return;
+		*loc = macaddr;
+		intqueue_pop(ipq);
+		intqueue_push(ipq, addr);
+	} else {
+		loc = mac_arr + ipq->len;
+		if(hashtable_put(addrmap, addr, loc) < 0)
+			return;
+		*loc = macaddr;
+		intqueue_push(ipq, addr);
+	}
+}
+
 static void arpserver_task() {
-	/* TODO */
+	union {
+		struct {
+			struct ethhdr eth;
+			struct arppkt arp;
+		} pkt;
+		uint32_t addr;
+	} msg;
 	int tid, rcvlen, msgcode;
 
+	mac_addr_t mac_arr[1024];
+	intqueue ipq;
+	int ipq_arr[1024];
+	intqueue_init(&ipq, ipq_arr, 1024);
+	mac_addr_t *loc;
+
+	hashtable addrmap;
+	struct ht_item addrmap_arr[1537];
+	hashtable_init(&addrmap, addrmap_arr, 1537, NULL, NULL);
+
 	while(1) {
-		rcvlen = Receive(&tid, &msgcode, NULL, 0);
+		rcvlen = Receive(&tid, &msgcode, &msg, sizeof(msg));
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
 		case ARP_DISPATCH_MSG:
+			ReplyStatus(tid, 0);
+			arpserver_store(mac_arr, &ipq, &addrmap, ntohl(msg.pkt.arp.arp_spa), msg.pkt.arp.arp_sha);
+			if(ntohs(msg.pkt.arp.arp_oper == ARP_OPER_REQUEST)) {
+				if(ntohl(msg.pkt.arp.arp_tpa) == my_ip) {
+					send_arp_reply(ntohl(msg.pkt.arp.arp_spa), msg.pkt.arp.arp_sha);
+				} else {
+				}
+			}
+			break;
 		case ARP_QUERY_MSG:
+			if(hashtable_get(&addrmap, msg.addr, (void **)&loc) < 0) {
+				send_arp_request(msg.addr);
+				ReplyStatus(tid, ERR_ARP_PENDING);
+			} else {
+				Reply(tid, 0, loc, sizeof(mac_addr_t));
+			}
+			break;
 		default:
 			ReplyStatus(tid, ERR_REPLY_BADREQ);
 			continue;

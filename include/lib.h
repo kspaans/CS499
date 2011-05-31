@@ -29,6 +29,7 @@
 #define QUEUE(T,Q) typedef struct { T *arr; int idx, len, max; } Q; \
 	void Q##_init(Q *q, T *arr, int max); \
 	void Q##_push(Q *q, T v); \
+	T Q##_front(Q *q); \
 	T Q##_pop(Q *q); \
 	int Q##_empty(Q *q); \
 	int Q##_full(Q *q);

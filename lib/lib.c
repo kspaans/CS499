@@ -15,6 +15,8 @@ char __aeabi_unwind_cpp_pr0[0];
 		{ q->idx=q->len=0; q->max=max; q->arr=arr; } \
 	void Q##_push(Q *q, T v) \
 		{ q->arr[(q->idx+q->len)%q->max] = v; ++q->len; } \
+	T Q##_front(Q *q) \
+		{ return q->arr[q->idx]; } \
 	T Q##_pop(Q *q) \
 		{ T v = q->arr[q->idx]; q->idx = (q->idx+1)%q->max; --q->len; return v; } \
 	int Q##_empty(Q *q) \
