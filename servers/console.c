@@ -2,9 +2,20 @@
 #include <errno.h>
 #include <event.h>
 #include <syscall.h>
-#include <server/console.h>
+#include <task.h>
+#include <servers/console.h>
 #include <drivers/uart.h>
 #include <mem.h>
+
+static int consoletx_tid;
+static int consolerx_tid;
+
+enum consolemsg {
+	CONSOLE_TX_NOTIFY_MSG,
+	CONSOLE_RX_NOTIFY_MSG,
+	CONSOLE_TX_DATA_MSG,
+	CONSOLE_RX_REQ_MSG,
+};
 
 #define CHUNK_SIZE 256
 #define TX_BUF_MAX 32768
@@ -39,7 +50,7 @@ void putchar(char c) {
 	Send(consoletx_tid, CONSOLE_TX_DATA_MSG, &c, 1, NULL, 0);
 }
 
-void consoletx_task() {
+static void consoletx_task() {
 	int tid, rcvlen, msgcode;
 	char rcvbuf[CHUNK_SIZE];
 	char *cur;
@@ -108,7 +119,7 @@ void consoletx_task() {
 	}
 }
 
-void consolerx_task() {
+static void consolerx_task() {
 	int tid, rcvlen, msgcode;
 
 	intqueue tidq;
@@ -149,16 +160,29 @@ void consolerx_task() {
 	}
 }
 
-void consoletx_notifier() {
+static void consoletx_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_CONSOLE_TRANSMIT);
 		Send(consoletx_tid, CONSOLE_TX_NOTIFY_MSG, NULL, 0, NULL, 0);
 	}
 }
 
-void consolerx_notifier() {
+static void consolerx_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_CONSOLE_RECEIVE);
 		Send(consolerx_tid, CONSOLE_RX_NOTIFY_MSG, NULL, 0, NULL, 0);
 	}
+}
+
+/* reserve_tids and start_tasks are called as part of kernel initialization */
+void console_reserve_tids() {
+	consoletx_tid = reserve_tid();
+	consolerx_tid = reserve_tid();
+}
+
+void console_start_tasks() {
+	KernCreateTask(1, consoletx_task, TASK_DAEMON, consoletx_tid);
+	KernCreateTask(1, consolerx_task, TASK_DAEMON, consolerx_tid);
+	KernCreateTask(0, consoletx_notifier, TASK_DAEMON, TID_AUTO);
+	KernCreateTask(0, consolerx_notifier, TASK_DAEMON, TID_AUTO);
 }

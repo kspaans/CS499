@@ -9,9 +9,6 @@ typedef const void* const_useraddr_t;
 /* Number of non-daemon tasks. The system exits when no non-daemon tasks remain. */
 extern int nondaemon_count;
 
-#define TASK_DAEMON 1
-#define TASK_NORMAL 0
-
 /* Number of priorities supported.
  * Priority numbers run from 0 (highest priority)
  * to TASK_NPRIO-1 (lowest priority). */
@@ -120,7 +117,6 @@ int syscall_Reply(struct task *task, int tid, int status, const_useraddr_t reply
 int syscall_AwaitEvent(struct task* task, int eventid);
 int syscall_TaskStat(struct task* task, int tid, useraddr_t stat);
 /* Kernel-internal calls */
-int reserve_tid();
 int do_Create(struct task *task, int priority, void (*code)(), int daemon, int tid);
 
 void event_unblock_all(int eventid, int return_value);

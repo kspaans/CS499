@@ -1,10 +1,10 @@
 S = ..
 
-TARGET = $(S)/bin/libbwio.a
+TARGET = $(S)/bin/libs.a
 
 all: $(TARGET)
 
-OBJS = obj/cpu.o obj/lib.o obj/memcpy.o obj/printf.o obj/ip.o obj/string.o
+OBJS = obj/cpu.o obj/lib.o obj/memcpy.o obj/printf.o obj/string.o
 
 include ../defs.mk
 -include $(OBJS:.o=.dep)

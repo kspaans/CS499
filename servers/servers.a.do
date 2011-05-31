@@ -1,4 +1,5 @@
-DEPS="eth.o intc.o leds.o timers.o uart.o wd_timer.o gpio.o"
+DEPS="clock.o console.o net.o"
 redo-ifchange ${TOP}/utils/archive ${DEPS}
 
 ${TOP}/utils/archive $3 ${DEPS}
+

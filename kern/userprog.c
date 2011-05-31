@@ -47,10 +47,9 @@ static void udp_console_loop() {
 		udp_printf("%c", c);
 	}
 }
-#undef udp_printf
 
 #include <drivers/leds.h>
-#include <server/clock.h>
+#include <servers/clock.h>
 static void flash_leds() {
 	printf("Now flashing the blinkenlights.\n");
 	for(;;) {

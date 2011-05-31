@@ -2,7 +2,16 @@
 #include <errno.h>
 #include <event.h>
 #include <syscall.h>
-#include <server/clock.h>
+#include <task.h>
+#include <servers/clock.h>
+
+static int clockserver_tid;
+
+enum clockmsg {
+	CLOCK_NOTIFY_MSG,
+	CLOCK_DELAY_MSG,
+	CLOCK_TIME_MSG
+};
 
 void msleep(int msec) {
 	if(msec <= 0) return;
@@ -55,7 +64,7 @@ static void delayinfoheap_push(delayinfo *delays, int *n, delayinfo value) {
 
 #define DELAYS 5000
 
-void clockserver_task() {
+static void clockserver_task() {
 	int tid;
 	int rcvlen;
 	int rcvdata;
@@ -106,9 +115,19 @@ void clockserver_task() {
 	}
 }
 
-void clockserver_notifier() {
+static void clockserver_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_CLOCK_TICK);
 		Send(clockserver_tid, CLOCK_NOTIFY_MSG, NULL, 0, NULL, 0);
 	}
+}
+
+/* reserve_tids and start_tasks are called as part of kernel initialization */
+void clock_reserve_tids() {
+	clockserver_tid = reserve_tid();
+}
+
+void clock_start_tasks() {
+	KernCreateTask(1, clockserver_task, TASK_DAEMON, clockserver_tid);
+	KernCreateTask(0, clockserver_notifier, TASK_DAEMON, TID_AUTO);
 }

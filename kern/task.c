@@ -120,8 +120,9 @@ int do_Create(struct task *task, int priority, void (*code)(), int daemon, int t
 	if(daemon != TASK_DAEMON)
 		nondaemon_count++;
 
-	if(tid == -1)
+	if(tid == TID_AUTO)
 		tid = reserve_tid();
+
 	task_lookup[tid-1] = newtask;
 	newtask->tid = tid;
 	newtask->parent = task;
@@ -143,12 +144,16 @@ int do_Create(struct task *task, int priority, void (*code)(), int daemon, int t
 	return newtask->tid;
 }
 
+int KernCreateTask(int priority, void (*code)(), int daemon, int tid) {
+	return do_Create(NULL, priority, code, daemon, tid);
+}
+
 int syscall_Create(struct task *task, int priority, void (*code)()) {
-	return do_Create(task, priority, code, TASK_NORMAL, -1); // create non-daemon task
+	return do_Create(task, priority, code, TASK_NORMAL, TID_AUTO); // create non-daemon task
 }
 
 int syscall_CreateDaemon(struct task *task, int priority, void (*code)()) {
-	return do_Create(task, priority, code, TASK_DAEMON, -1); // create daemon task
+	return do_Create(task, priority, code, TASK_DAEMON, TID_AUTO); // create daemon task
 }
 
 int syscall_MyTid(struct task *task) {
@@ -322,6 +327,8 @@ int syscall_AwaitEvent(struct task *task, int eventid) {
 int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
 	struct task_stat st;
 	if(tid == 0) {
+		if(!stat)
+			return next_tid;
 		st.tid = 0;
 		st.ptid = next_tid; /* let the caller know how many TIDs exist */
 		st.priority = 0;
@@ -330,9 +337,10 @@ int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
 		st.srrtid = -1;
 	} else {
 		struct task *othertask = get_task(tid);
-		if(othertask == NULL) {
+		if(othertask == NULL)
 			return ERR_TASKSTAT_BADTID;
-		}
+		if(!stat)
+			return 0;
 		st.tid = othertask->tid;
 		if(othertask->parent) st.ptid = othertask->parent->tid;
 		else st.ptid = 0;

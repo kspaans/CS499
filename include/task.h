@@ -3,6 +3,10 @@
 
 #define MAX_TASKS 4096
 
+#define TASK_DAEMON 1
+#define TASK_NORMAL 0
+#define TID_AUTO -1
+
 /* Publically query-able task state. */
 
 enum taskstate {
@@ -22,5 +26,8 @@ struct task_stat {
 	enum taskstate state;
 	int srrtid;
 };
+
+int reserve_tid();
+int KernCreateTask(int priority, void (*code)(), int daemon, int tid);
 
 #endif /* TASK_H */
