@@ -3,8 +3,8 @@
 #include <types.h>
 
 enum {
-	IPPROTO_IP = 0,		/* Dummy protocol for TCP		*/
-	IPPROTO_HOPOPTS = 0,		/* IPv6 Hop-by-Hop options		*/
+	IPPROTO_IP = 0,			/* Dummy protocol for TCP		*/
+	IPPROTO_HOPOPTS = 0,	/* IPv6 Hop-by-Hop options		*/
 	IPPROTO_ICMP = 1,		/* Internet Control Message Protocol	*/
 	IPPROTO_IGMP = 2,		/* Internet Gateway Management Protocol */
 	IPPROTO_IPIP = 4,		/* IPIP tunnels (older KA9Q tunnels use 94) */
@@ -14,13 +14,13 @@ enum {
 	IPPROTO_UDP = 17,		/* User Datagram Protocol		*/
 	IPPROTO_IDP = 22,		/* XNS IDP protocol			*/
 	IPPROTO_IPV6 = 41,		/* IPv6 header				*/
-	IPPROTO_ROUTING = 43,		/* IPv6 Routing header			*/
+	IPPROTO_ROUTING = 43,	/* IPv6 Routing header			*/
 	IPPROTO_FRAGMENT = 44,	/* IPv6 fragmentation header		*/
 	IPPROTO_ESP = 50,		/* encapsulating security payload	*/
 	IPPROTO_AH = 51,		/* authentication header		*/
-	IPPROTO_ICMPV6 = 58,		/* ICMPv6				*/
+	IPPROTO_ICMPV6 = 58,	/* ICMPv6				*/
 	IPPROTO_NONE = 59,		/* IPv6 no next header			*/
-	IPPROTO_DSTOPTS = 60,		/* IPv6 Destination options		*/
+	IPPROTO_DSTOPTS = 60,	/* IPv6 Destination options		*/
 	IPPROTO_RAW = 255,		/* Raw IP packets			*/
 	IPPROTO_MAX
 };
@@ -56,6 +56,16 @@ struct ip {
 	uint8_t  ip_p;                   /* protocol */
 	uint16_t ip_sum;                 /* checksum */
 	struct  in_addr ip_src,ip_dst;  /* source and dest address */
+};
+
+struct icmphdr {
+#define ICMP_TYPE_ECHO_REPLY 0
+#define ICMP_TYPE_ECHO_REQ 8
+	uint8_t icmp_type;
+#define ICMP_CODE_ECHO 0
+	uint8_t icmp_code;
+	uint16_t icmp_sum;
+	uint32_t icmp_data;
 };
 
 struct udphdr {

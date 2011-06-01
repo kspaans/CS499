@@ -14,11 +14,22 @@
 #include <servers/clock.h>
 #include <servers/net.h>
 
+/* Important points to keep in mind:
+
+1) The network chip has been instructed to add 2 bytes of padding to the start
+   of all received packets. The purpose of this padding is to force headers
+   after the ethernet header to be DWORD aligned, which improves performance,
+   at the expense of a bit of clarity.
+   This setting can be changed in the RX_CFG register.
+*/
+
 static int ethrx_tid; // general Ethernet receiver
+static int icmpserver_tid; // ICMP server
 static int arpserver_tid; // ARP server (MAC cache, ARP responder)
 static int udprx_tid; // UDP receiver server
 static int udpconrx_tid; // UDP-based console receiver
 
+#define RXPAD 2 /* set in drivers/eth.c with RX_CFG */
 #define FRAME_MAX 1600
 
 #define UDPCON_CLIENT_PORT 26845
@@ -29,6 +40,8 @@ static int udpconrx_tid; // UDP-based console receiver
 
 enum netmsg {
 	ETH_RX_NOTIFY_MSG,
+
+	ICMP_DISPATCH_MSG,
 
 	ARP_DISPATCH_MSG,
 	ARP_QUERY_MSG,
@@ -193,22 +206,27 @@ int udp_printf(const char *fmt, ...) {
 }
 
 static void ethrx_dispatch(uint32_t sts) {
-	union {
+	union msg {
 		struct {
+			char padding[RXPAD];
 			struct ethhdr eth;
 			struct ip ip;
 		} __attribute__((packed)) pkt;
 		char raw[FRAME_MAX];
 	} frame;
-	uint32_t len = (sts >> 16) & 0x3fff;
+	uint32_t len = ((sts >> 16) & 0x3fff)+RXPAD;
 	eth_rx(ETH1_BASE, (uint32_t *)&frame, len);
+	len -= 4; // remove crc at end
 
 	switch(ntohs(frame.pkt.eth.ethertype)) {
 	case ET_ARP:
-		MsgSend(arpserver_tid, ARP_DISPATCH_MSG, &frame, sizeof(struct ethhdr) + sizeof(struct arppkt), NULL, 0);
+		MsgSend(arpserver_tid, ARP_DISPATCH_MSG, &frame.pkt.ip, sizeof(struct arppkt), NULL, 0);
 		break;
 	case ET_IPV4:
 		switch(frame.pkt.ip.ip_p) {
+		case IPPROTO_ICMP:
+			MsgSend(icmpserver_tid, ICMP_DISPATCH_MSG, &frame, len, NULL, 0);
+			break;
 		case IPPROTO_UDP:
 			MsgSend(udprx_tid, UDP_RX_DISPATCH_MSG, &frame, len, NULL, 0);
 			break;
@@ -252,6 +270,52 @@ static void ethrx_notifier() {
 	}
 }
 
+static void icmpserver_task() {
+	union msg {
+		struct {
+			uint16_t padding;
+			struct ethhdr eth;
+			struct ip ip;
+			struct icmphdr icmp;
+		} __attribute__((packed)) pkt;
+		char raw[FRAME_MAX];
+	} msg;
+	int tid, rcvlen, msgcode;
+
+	while(1) {
+		rcvlen = MsgReceive(&tid, &msgcode, &msg, sizeof(msg));
+		if(rcvlen < 0)
+			continue;
+		switch(msgcode) {
+		case ICMP_DISPATCH_MSG:
+			MsgReplyStatus(tid, 0);
+			if(msg.pkt.icmp.icmp_type == ICMP_TYPE_ECHO_REQ) {
+				msg.pkt.icmp.icmp_type = ICMP_TYPE_ECHO_REPLY;
+				msg.pkt.eth.dest = msg.pkt.eth.src;
+				msg.pkt.eth.src = my_mac;
+				msg.pkt.ip.ip_dst = msg.pkt.ip.ip_src;
+				msg.pkt.ip.ip_src.s_addr = htonl(my_ip);
+				msg.pkt.ip.ip_sum = 0;
+				msg.pkt.ip.ip_sum = htons(ip_checksum((uint8_t *)&msg.pkt.ip, sizeof(struct ip)));
+				uint32_t btag = MAKE_COE_BTAG(0x1c1c, rcvlen-RXPAD);
+				msg.pkt.icmp.icmp_sum = 0;
+				// Compute checksum starting at ICMP header and continuing
+				// to the end of the packet. Store checksum at icmp_sum.
+				eth_tx_coe(ETH1_BASE, offsetof(union msg, pkt.icmp)-RXPAD,
+					offsetof(union msg, pkt.icmp.icmp_sum)-RXPAD, btag);
+				eth_tx(ETH1_BASE, &msg.pkt.eth, rcvlen-2, 0, 1, btag);
+				tx_wait_sts(btag);
+			} else {
+				printf("icmp unknown function %d.%d\n", msg.pkt.icmp.icmp_type, msg.pkt.icmp.icmp_code);
+			}
+			break;
+		default:
+			MsgReplyStatus(tid, ERR_NOFUNC);
+			continue;
+		}
+	}
+}
+
 static void arpserver_store(mac_addr_t *mac_arr, intqueue *ipq, hashtable *addrmap, uint32_t addr, mac_addr_t macaddr) {
 	mac_addr_t *loc;
 	if(hashtable_get(addrmap, addr, (void **)&loc) >= 0) {
@@ -277,11 +341,8 @@ static void arpserver_store(mac_addr_t *mac_arr, intqueue *ipq, hashtable *addrm
 }
 
 static void arpserver_task() {
-	union {
-		struct {
-			struct ethhdr eth;
-			struct arppkt arp;
-		} __attribute__((packed)) pkt;
+	union msg {
+		struct arppkt pkt;
 		uint32_t addr;
 	} msg;
 	int tid, rcvlen, msgcode;
@@ -303,10 +364,10 @@ static void arpserver_task() {
 		switch(msgcode) {
 		case ARP_DISPATCH_MSG:
 			MsgReplyStatus(tid, 0);
-			arpserver_store(mac_arr, &ipq, &addrmap, ntohl(msg.pkt.arp.arp_spa), msg.pkt.arp.arp_sha);
-			if(ntohs(msg.pkt.arp.arp_oper) == ARP_OPER_REQUEST
-				&& ntohl(msg.pkt.arp.arp_tpa) == my_ip) {
-				send_arp_reply(ntohl(msg.pkt.arp.arp_spa), msg.pkt.arp.arp_sha);
+			arpserver_store(mac_arr, &ipq, &addrmap, ntohl(msg.pkt.arp_spa), msg.pkt.arp_sha);
+			if(ntohs(msg.pkt.arp_oper) == ARP_OPER_REQUEST
+				&& ntohl(msg.pkt.arp_tpa) == my_ip) {
+				send_arp_reply(ntohl(msg.pkt.arp_spa), msg.pkt.arp_sha);
 			}
 			break;
 		case ARP_QUERY_MSG:
@@ -375,6 +436,7 @@ static void udpconrx_notifier() {
 
 void net_start_tasks() {
 	ethrx_tid = KernCreateTask(1, ethrx_task, TASK_DAEMON);
+	icmpserver_tid = KernCreateTask(1, icmpserver_task, TASK_DAEMON);
 	arpserver_tid = KernCreateTask(1, arpserver_task, TASK_DAEMON);
 	udprx_tid = KernCreateTask(1, udprx_task, TASK_DAEMON);
 	udpconrx_tid = KernCreateTask(2, udpconrx_task, TASK_DAEMON);

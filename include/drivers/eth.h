@@ -56,12 +56,12 @@
 # define ETH_MAC_CSR_BUSY 0x80000000
 # define ETH_MAC_CSR_READ 0x40000000
 #define ETH_MAC_CSR_DATA_OFFSET 0xA8
-# define ETH_MAC_MAC_CR 1
+# define ETH_MAC_MAC_CR 0x1
 #  define ETH_MAC_TXEN 0x00000008
 #  define ETH_MAC_RXEN 0x00000004
-# define ETH_MAC_ADDRH 2
-# define ETH_MAC_ADDRL 3
-# define ETH_MAC_MII_ACC 6
+# define ETH_MAC_ADDRH 0x2
+# define ETH_MAC_ADDRL 0x3
+# define ETH_MAC_MII_ACC 0x6
 #  define ETH_MII_BCR 0
 #   define ETH_MII_BCR_RESET 0x8000
 #   define ETH_MII_BCR_ANENABLE 0x1000
@@ -69,20 +69,25 @@
 #  define ETH_MII_BSR 1
 #   define ETH_MII_BSR_LSTS 0x0004
 #  define ETH_MII_ADVERTISE 4
-# define ETH_MAC_MII_DATA 7
+# define ETH_MAC_MII_DATA 0x7
 #  define ETH_MII_ACC_BUSY 0x00000001
 #  define ETH_MII_ACC_WRITE 0x00000002
 #  define ETH_MII_ACC_PHY 0x00000800
-# define ETH_MAC_FLOW 8
+# define ETH_MAC_FLOW 0x8
 #  define ETH_MAC_FLOW_FCPT 0xFFFF0000
 #  define ETH_MAC_FLOW_FCEN 0x00000002
+# define ETH_MAC_COE 0xD
+#  define ETH_MAC_COE_TXCOE 0x00010000
 #define ETH_AFC_CFG_OFFSET 0xAC
 #define ETH_E2P_CMD_OFFSET 0xB0
 # define ETH_E2P_EPC_BUSY  0x80000000
 # define ETH_E2P_MACLOADED 0x00000100
 #define ETH_E2P_DATA_OFFSET 0xB4
 
+#define BTAG_CKEN (1<<14)
+
 #define MAKE_BTAG(tag,len) (((tag) << 16) | ((len) & 0x7ff))
+#define MAKE_COE_BTAG(tag,len) (((tag) << 16) | BTAG_CKEN | (((len)+4) & 0x7ff))
 
 int eth_init();
 void eth_set_rxlevel(int level);
@@ -91,6 +96,7 @@ int eth_intstatus();
 void eth_intreset(int interrupt);
 void eth_intenable(int interrupt);
 void eth_intdisable(int interrupt);
+void eth_tx_coe(int base, uint32_t start_offset, uint32_t checksum_offset, uint32_t btag);
 void eth_tx(int base, const void *buf, uint16_t nbytes, int first, int last, uint32_t btag);
 void eth_rx(int base, uint32_t *buf, uint16_t nbytes);
 uint32_t eth_rx_wait_sts(int base);

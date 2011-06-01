@@ -5,6 +5,8 @@
 #include <stdarg.h>
 #include <types.h>
 
+#define offsetof(st, m) __builtin_offsetof(st, m)
+
 /* User mode asserts */
 #define STRINGIFY(x) #x
 #define STRINGIFY2(x) STRINGIFY(x)

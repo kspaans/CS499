@@ -139,7 +139,13 @@ int eth_dev_init(int base) {
 	printk("eth: line up\n");
 
 	/* configuration */
-	// 8<<16 = 8KB TX FIFO
+	/* offset incoming packets by two bytes to put the IP header on a 4-byte boundary */
+	eth_write(base, ETH_RX_CFG_OFFSET, (2 << 8));
+	/* enable TX checksum offload engine */
+	reg = eth_mac_read(base, ETH_MAC_COE);
+	reg |= ETH_MAC_COE_TXCOE;
+	eth_mac_write(base, ETH_MAC_COE, reg);
+	/* use 8KB TX FIFO */
 	eth_write(base, ETH_HW_CFG_OFFSET, ETH_HW_CFG_MBO | (8 << 16));
 	eth_write(base, ETH_TX_CFG_OFFSET, ETH_TX_CFG_ON);
 	eth_mac_write(base, ETH_MAC_MAC_CR, ETH_MAC_TXEN | ETH_MAC_RXEN);
@@ -200,6 +206,14 @@ struct fifobuf {
 static void eth_tx_wait_ready(int base, int ndw) {
 	while((eth_read(base, ETH_TX_FIFO_INF_OFFSET) & 0xffff) < (ndw << 2))
 		;
+}
+
+void eth_tx_coe(int base, uint32_t start_offset, uint32_t checksum_offset, uint32_t btag) {
+	eth_tx_wait_ready(base, 3);
+	// first = 1, last = 0
+	eth_write(base, ETH_TX_FIFO_OFFSET, (0 << 16) | (1 << 13) | (0 << 12) | 4);
+	eth_write(base, ETH_TX_FIFO_OFFSET, btag);
+	eth_write(base, ETH_TX_FIFO_OFFSET, (checksum_offset << 16) | start_offset);
 }
 
 static void eth_tx_aligned(int base, const uint32_t *buf, uint16_t offset, uint16_t nbytes, int first, int last, uint32_t btag) {
