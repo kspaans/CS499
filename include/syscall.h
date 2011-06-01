@@ -19,6 +19,10 @@ int MsgReceive(int *tid, int *msgcode, void *msg, int msglen);
 /* Reply to a message. status will be returned as the return value from Send. */
 int MsgReply(int tid, int status, const void *reply, int replylen);
 #define MsgReplyStatus(tid,status) MsgReply(tid,status,NULL,0)
+/* Read part or all of a received message. The number of bytes actually read is returned. */
+int MsgRead(int tid, void *buf, int offset, int len);
+/* Forward a received message to another task */
+int MsgForward(int sender, int receiver, int msgcode);
 int AwaitEvent(int eventid);
 int TaskStat(int tid, struct task_stat *stat);
 

@@ -9,8 +9,10 @@
 #define SYS_MSGSEND       6
 #define SYS_MSGRECEIVE    7
 #define SYS_MSGREPLY      8
-#define SYS_CREATEDAEMON  9
-#define SYS_AWAITEVENT    10
-#define SYS_TASKSTAT      11
+#define SYS_MSGREAD       9
+#define SYS_MSGFORWARD    10
+#define SYS_CREATEDAEMON  11
+#define SYS_AWAITEVENT    12
+#define SYS_TASKSTAT      13
 
 #endif /* KERN_SYSCALLNO_H */

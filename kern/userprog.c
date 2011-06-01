@@ -79,56 +79,6 @@ __attribute__((unused)) static void memcpy_bench() {
 	printf("Did 4MB in %lu milliseconds\n", (unsigned long)(duration/TICKS_PER_MSEC));
 }
 
-static void srr_child() {
-	char buf[4];
-	int i, j;
-	for(i=0; i<5; i++) {
-		int tid;
-		int len = MsgReceive(&tid, NULL, buf, sizeof(buf));
-		printf("  Child Received, with retval %d\n", len);
-		if(len < 0) {
-			printf("RECEIVE FAILED: %d\n", len);
-			MsgReply(tid, 6, "FAILED", 6);
-			continue;
-		}
-		printf("  Child got Receive: ");
-		for(j=0; j<len; j++)
-			putchar(buf[j]);
-		printf("\n");
-		int ret = MsgReply(tid, i, "0123456789", i);
-		if(ret < 0) {
-			printf("  Child Reply FAILED: %d\n", ret);
-		} else {
-			printf("  Child Reply!\n");
-		}
-	}
-}
-__attribute__((unused)) static void srr_task() {
-	int tid = MyTid();
-	printf("srr_task[%d]: testing SRR transaction\n", tid);
-	int child = Create(1, srr_child);
-	char buf[4];
-	int i, j;
-	for(i=0; i<5; i++) {
-		int len = MsgSend(child, 0, "abcdefghijklmno", i, buf, sizeof(buf));
-		printf(" Parent Sent, with retval %d\n", len);
-		if(len < 0) {
-			printf(" Parent Send failed: %d\n", len);
-			continue;
-		}
-		if(len > sizeof(buf)) {
-			printf(" Parent got TRUNCATED Reply: ");
-			for(j=0; j<sizeof(buf); j++)
-				putchar(buf[j]);
-		} else {
-			printf(" Parent got Reply: ");
-			for(j=0; j<len; j++)
-				putchar(buf[j]);
-		}
-		printf("\n");
-	}
-}
-
 #define SRR_RUNS 16384
 static void srrbench_child() {
 	char buf[1024];
@@ -167,6 +117,87 @@ __attribute__((unused)) static void srrbench_task() {
 	printf("srrbench_task[%d]: benchmark finished.\n", tid);
 }
 
+#define TESTRECV(i,buf,bufsz) { \
+	msglen = MsgReceive(&tid, &msgcode, buf, bufsz); \
+	printf("Receive #%d (child %d): %d", i, msgcode, msglen); \
+	if(!buf) printf(" (null) [] "); \
+	else if(msglen > bufsz) printf(" (truncated) [%.*s] ", bufsz, buf); \
+	else printf(" [%.*s] ", msglen, buf); \
+	msglen = MsgRead(tid, msgbuf, 0, 32); \
+	printf(" read %d [%.*s] ", msglen, msglen, msgbuf); \
+	printf(" reply %d\n", MsgReplyStatus(tid, msgcode)); \
+}
+static void advsrr_child2() {
+	int tid, msgcode, msglen;
+	char msgbuf[32];
+	TESTRECV(1, (char *)NULL, 16);
+	TESTRECV(2, msgbuf, 16);
+	TESTRECV(3, (char *)NULL, 16);
+	TESTRECV(4, msgbuf, 32);
+	TESTRECV(5, msgbuf, 16);
+	TESTRECV(6, msgbuf, 8);
+}
+static void advsrr_child1() {
+	int child2 = Create(1, advsrr_child2);
+	int tid, msgcode, msglen;
+	char msgbuf[32];
+	TESTRECV(1, (char *)NULL, 16);
+	TESTRECV(2, msgbuf, 16);
+	TESTRECV(3, (char *)NULL, 16);
+	TESTRECV(4, msgbuf, 32);
+	TESTRECV(5, msgbuf, 16);
+	TESTRECV(6, msgbuf, 8);
+#define TESTFWD(i,buf,bufsz) { \
+	msglen = MsgReceive(&tid, &msgcode, buf, bufsz); \
+	printf("Forward #%d (child %d): %d %d\n", i, msgcode, msglen, MsgForward(tid, child2, 2)); \
+}
+	TESTFWD(1, NULL, 16);
+	TESTFWD(2, msgbuf, 16);
+	TESTFWD(3, NULL, 16);
+	TESTFWD(4, msgbuf, 32);
+	TESTFWD(5, msgbuf, 16);
+	TESTFWD(6, msgbuf, 8);
+#undef TESTFWD
+}
+#undef TESTRECV
+__attribute__((unused)) static void advsrr_task() {
+	int tid = MyTid();
+	char data[16];
+	memcpy(data, "abcdefghijklmnopqrstuvwxyz", 16);
+	int child1 = Create(0, advsrr_child1);
+#define TESTSEND(i,buf,bufsz) { \
+	printf("Send #%d: %d\n", i, MsgSend(child1, 1, buf, bufsz, NULL, 0)); \
+}
+
+	printf("Receive test:\n");
+	printf("advsrr_task[%d]: send NULL, recv NULL\n", tid);
+	TESTSEND(1, NULL, 64);
+	printf("advsrr_task[%d]: send NULL, recv 16\n", tid);
+	TESTSEND(2, NULL, 64);
+	printf("advsrr_task[%d]: send 16, recv NULL\n", tid);
+	TESTSEND(3, data, 16);
+	printf("advsrr_task[%d]: send 16, recv 32\n", tid);
+	TESTSEND(4, data, 16);
+	printf("advsrr_task[%d]: send 16, recv 16\n", tid);
+	TESTSEND(5, data, 16);
+	printf("advsrr_task[%d]: send 16, recv 8\n", tid);
+	TESTSEND(6, data, 16);
+
+	printf("\nForward test:\n");
+	printf("advsrr_task[%d]: send NULL, recv NULL\n", tid);
+	TESTSEND(1, NULL, 64);
+	printf("advsrr_task[%d]: send NULL, recv 16\n", tid);
+	TESTSEND(2, NULL, 64);
+	printf("advsrr_task[%d]: send 16, recv NULL\n", tid);
+	TESTSEND(3, data, 16);
+	printf("advsrr_task[%d]: send 16, recv 32\n", tid);
+	TESTSEND(4, data, 16);
+	printf("advsrr_task[%d]: send 16, recv 16\n", tid);
+	TESTSEND(5, data, 16);
+	printf("advsrr_task[%d]: send 16, recv 8\n", tid);
+	TESTSEND(6, data, 16);
+}
+
 static uint32_t dumbhash(int x) { return 0; }
 static void hashtable_print(hashtable *ht) {
 	printf("{");
@@ -200,6 +231,7 @@ __attribute__((unused)) static void hashtable_test() {
 void userprog_init() {
 	//ASSERTNOERR(Create(0, hashtable_test));
 	ASSERTNOERR(Create(1, memcpy_bench));
+	ASSERTNOERR(Create(2, advsrr_task));
 	//ASSERTNOERR(Create(2, srr_task));
 	//ASSERTNOERR(Create(3, srrbench_task));
 
