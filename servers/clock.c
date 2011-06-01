@@ -82,7 +82,7 @@ static void clockserver_task() {
 		case CLOCK_NOTIFY_MSG:
 			ReplyStatus(tid, 0);
 			time++;
-			while (num_delays > 0 && delays[0].time <= time) {
+			while(num_delays > 0 && delays[0].time <= time) {
 				delayinfo current_info = delayinfoheap_pop(delays, &num_delays);
 				ReplyStatus(current_info.tid, 0);
 			}
@@ -90,14 +90,14 @@ static void clockserver_task() {
 		case CLOCK_DELAY_MSG:
 			if(rcvlen < sizeof(int)) {
 				printf("Bad clock message");
-				ReplyStatus(tid, ERR_REPLY_BADREQ);
+				ReplyStatus(tid, ERR_INVAL);
 				break;
 			}
 			rcvdata += time;
-			if (rcvdata <= time) {
+			if(rcvdata <= time) {
 				ReplyStatus(tid, 0);
 			} else if (num_delays == DELAYS) {
-				ReplyStatus(tid, ERR_REPLY_NOMEM);
+				ReplyStatus(tid, ERR_NOMEM);
 			} else {
 				delayinfo current_info;
 				current_info.tid = tid;
@@ -109,7 +109,7 @@ static void clockserver_task() {
 			ReplyStatus(tid, time);
 			break;
 		default:
-			ReplyStatus(tid, ERR_REPLY_BADREQ);
+			ReplyStatus(tid, ERR_NOFUNC);
 			break;
 		}
 	}
@@ -122,12 +122,7 @@ static void clockserver_notifier() {
 	}
 }
 
-/* reserve_tids and start_tasks are called as part of kernel initialization */
-void clock_reserve_tids() {
-	clockserver_tid = reserve_tid();
-}
-
 void clock_start_tasks() {
-	KernCreateTask(1, clockserver_task, TASK_DAEMON, clockserver_tid);
-	KernCreateTask(0, clockserver_notifier, TASK_DAEMON, TID_AUTO);
+	clockserver_tid = KernCreateTask(1, clockserver_task, TASK_DAEMON);
+	KernCreateTask(0, clockserver_notifier, TASK_DAEMON);
 }

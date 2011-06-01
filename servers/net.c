@@ -70,6 +70,15 @@ int arp_lookup(uint32_t ip_addr, mac_addr_t *mac_addr, int timeout_msec) {
 	}
 }
 
+static int tx_wait_sts(uint32_t btag) {
+	uint32_t sts = eth_tx_wait_sts(ETH1_BASE);
+	if((sts >> 16) != (btag >> 16))
+		return ERR_INVAL;
+	if(sts & ETH_TX_STS_ERROR)
+		return -(sts & ETH_TX_STS_ERROR) - 0x10000;
+	return 0;
+}
+
 static int send_arp_request(uint32_t addr) {
 	struct ethhdr eth;
 	struct arppkt arp;
@@ -93,13 +102,7 @@ static int send_arp_request(uint32_t addr) {
 	eth_tx(ETH1_BASE, &eth, sizeof(eth), 1, 0, btag);
 	eth_tx(ETH1_BASE, &arp, sizeof(arp), 0, 1, btag);
 
-	uint32_t sts = eth_tx_wait_sts(ETH1_BASE);
-	if(sts >> 16 != 0xcafe)
-		return -1;
-	if(sts & ETH_TX_STS_ERROR)
-		return -(sts & ETH_TX_STS_ERROR);
-
-	return 0;
+	return tx_wait_sts(btag);
 }
 
 static int send_arp_reply(uint32_t addr, mac_addr_t macaddr) {
@@ -125,13 +128,7 @@ static int send_arp_reply(uint32_t addr, mac_addr_t macaddr) {
 	eth_tx(ETH1_BASE, &eth, sizeof(eth), 1, 0, btag);
 	eth_tx(ETH1_BASE, &arp, sizeof(arp), 0, 1, btag);
 
-	uint32_t sts = eth_tx_wait_sts(ETH1_BASE);
-	if(sts >> 16 != 0xcaff)
-		return -1;
-	if(sts & ETH_TX_STS_ERROR)
-		return -(sts & ETH_TX_STS_ERROR);
-
-	return 0;
+	return tx_wait_sts(btag);
 }
 
 int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data, uint16_t len) {
@@ -140,7 +137,7 @@ int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data
 	struct udphdr udp;
 
 	if(len > UDPMTU)
-		return -1;
+		return ERR_INVAL;
 
 	int res = arp_lookup(addr, &eth.dest, 100);
 	if(res < 0)
@@ -173,13 +170,7 @@ int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data
 	eth_tx(ETH1_BASE, &udp, sizeof(udp), 0, 0, btag);
 	eth_tx(ETH1_BASE, data, len, 0, 1, btag);
 
-	uint32_t sts = eth_tx_wait_sts(ETH1_BASE);
-	if(sts >> 16 != 0xbeef)
-		return -1;
-	if(sts & ETH_TX_STS_ERROR)
-		return -(sts & ETH_TX_STS_ERROR);
-
-	return 0;
+	return tx_wait_sts(btag);
 }
 
 static void udp_printfunc(void *data, const char *buf, size_t len) {
@@ -248,7 +239,7 @@ static void ethrx_task() {
 			eth_intenable(ETH_INT_RSFL);
 			break;
 		default:
-			ReplyStatus(tid, ERR_REPLY_BADREQ);
+			ReplyStatus(tid, ERR_NOFUNC);
 			continue;
 		}
 	}
@@ -327,7 +318,7 @@ static void arpserver_task() {
 			}
 			break;
 		default:
-			ReplyStatus(tid, ERR_REPLY_BADREQ);
+			ReplyStatus(tid, ERR_NOFUNC);
 			continue;
 		}
 	}
@@ -347,7 +338,7 @@ static void udprx_task() {
 		case UDP_RX_REQ_MSG:
 		case UDP_RX_RELEASE_MSG:
 		default:
-			ReplyStatus(tid, ERR_REPLY_BADREQ);
+			ReplyStatus(tid, ERR_NOFUNC);
 			continue;
 		}
 	}
@@ -365,7 +356,7 @@ static void udpconrx_task() {
 		case UDPCON_RX_NOTIFY_MSG:
 		case UDPCON_RX_REQ_MSG:
 		default:
-			ReplyStatus(tid, ERR_REPLY_BADREQ);
+			ReplyStatus(tid, ERR_NOFUNC);
 			continue;
 		}
 	}
@@ -382,19 +373,11 @@ static void udpconrx_notifier() {
 	*/
 }
 
-/* reserve_tids and start_tasks are called as part of kernel initialization */
-void net_reserve_tids() {
-	ethrx_tid = reserve_tid();
-	arpserver_tid = reserve_tid();
-	udprx_tid = reserve_tid();
-	udpconrx_tid = reserve_tid();
-}
-
 void net_start_tasks() {
-	KernCreateTask(1, ethrx_task, TASK_DAEMON, ethrx_tid);
-	KernCreateTask(1, arpserver_task, TASK_DAEMON, arpserver_tid);
-	KernCreateTask(1, udprx_task, TASK_DAEMON, udprx_tid);
-	KernCreateTask(2, udpconrx_task, TASK_DAEMON, udpconrx_tid);
-	KernCreateTask(0, ethrx_notifier, TASK_DAEMON, TID_AUTO);
-	KernCreateTask(1, udpconrx_notifier, TASK_DAEMON, TID_AUTO);
+	ethrx_tid = KernCreateTask(1, ethrx_task, TASK_DAEMON);
+	arpserver_tid = KernCreateTask(1, arpserver_task, TASK_DAEMON);
+	udprx_tid = KernCreateTask(1, udprx_task, TASK_DAEMON);
+	udpconrx_tid = KernCreateTask(2, udpconrx_task, TASK_DAEMON);
+	KernCreateTask(0, ethrx_notifier, TASK_DAEMON);
+	KernCreateTask(1, udpconrx_notifier, TASK_DAEMON);
 }

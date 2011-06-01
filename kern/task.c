@@ -99,29 +99,24 @@ static void __attribute__((noreturn)) task_run(void (*code)()) {
 	Exit();
 }
 
-int reserve_tid() {
-	return next_tid++;
-}
-
-int do_Create(struct task *task, int priority, void (*code)(), int daemon, int tid) {
+static int do_Create(struct task *task, int priority, void (*code)(), int daemon) {
 	if(priority < 0 || priority >= TASK_NPRIO)
-		return ERR_CREATE_BADPRIO;
+		return ERR_INVAL;
 
 	/* TODO: When free lists are implemented, try the free lists instead of
 	 * dying here. */
 	struct task *newtask = kmalloc(sizeof(struct task));
 	if(newtask == NULL)
-		return ERR_CREATE_NOMEM;
+		return ERR_NOMEM;
 
 	void *newtask_stack = kmalloc(TASK_STACKSIZE);
 	if(newtask_stack == NULL)
-		return ERR_CREATE_NOMEM;
+		return ERR_NOMEM;
 
 	if(daemon != TASK_DAEMON)
 		nondaemon_count++;
 
-	if(tid == TID_AUTO)
-		tid = reserve_tid();
+	int tid = next_tid++;
 
 	task_lookup[tid-1] = newtask;
 	newtask->tid = tid;
@@ -144,16 +139,16 @@ int do_Create(struct task *task, int priority, void (*code)(), int daemon, int t
 	return newtask->tid;
 }
 
-int KernCreateTask(int priority, void (*code)(), int daemon, int tid) {
-	return do_Create(NULL, priority, code, daemon, tid);
+int KernCreateTask(int priority, void (*code)(), int daemon) {
+	return do_Create(NULL, priority, code, daemon);
 }
 
 int syscall_Create(struct task *task, int priority, void (*code)()) {
-	return do_Create(task, priority, code, TASK_NORMAL, TID_AUTO); // create non-daemon task
+	return do_Create(task, priority, code, TASK_NORMAL); // create non-daemon task
 }
 
 int syscall_CreateDaemon(struct task *task, int priority, void (*code)()) {
-	return do_Create(task, priority, code, TASK_DAEMON, TID_AUTO); // create daemon task
+	return do_Create(task, priority, code, TASK_DAEMON); // create daemon task
 }
 
 int syscall_MyTid(struct task *task) {
@@ -183,7 +178,7 @@ void syscall_Exit(struct task *task) {
 		} else {
 			/* Unblock sender and tell it the transaction failed. */
 			sender->state = TASK_RUNNING;
-			sender->regs.r0 = ERR_SEND_SRRFAIL;
+			sender->regs.r0 = ERR_INTR;
 			task_enqueue(sender);
 		}
 	}
@@ -206,7 +201,7 @@ static int handle_receive(struct task *receiver, struct task *sender) {
 	if(receiver->srr.recv.buf && sender->srr.send.buf) {
 		if(receiver->srr.recv.len < sender->srr.send.len) {
 			/* Unblock sender and tell him the send failed */
-			sender->regs.r0 = ERR_SEND_NOSPACE;
+			sender->regs.r0 = ERR_NOSPC;
 			sender->state = TASK_RUNNING;
 			return 0;
 		}
@@ -229,9 +224,9 @@ static int handle_receive(struct task *receiver, struct task *sender) {
 int syscall_Send(struct task *sender, int tid, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen) {
 	struct task *receiver = get_task(tid);
 	if(receiver == NULL)
-		return ERR_SEND_BADTID;
+		return ERR_NOTID;
 	if(receiver->tid != tid || receiver->state == TASK_DEAD)
-		return ERR_SEND_NOSUCHTID;
+		return ERR_NOTID;
 
 	sender->state = TASK_RECV_BLOCKED;
 	sender->srr.send.tid = tid;
@@ -248,8 +243,8 @@ int syscall_Send(struct task *sender, int tid, int msgcode, const_useraddr_t msg
 	} else {
 		taskqueue_push(&receiver->recv_queue, sender);
 	}
-	/* Return SRRFAIL here. Real return value will be posted by syscall_Reply. */
-	return ERR_SEND_SRRFAIL;
+	/* Return INTR here. Real return value will be posted by syscall_Reply. */
+	return ERR_INTR;
 }
 
 int syscall_Receive(struct task *receiver, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen) {
@@ -262,30 +257,30 @@ int syscall_Receive(struct task *receiver, useraddr_t tid, useraddr_t msgcode, u
 		struct task *sender = taskqueue_pop(&receiver->recv_queue);
 		if(sender->state != TASK_RECV_BLOCKED) {
 			printk("KERNEL FATAL: Task had a non-blocked task on receive queue.\n");
-			return ERR_RECEIVE_SRRFAIL;
+			return ERR_STATE;
 		}
 		if(handle_receive(receiver, sender))
 			return receiver->regs.r0; // receiver unblocked
 		else
 			task_enqueue(sender); // sender unblocked
 	}
-	return ERR_RECEIVE_SRRFAIL;
+	return ERR_INTR;
 }
 
 int syscall_Reply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen) {
 	struct task *sender = get_task(tid);
 	if(sender == NULL)
-		return ERR_REPLY_BADTID;
+		return ERR_NOTID;
 	if(sender->tid != tid || sender->state == TASK_DEAD)
-		return ERR_REPLY_NOSUCHTID;
+		return ERR_NOTID;
 	if(sender->state != TASK_REPLY_BLOCKED)
-		return ERR_REPLY_NOTBLOCKED;
+		return ERR_STATE;
 
 	int ret = 0;
 	/* Copy the message. */
 	if(sender->srr.send.rbuf && reply) {
 		if(sender->srr.send.rlen < replylen) {
-			ret = status = ERR_REPLY_NOSPACE;
+			ret = status = ERR_NOSPC;
 		} else {
 			memcpy(sender->srr.send.rbuf, reply, replylen);
 		}
@@ -314,14 +309,14 @@ void event_unblock_one(int eventid, int return_value) {
 
 int syscall_AwaitEvent(struct task *task, int eventid) {
 	if(eventid < 0 || eventid >= NEVENTS) {
-		return ERR_AWAITEVENT_INVALIDEVENT;
+		return ERR_INVAL;
 	}
 	task->state = TASK_EVENT_BLOCKED;
 	task->srr.event.id = eventid;
 	taskqueue_push(&eventqueues[eventid], task);
 
-	// Return SRRFAIL... Real value will be posted when unblocked.
-	return ERR_AWAITEVENT_SRRFAIL;
+	// Return INTR... Real value will be posted when unblocked.
+	return ERR_INTR;
 }
 
 int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
@@ -330,7 +325,7 @@ int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
 		if(!stat)
 			return next_tid;
 		st.tid = 0;
-		st.ptid = next_tid; /* let the caller know how many TIDs exist */
+		st.ptid = 0;
 		st.priority = 0;
 		st.daemon = 0;
 		st.state = TASK_RUNNING;
@@ -338,7 +333,7 @@ int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
 	} else {
 		struct task *othertask = get_task(tid);
 		if(othertask == NULL)
-			return ERR_TASKSTAT_BADTID;
+			return ERR_NOTID;
 		if(!stat)
 			return 0;
 		st.tid = othertask->tid;
@@ -405,7 +400,7 @@ void task_syscall(int code, struct task *task) {
 		ret = syscall_TaskStat(task, task->regs.r0, (useraddr_t)task->regs.r1);
 		break;
 	default:
-		ret = ERR_BADCALL;
+		ret = ERR_NOSYS;
 	}
 	task->regs.r0 = ret;
 }
@@ -422,20 +417,20 @@ void print_task(struct task *task) {
 	PRINT_REG(r3);
 	PRINT_REG(r4);
 	PRINT_REG(r5);
-	kputs("");
+	printk("\n");
 	PRINT_REG(r6);
 	PRINT_REG(r7);
 	PRINT_REG(r8);
 	PRINT_REG(r9);
 	PRINT_REG(sl);
 	PRINT_REG(fp);
-	kputs("");
+	printk("\n");
 	PRINT_REG(ip);
 	PRINT_REG(sp);
 	PRINT_REG(lr);
 	PRINT_REG(pc);
 	PRINT_REG(psr);
-	kputs("");
+	printk("\n");
 	printk("STATE:\n");
 	printk("tid:%d parent:%p prio:%d, state:%d\n\n", task->tid, task->parent, task->priority, task->state);
 }

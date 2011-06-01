@@ -50,10 +50,6 @@ int main() {
 	init_tasks();
 
 	/* Setup servers */
-	clock_reserve_tids();
-	console_reserve_tids();
-	net_reserve_tids();
-
 	clock_start_tasks();
 	console_start_tasks();
 	net_start_tasks();

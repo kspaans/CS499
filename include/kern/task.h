@@ -116,8 +116,6 @@ int syscall_Receive(struct task *task, useraddr_t tid, useraddr_t msgcode, usera
 int syscall_Reply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen);
 int syscall_AwaitEvent(struct task* task, int eventid);
 int syscall_TaskStat(struct task* task, int tid, useraddr_t stat);
-/* Kernel-internal calls */
-int do_Create(struct task *task, int priority, void (*code)(), int daemon, int tid);
 
 void event_unblock_all(int eventid, int return_value);
 void event_unblock_one(int eventid, int return_value);

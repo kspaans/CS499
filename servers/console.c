@@ -93,7 +93,7 @@ static void consoletx_task() {
 			// Enqueue the rest of the new data
 			while(rcvlen > 0) {
 				if(charqueue_full(&chq)) {
-					ReplyStatus(tid, ERR_REPLY_NOMEM);
+					ReplyStatus(tid, ERR_NOMEM);
 					break;
 				}
 				if(!newline_seen && *cur == '\n') {
@@ -113,7 +113,7 @@ static void consoletx_task() {
 				uart_intenable(UART_THR_IT);
 			break;
 		default:
-			ReplyStatus(tid, ERR_REPLY_BADREQ);
+			ReplyStatus(tid, ERR_NOFUNC);
 			continue;
 		}
 	}
@@ -145,13 +145,13 @@ static void consolerx_task() {
 			break;
 		case CONSOLE_RX_REQ_MSG:
 			if(intqueue_full(&tidq)) {
-				ReplyStatus(tid, ERR_REPLY_NOMEM);
+				ReplyStatus(tid, ERR_NOMEM);
 				continue;
 			}
 			intqueue_push(&tidq, tid);
 			break;
 		default:
-			ReplyStatus(tid, ERR_REPLY_BADREQ);
+			ReplyStatus(tid, ERR_NOFUNC);
 			continue;
 		}
 		while(!intqueue_empty(&tidq) && !charqueue_empty(&chq))
@@ -174,15 +174,9 @@ static void consolerx_notifier() {
 	}
 }
 
-/* reserve_tids and start_tasks are called as part of kernel initialization */
-void console_reserve_tids() {
-	consoletx_tid = reserve_tid();
-	consolerx_tid = reserve_tid();
-}
-
 void console_start_tasks() {
-	KernCreateTask(1, consoletx_task, TASK_DAEMON, consoletx_tid);
-	KernCreateTask(1, consolerx_task, TASK_DAEMON, consolerx_tid);
-	KernCreateTask(0, consoletx_notifier, TASK_DAEMON, TID_AUTO);
-	KernCreateTask(0, consolerx_notifier, TASK_DAEMON, TID_AUTO);
+	consoletx_tid = KernCreateTask(1, consoletx_task, TASK_DAEMON);
+	consolerx_tid = KernCreateTask(1, consolerx_task, TASK_DAEMON);
+	KernCreateTask(0, consoletx_notifier, TASK_DAEMON);
+	KernCreateTask(0, consolerx_notifier, TASK_DAEMON);
 }

@@ -21,6 +21,8 @@ static void udp_console_loop() {
 		char c = getchar();
 		if(c == 4)
 			return;
+		if(c == '\r')
+			c = '\n';
 		udp_printf("%c", c);
 	}
 }

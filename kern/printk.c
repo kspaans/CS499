@@ -27,7 +27,3 @@ int printk(const char *fmt, ...) {
 int vprintk(const char *fmt, va_list va) {
 	return func_vprintf(bw_printfunc, NULL, fmt, va);
 }
-
-void kputs(const char *str) {
-	printk("%s\n", str);
-}
