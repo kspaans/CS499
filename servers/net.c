@@ -273,7 +273,7 @@ static void ethrx_notifier() {
 static void icmpserver_task() {
 	union msg {
 		struct {
-			uint16_t padding;
+			char padding[RXPAD];
 			struct ethhdr eth;
 			struct ip ip;
 			struct icmphdr icmp;
@@ -290,6 +290,7 @@ static void icmpserver_task() {
 		case ICMP_DISPATCH_MSG:
 			MsgReplyStatus(tid, 0);
 			if(msg.pkt.icmp.icmp_type == ICMP_TYPE_ECHO_REQ) {
+				int len = ntohs(msg.pkt.ip.ip_len) + sizeof(struct ethhdr);
 				msg.pkt.icmp.icmp_type = ICMP_TYPE_ECHO_REPLY;
 				msg.pkt.eth.dest = msg.pkt.eth.src;
 				msg.pkt.eth.src = my_mac;
@@ -297,13 +298,13 @@ static void icmpserver_task() {
 				msg.pkt.ip.ip_src.s_addr = htonl(my_ip);
 				msg.pkt.ip.ip_sum = 0;
 				msg.pkt.ip.ip_sum = htons(ip_checksum((uint8_t *)&msg.pkt.ip, sizeof(struct ip)));
-				uint32_t btag = MAKE_COE_BTAG(0x1c1c, rcvlen-RXPAD);
+				uint32_t btag = MAKE_COE_BTAG(0x1c1c, len);
 				msg.pkt.icmp.icmp_sum = 0;
 				// Compute checksum starting at ICMP header and continuing
 				// to the end of the packet. Store checksum at icmp_sum.
 				eth_tx_coe(ETH1_BASE, offsetof(union msg, pkt.icmp)-RXPAD,
 					offsetof(union msg, pkt.icmp.icmp_sum)-RXPAD, btag);
-				eth_tx(ETH1_BASE, &msg.pkt.eth, rcvlen-2, 0, 1, btag);
+				eth_tx(ETH1_BASE, &msg.pkt.eth, len, 0, 1, btag);
 				tx_wait_sts(btag);
 			} else {
 				printf("icmp unknown function %d.%d\n", msg.pkt.icmp.icmp_type, msg.pkt.icmp.icmp_code);
