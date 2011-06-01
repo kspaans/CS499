@@ -15,11 +15,11 @@ enum clockmsg {
 
 void msleep(int msec) {
 	if(msec <= 0) return;
-	Send(clockserver_tid, CLOCK_DELAY_MSG, &msec, sizeof(msec), NULL, 0);
+	MsgSend(clockserver_tid, CLOCK_DELAY_MSG, &msec, sizeof(msec), NULL, 0);
 }
 
 int Time() {
-	return Send(clockserver_tid, CLOCK_TIME_MSG, NULL, 0, NULL, 0);
+	return MsgSend(clockserver_tid, CLOCK_TIME_MSG, NULL, 0, NULL, 0);
 }
 
 typedef struct {
@@ -73,31 +73,31 @@ static void clockserver_task() {
 	delayinfo delays[DELAYS];
 	int num_delays = 0;
 	while(1) {
-		rcvlen = Receive(&tid, &msgcode, &rcvdata, sizeof(rcvdata));
+		rcvlen = MsgReceive(&tid, &msgcode, &rcvdata, sizeof(rcvdata));
 		if(rcvlen < 0) {
 			printf("ERROR: Clock server receive failed\n");
 			continue;
 		}
 		switch(msgcode) {
 		case CLOCK_NOTIFY_MSG:
-			ReplyStatus(tid, 0);
+			MsgReplyStatus(tid, 0);
 			time++;
 			while(num_delays > 0 && delays[0].time <= time) {
 				delayinfo current_info = delayinfoheap_pop(delays, &num_delays);
-				ReplyStatus(current_info.tid, 0);
+				MsgReplyStatus(current_info.tid, 0);
 			}
 			break;
 		case CLOCK_DELAY_MSG:
 			if(rcvlen < sizeof(int)) {
 				printf("Bad clock message");
-				ReplyStatus(tid, ERR_INVAL);
+				MsgReplyStatus(tid, ERR_INVAL);
 				break;
 			}
 			rcvdata += time;
 			if(rcvdata <= time) {
-				ReplyStatus(tid, 0);
+				MsgReplyStatus(tid, 0);
 			} else if (num_delays == DELAYS) {
-				ReplyStatus(tid, ERR_NOMEM);
+				MsgReplyStatus(tid, ERR_NOMEM);
 			} else {
 				delayinfo current_info;
 				current_info.tid = tid;
@@ -106,10 +106,10 @@ static void clockserver_task() {
 			}
 			break;
 		case CLOCK_TIME_MSG:
-			ReplyStatus(tid, time);
+			MsgReplyStatus(tid, time);
 			break;
 		default:
-			ReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ERR_NOFUNC);
 			break;
 		}
 	}
@@ -118,7 +118,7 @@ static void clockserver_task() {
 static void clockserver_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_CLOCK_TICK);
-		Send(clockserver_tid, CLOCK_NOTIFY_MSG, NULL, 0, NULL, 0);
+		MsgSend(clockserver_tid, CLOCK_NOTIFY_MSG, NULL, 0, NULL, 0);
 	}
 }
 

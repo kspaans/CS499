@@ -10,9 +10,9 @@
 
 enum taskstate {
 	TASK_RUNNING,		/* Active or ready to run */
-	TASK_RECV_BLOCKED,	/* Called Send(), waiting for Receive() */
-	TASK_REPLY_BLOCKED,	/* Called Send(), waiting for Reply() */
-	TASK_SEND_BLOCKED,	/* Called Receive(), waiting for Send() */
+	TASK_RECV_BLOCKED,	/* Called MsgSend(), waiting for MsgReceive() */
+	TASK_REPLY_BLOCKED,	/* Called MsgSend(), waiting for MsgReply() */
+	TASK_SEND_BLOCKED,	/* Called MsgReceive(), waiting for MsgSend() */
 	TASK_DEAD,			/* Called Exit() */
 	TASK_EVENT_BLOCKED,
 };

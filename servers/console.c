@@ -26,7 +26,7 @@ static void console_printfunc(void *unused, const char *buf, size_t len) {
 	(void)unused;
 	for(int i=0; i<len; i+=CHUNK_SIZE) {
 		int chunk = (i+CHUNK_SIZE < len) ? CHUNK_SIZE : len-i;
-		Send(consoletx_tid, CONSOLE_TX_DATA_MSG, buf+i, chunk, NULL, 0);
+		MsgSend(consoletx_tid, CONSOLE_TX_DATA_MSG, buf+i, chunk, NULL, 0);
 	}
 }
 
@@ -43,11 +43,11 @@ int vprintf(const char *fmt, va_list va) {
 }
 
 int getchar() {
-	return Send(consolerx_tid, CONSOLE_RX_REQ_MSG, NULL, 0, NULL, 0);
+	return MsgSend(consolerx_tid, CONSOLE_RX_REQ_MSG, NULL, 0, NULL, 0);
 }
 
 void putchar(char c) {
-	Send(consoletx_tid, CONSOLE_TX_DATA_MSG, &c, 1, NULL, 0);
+	MsgSend(consoletx_tid, CONSOLE_TX_DATA_MSG, &c, 1, NULL, 0);
 }
 
 static void consoletx_task() {
@@ -61,12 +61,12 @@ static void consoletx_task() {
 	charqueue_init(&chq, chq_arr, TX_BUF_MAX);
 
 	while(1) {
-		rcvlen = Receive(&tid, &msgcode, rcvbuf, CHUNK_SIZE);
+		rcvlen = MsgReceive(&tid, &msgcode, rcvbuf, CHUNK_SIZE);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
 		case CONSOLE_TX_NOTIFY_MSG:
-			ReplyStatus(tid, 0);
+			MsgReplyStatus(tid, 0);
 			while(!charqueue_empty(&chq) && !uart_txfull())
 				uart_tx(charqueue_pop(&chq));
 			if(!charqueue_empty(&chq))
@@ -93,7 +93,7 @@ static void consoletx_task() {
 			// Enqueue the rest of the new data
 			while(rcvlen > 0) {
 				if(charqueue_full(&chq)) {
-					ReplyStatus(tid, ERR_NOMEM);
+					MsgReplyStatus(tid, ERR_NOMEM);
 					break;
 				}
 				if(!newline_seen && *cur == '\n') {
@@ -106,14 +106,14 @@ static void consoletx_task() {
 			}
 			// Reply to user
 			if(rcvlen == 0) {
-				ReplyStatus(tid, 0);
+				MsgReplyStatus(tid, 0);
 			}
 			// Enable interrupts if there's still something which needs to be sent
 			if(!charqueue_empty(&chq))
 				uart_intenable(UART_THR_IT);
 			break;
 		default:
-			ReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ERR_NOFUNC);
 			continue;
 		}
 	}
@@ -131,12 +131,12 @@ static void consolerx_task() {
 	charqueue_init(&chq, chq_arr, RX_BUF_MAX);
 
 	while(1) {
-		rcvlen = Receive(&tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(&tid, &msgcode, NULL, 0);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
 		case CONSOLE_RX_NOTIFY_MSG:
-			ReplyStatus(tid, 0);
+			MsgReplyStatus(tid, 0);
 			while(!uart_rxempty()) {
 				if(charqueue_full(&chq))
 					charqueue_pop(&chq);
@@ -145,17 +145,17 @@ static void consolerx_task() {
 			break;
 		case CONSOLE_RX_REQ_MSG:
 			if(intqueue_full(&tidq)) {
-				ReplyStatus(tid, ERR_NOMEM);
+				MsgReplyStatus(tid, ERR_NOMEM);
 				continue;
 			}
 			intqueue_push(&tidq, tid);
 			break;
 		default:
-			ReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ERR_NOFUNC);
 			continue;
 		}
 		while(!intqueue_empty(&tidq) && !charqueue_empty(&chq))
-			ReplyStatus(intqueue_pop(&tidq), charqueue_pop(&chq));
+			MsgReplyStatus(intqueue_pop(&tidq), charqueue_pop(&chq));
 		uart_intenable(UART_RHR_IT);
 	}
 }
@@ -163,14 +163,14 @@ static void consolerx_task() {
 static void consoletx_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_CONSOLE_TRANSMIT);
-		Send(consoletx_tid, CONSOLE_TX_NOTIFY_MSG, NULL, 0, NULL, 0);
+		MsgSend(consoletx_tid, CONSOLE_TX_NOTIFY_MSG, NULL, 0, NULL, 0);
 	}
 }
 
 static void consolerx_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_CONSOLE_RECEIVE);
-		Send(consolerx_tid, CONSOLE_RX_NOTIFY_MSG, NULL, 0, NULL, 0);
+		MsgSend(consolerx_tid, CONSOLE_RX_NOTIFY_MSG, NULL, 0, NULL, 0);
 	}
 }
 

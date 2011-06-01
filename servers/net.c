@@ -56,7 +56,7 @@ int arp_lookup(uint32_t ip_addr, mac_addr_t *mac_addr, int timeout_msec) {
 		return arp_lookup(GATEWAY_IP, mac_addr, timeout_msec);
 	int count = 0;
 	while(1) {
-		int res = Send(arpserver_tid, ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), mac_addr, sizeof(mac_addr_t));
+		int res = MsgSend(arpserver_tid, ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), mac_addr, sizeof(mac_addr_t));
 		if(res == ERR_ARP_PENDING) {
 			if(count >= timeout_msec) {
 				return ERR_ARP_TIMEOUT;
@@ -205,12 +205,12 @@ static void ethrx_dispatch(uint32_t sts) {
 
 	switch(ntohs(frame.pkt.eth.ethertype)) {
 	case ET_ARP:
-		Send(arpserver_tid, ARP_DISPATCH_MSG, &frame, sizeof(struct ethhdr) + sizeof(struct arppkt), NULL, 0);
+		MsgSend(arpserver_tid, ARP_DISPATCH_MSG, &frame, sizeof(struct ethhdr) + sizeof(struct arppkt), NULL, 0);
 		break;
 	case ET_IPV4:
 		switch(frame.pkt.ip.ip_p) {
 		case IPPROTO_UDP:
-			Send(udprx_tid, UDP_RX_DISPATCH_MSG, &frame, len, NULL, 0);
+			MsgSend(udprx_tid, UDP_RX_DISPATCH_MSG, &frame, len, NULL, 0);
 			break;
 		default:
 			printf("unknown IP proto %d\n", frame.pkt.ip.ip_p);
@@ -227,19 +227,19 @@ static void ethrx_task() {
 	int tid, rcvlen, msgcode;
 
 	while(1) {
-		rcvlen = Receive(&tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(&tid, &msgcode, NULL, 0);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
 		case ETH_RX_NOTIFY_MSG:
-			ReplyStatus(tid, 0);
+			MsgReplyStatus(tid, 0);
 			while(read32(ETH1_BASE + ETH_RX_FIFO_INF_OFFSET) & 0x00ff0000) {
 				ethrx_dispatch(read32(ETH1_BASE + ETH_RX_STS_FIFO_OFFSET));
 			}
 			eth_intenable(ETH_INT_RSFL);
 			break;
 		default:
-			ReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ERR_NOFUNC);
 			continue;
 		}
 	}
@@ -248,7 +248,7 @@ static void ethrx_task() {
 static void ethrx_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_ETH_RECEIVE);
-		Send(ethrx_tid, ETH_RX_NOTIFY_MSG, NULL, 0, NULL, 0);
+		MsgSend(ethrx_tid, ETH_RX_NOTIFY_MSG, NULL, 0, NULL, 0);
 	}
 }
 
@@ -297,12 +297,12 @@ static void arpserver_task() {
 	hashtable_init(&addrmap, addrmap_arr, 1537, NULL, NULL);
 
 	while(1) {
-		rcvlen = Receive(&tid, &msgcode, &msg, sizeof(msg));
+		rcvlen = MsgReceive(&tid, &msgcode, &msg, sizeof(msg));
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
 		case ARP_DISPATCH_MSG:
-			ReplyStatus(tid, 0);
+			MsgReplyStatus(tid, 0);
 			arpserver_store(mac_arr, &ipq, &addrmap, ntohl(msg.pkt.arp.arp_spa), msg.pkt.arp.arp_sha);
 			if(ntohs(msg.pkt.arp.arp_oper) == ARP_OPER_REQUEST
 				&& ntohl(msg.pkt.arp.arp_tpa) == my_ip) {
@@ -312,13 +312,13 @@ static void arpserver_task() {
 		case ARP_QUERY_MSG:
 			if(hashtable_get(&addrmap, msg.addr, (void **)&loc) < 0) {
 				send_arp_request(msg.addr);
-				ReplyStatus(tid, ERR_ARP_PENDING);
+				MsgReplyStatus(tid, ERR_ARP_PENDING);
 			} else {
-				Reply(tid, 0, loc, sizeof(mac_addr_t));
+				MsgReply(tid, 0, loc, sizeof(mac_addr_t));
 			}
 			break;
 		default:
-			ReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ERR_NOFUNC);
 			continue;
 		}
 	}
@@ -329,7 +329,7 @@ static void udprx_task() {
 	int tid, rcvlen, msgcode;
 
 	while(1) {
-		rcvlen = Receive(&tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(&tid, &msgcode, NULL, 0);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -338,7 +338,7 @@ static void udprx_task() {
 		case UDP_RX_REQ_MSG:
 		case UDP_RX_RELEASE_MSG:
 		default:
-			ReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ERR_NOFUNC);
 			continue;
 		}
 	}
@@ -349,14 +349,14 @@ static void udpconrx_task() {
 	int tid, rcvlen, msgcode;
 
 	while(1) {
-		rcvlen = Receive(&tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(&tid, &msgcode, NULL, 0);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
 		case UDPCON_RX_NOTIFY_MSG:
 		case UDPCON_RX_REQ_MSG:
 		default:
-			ReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ERR_NOFUNC);
 			continue;
 		}
 	}

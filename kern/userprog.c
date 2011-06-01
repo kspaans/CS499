@@ -8,7 +8,7 @@
 
 #include <eth.h>
 #include <servers/net.h>
-static void udp_console_loop() {
+__attribute__((unused)) static void udp_console_loop() {
 	printf("Type characters to send to the remote host; Ctrl+D to quit\n");
 
 	udp_printf("Hello from ");
@@ -29,7 +29,7 @@ static void udp_console_loop() {
 
 #include <drivers/leds.h>
 #include <servers/clock.h>
-static void flash_leds() {
+__attribute__((unused)) static void flash_leds() {
 	printf("Now flashing the blinkenlights.\n");
 	for(;;) {
 		for(enum leds led = LED1; led <= LED5; led++) {
@@ -42,7 +42,7 @@ static void flash_leds() {
 
 #include <machine.h>
 #include <drivers/uart.h>
-static void console_loop() {
+__attribute__((unused)) static void console_loop() {
 	volatile uint32_t *flags, *data;
 	flags = (uint32_t *)(UART3_PHYS_BASE + UART_LSR_OFFSET);
 	data = (uint32_t *)(UART3_PHYS_BASE + UART_RHR_OFFSET);
@@ -62,7 +62,7 @@ static void console_loop() {
 #include <lib.h>
 #include <string.h>
 #include <timer.h>
-static void memcpy_bench() {
+__attribute__((unused)) static void memcpy_bench() {
 	backtrace();
 	int tid = MyTid();
 	printf("memcpy_bench[%d]: benchmarking memcpy\n", tid);
@@ -84,18 +84,18 @@ static void srr_child() {
 	int i, j;
 	for(i=0; i<5; i++) {
 		int tid;
-		int len = Receive(&tid, NULL, buf, sizeof(buf));
+		int len = MsgReceive(&tid, NULL, buf, sizeof(buf));
 		printf("  Child Received, with retval %d\n", len);
 		if(len < 0) {
 			printf("RECEIVE FAILED: %d\n", len);
-			Reply(tid, 6, "FAILED", 6);
+			MsgReply(tid, 6, "FAILED", 6);
 			continue;
 		}
 		printf("  Child got Receive: ");
 		for(j=0; j<len; j++)
 			putchar(buf[j]);
 		printf("\n");
-		int ret = Reply(tid, i, "0123456789", i);
+		int ret = MsgReply(tid, i, "0123456789", i);
 		if(ret < 0) {
 			printf("  Child Reply FAILED: %d\n", ret);
 		} else {
@@ -103,15 +103,14 @@ static void srr_child() {
 		}
 	}
 }
-
-static void srr_task() {
+__attribute__((unused)) static void srr_task() {
 	int tid = MyTid();
 	printf("srr_task[%d]: testing SRR transaction\n", tid);
 	int child = Create(1, srr_child);
 	char buf[4];
 	int i, j;
 	for(i=0; i<5; i++) {
-		int len = Send(child, 0, "abcdefghijklmno", i, buf, sizeof(buf));
+		int len = MsgSend(child, 0, "abcdefghijklmno", i, buf, sizeof(buf));
 		printf(" Parent Sent, with retval %d\n", len);
 		if(len < 0) {
 			printf(" Parent Send failed: %d\n", len);
@@ -136,15 +135,14 @@ static void srrbench_child() {
 	int tid;
 	int i;
 	for(i=0; i<SRR_RUNS; i++) {
-		Receive(&tid, NULL, buf, 4);
-		Reply(tid, 4, buf, 4);
+		MsgReceive(&tid, NULL, buf, 4);
+		MsgReply(tid, 4, buf, 4);
 	}
 	for(i=0; i<SRR_RUNS; i++) {
-		Receive(&tid, NULL, buf, 64);
-		Reply(tid, 64, buf, 64);
+		MsgReceive(&tid, NULL, buf, 64);
+		MsgReply(tid, 64, buf, 64);
 	}
 }
-
 #include <drivers/timers.h>
 #define BENCH(name, code) { \
 	printf("SRR Benchmarking: " name ": "); \
@@ -154,8 +152,7 @@ static void srrbench_child() {
 	printf("%d ms\n", (int)(elapsed/TICKS_PER_MSEC)); \
 	printf("%d ns/loop\n", (int)(elapsed*1000000/TICKS_PER_MSEC/SRR_RUNS)); \
 }
-
-static void srrbench_task() {
+__attribute__((unused)) static void srrbench_task() {
 	int tid = MyTid();
 	printf("srrbench_task[%d]: benchmarking SRR transaction\n", tid);
 	int child = Create(0, srrbench_child);
@@ -164,8 +161,8 @@ static void srrbench_task() {
 	unsigned long long start, elapsed;
 
 	BENCH("Pass", Pass())
-	BENCH("4-bytes", Send(child, 0, buf, 4, buf, 4))
-	BENCH("64-bytes", Send(child, 0, buf, 64, buf, 64))
+	BENCH("4-bytes", MsgSend(child, 0, buf, 4, buf, 4))
+	BENCH("64-bytes", MsgSend(child, 0, buf, 64, buf, 64))
 
 	printf("srrbench_task[%d]: benchmark finished.\n", tid);
 }
@@ -185,7 +182,7 @@ static void hashtable_print(hashtable *ht) {
 	}
 	printf("}\n");
 }
-static void hashtable_test() {
+__attribute__((unused)) static void hashtable_test() {
 	hashtable ht;
 	struct ht_item ht_arr[3];
 	hashtable_init(&ht, ht_arr, 3, dumbhash, NULL);

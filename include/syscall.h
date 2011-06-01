@@ -13,12 +13,12 @@ void Pass();
 void Exit() __attribute__((noreturn));
 /* Send a message to "tid" of type "msgcode" and payload "msg"
  * Returns the status from Reply, or negative values on failure */
-int Send(int tid, int msgcode, const void *msg, int msglen, void *reply, int replylen);
+int MsgSend(int tid, int msgcode, const void *msg, int msglen, void *reply, int replylen);
 /* Wait for a message. The size of the sent message is returned. */
-int Receive(int *tid, int *msgcode, void *msg, int msglen);
+int MsgReceive(int *tid, int *msgcode, void *msg, int msglen);
 /* Reply to a message. status will be returned as the return value from Send. */
-int Reply(int tid, int status, const void *reply, int replylen);
-#define ReplyStatus(tid,status) Reply(tid,status,NULL,0)
+int MsgReply(int tid, int status, const void *reply, int replylen);
+#define MsgReplyStatus(tid,status) MsgReply(tid,status,NULL,0)
 int AwaitEvent(int eventid);
 int TaskStat(int tid, struct task_stat *stat);
 

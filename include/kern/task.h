@@ -111,9 +111,9 @@ int syscall_MyTid(struct task *task);
 int syscall_MyParentTid(struct task *task);
 void syscall_Pass(struct task *task);
 void syscall_Exit(struct task *task);
-int syscall_Send(struct task *task, int tid, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen);
-int syscall_Receive(struct task *task, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen);
-int syscall_Reply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen);
+int syscall_MsgSend(struct task *task, int tid, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen);
+int syscall_MsgReceive(struct task *task, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen);
+int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen);
 int syscall_AwaitEvent(struct task* task, int eventid);
 int syscall_TaskStat(struct task* task, int tid, useraddr_t stat);
 

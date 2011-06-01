@@ -221,7 +221,7 @@ static int handle_receive(struct task *receiver, struct task *sender) {
 }
 
 /* Message passing */
-int syscall_Send(struct task *sender, int tid, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen) {
+int syscall_MsgSend(struct task *sender, int tid, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen) {
 	struct task *receiver = get_task(tid);
 	if(receiver == NULL)
 		return ERR_NOTID;
@@ -247,7 +247,7 @@ int syscall_Send(struct task *sender, int tid, int msgcode, const_useraddr_t msg
 	return ERR_INTR;
 }
 
-int syscall_Receive(struct task *receiver, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen) {
+int syscall_MsgReceive(struct task *receiver, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen) {
 	receiver->state = TASK_SEND_BLOCKED;
 	receiver->srr.recv.tidptr = tid;
 	receiver->srr.recv.codeptr = msgcode;
@@ -267,7 +267,7 @@ int syscall_Receive(struct task *receiver, useraddr_t tid, useraddr_t msgcode, u
 	return ERR_INTR;
 }
 
-int syscall_Reply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen) {
+int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen) {
 	struct task *sender = get_task(tid);
 	if(sender == NULL)
 		return ERR_NOTID;
@@ -379,18 +379,18 @@ void task_syscall(int code, struct task *task) {
 		syscall_Exit(task);
 		ret = 0;
 		break;
-	case SYS_SEND:
-		ret = syscall_Send(task, /*tid*/task->regs.r0, /*msgcode*/task->regs.r1,
+	case SYS_MSGSEND:
+		ret = syscall_MsgSend(task, /*tid*/task->regs.r0, /*msgcode*/task->regs.r1,
 				/*msg*/(useraddr_t)task->regs.r2, /*msglen*/task->regs.r3,
 				/*reply*/(useraddr_t)STACK_ARG(task, 4), /*replylen*/STACK_ARG(task, 5));
 		break;
-	case SYS_RECEIVE:
-		ret = syscall_Receive(task, /*tid*/(useraddr_t)task->regs.r0,
+	case SYS_MSGRECEIVE:
+		ret = syscall_MsgReceive(task, /*tid*/(useraddr_t)task->regs.r0,
 				/*msgcode*/(useraddr_t)task->regs.r1,
 				/*msg*/(useraddr_t)task->regs.r2, /*msglen*/task->regs.r3);
 		break;
-	case SYS_REPLY:
-		ret = syscall_Reply(task, /*tid*/task->regs.r0, /*status*/task->regs.r1,
+	case SYS_MSGREPLY:
+		ret = syscall_MsgReply(task, /*tid*/task->regs.r0, /*status*/task->regs.r1,
 				/*reply*/(useraddr_t)task->regs.r2, /*replylen*/task->regs.r3);
 		break;
 	case SYS_AWAITEVENT:
