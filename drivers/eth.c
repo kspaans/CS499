@@ -191,15 +191,30 @@ void eth_intdisable(int interrupt) {
 	mem32(ETH1_BASE + ETH_INT_EN_OFFSET) &= ~interrupt;
 }
 
+/* Using a struct allows GCC to generate stmfd/ldmfd calls for transferring data
+   to/from the extra memory-mapped FIFO ports */
+struct fifobuf {
+	uint32_t data[8];
+};
+
+static void eth_tx_wait_ready(int base, int ndw) {
+	while((eth_read(base, ETH_TX_FIFO_INF_OFFSET) & 0xffff) < (ndw << 2))
+		;
+}
+
 static void eth_tx_aligned(int base, const uint32_t *buf, uint16_t offset, uint16_t nbytes, int first, int last, uint32_t btag) {
 	int ndw = (nbytes+offset+3)>>2;
 
-	/* wait until enough words are available in the FIFO */
-	while((eth_read(base, ETH_TX_FIFO_INF_OFFSET) & 0xffff) < ((ndw<<2)+8))
-		;
-
+	eth_tx_wait_ready(base, 2);
 	eth_write(base, ETH_TX_FIFO_OFFSET, (offset << 16) | (first << 13) | (last << 12) | nbytes);
 	eth_write(base, ETH_TX_FIFO_OFFSET, btag);
+
+	while(ndw > 8) {
+		eth_tx_wait_ready(base, 8);
+		*(struct fifobuf *)(base + ETH_TX_FIFO_OFFSET) = *(struct fifobuf *)(buf);
+		buf+=8; ndw-=8;
+	}
+	eth_tx_wait_ready(base, ndw);
 	while(ndw-->0)
 		eth_write(base, ETH_TX_FIFO_OFFSET, *buf++);
 }
@@ -210,6 +225,11 @@ void eth_tx(int base, const void *buf, uint16_t nbytes, int first, int last, uin
 
 void eth_rx(int base, uint32_t *buf, uint16_t nbytes) {
 	int ndw = (nbytes+3)>>2;
+
+	while(ndw > 8) {
+		*(struct fifobuf *)(buf) = *(struct fifobuf *)(base + ETH_RX_FIFO_OFFSET);
+		buf+=8; ndw-=8;
+	}
 	while(ndw-->0)
 		*buf++ = eth_read(base, ETH_RX_FIFO_OFFSET);
 }
