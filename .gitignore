@@ -6,3 +6,4 @@ obj
 .do_built
 .do_built.dir
 *.did
+cscope.out
