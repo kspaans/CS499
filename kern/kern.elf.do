@@ -1,4 +1,6 @@
-DEPS="backtrace.o interrupt.o kmalloc.o main.o omap3.o printk.o switch.o syscall.o task.o userprog.o"
+mkdir -p obj
+
+DEPS="obj/backtrace.o obj/interrupt.o obj/kmalloc.o obj/main.o obj/omap3.o obj/printk.o obj/switch.o obj/syscall.o obj/task.o obj/userprog.o"
 LIBS="../drivers/drivers.a ../lib/libs.a ../servers/servers.a"
 LDLIBS="-lgcc"
 

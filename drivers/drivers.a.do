@@ -1,4 +1,6 @@
-DEPS="eth.o intc.o leds.o timers.o uart.o wd_timer.o gpio.o"
+mkdir -p obj
+
+DEPS="obj/eth.o obj/intc.o obj/leds.o obj/timers.o obj/uart.o obj/wd_timer.o obj/gpio.o"
 redo-ifchange ${TOP}/utils/archive ${DEPS}
 
 ${TOP}/utils/archive $3 ${DEPS}

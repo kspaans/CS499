@@ -1,7 +1,8 @@
 #!/bin/bash
 
-if [ -e $1.S ] ; then
-    FILE=$1.S
+Sfile=$(dirname $(dirname $1))/$(basename $1).S
+if [ -e $Sfile ] ; then
+    FILE=$Sfile
 else
     FILE=$1.s
 fi
