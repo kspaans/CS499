@@ -1,0 +1,6 @@
+sys_nrespwron or something to assert a reboot?
+PRM_RSTCTRL
+SYNCT_RST or CORE_RST
+PRM_IRQ*_MPU
+
+But oh well, the watchdog doesn't work anyway.

@@ -96,4 +96,8 @@ unsigned long strtoul(const char *start, const char **end, int base);
 // Destructively parse args from a buffer. argv will refer to positions within buf.
 int parse_args(char *buf, char **argv, int argv_len);
 
+/* CPU functions */
+void init_cache();
+void init_mmu();
+
 #endif /* LIB_H */

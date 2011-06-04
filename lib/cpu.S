@@ -17,3 +17,10 @@ init_cache:
 	mcr p15, 0, r1, c1, c0, 1
 
 	bx  lr
+
+.global init_mmu
+.type init_mmu, %function
+init_mmu:
+	mrc p15, 0, r1, c1, c0, 0 @ read CP15 Register 1
+	orr r1, r1, #0x1 	  @ bit 0 to 1 to enable MMU
+	mcr p15, 0, r1, c1, c0, 0 @ enable MMUs

@@ -41,7 +41,9 @@ int main() {
 
 	/* For some reason, turning on the caches causes the kernel to hang after finishing
 	   the third invocation. Maybe we have to clear the caches here, or enable the MMU. */
-	//init_cache();
+	printk("Tralala before caches\r\n");
+	//init_cache(); // still broken
+	printk("Tralala after  caches\r\n");
 
 	/* Initialize other interrupts */
 	init_interrupts();
