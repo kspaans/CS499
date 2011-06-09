@@ -21,6 +21,7 @@ ALL WRONG
 for 16MB pages it shoudl be 31:24 bits for the tag
 
 3.2.57 in Coretex-A8 manual for shoving entries into te TLB
+WE NEED PAGE TABLES, A WALK WILL BE PERFORMED
 
 
 ---
@@ -36,11 +37,32 @@ see c13, Context ID Register (CONTEXTIDR) on pageB3-153.
 try enabling caches...
 try enabling MMU without anything...
 how to do flat mapping?
-
+In ARMv7 Arch Reference
+- Address Space ID (ASID) distinguishes between global and process specific mappings
+- FORMAT:
+  31-24             23-20 19 18 17 16 15    14-12 11-10   9-5  4  3 2 1 0
+  base address (PA) rsrv  NS 1  nG S  AP[2] TEX   AP[1:0] rsrv NX C B 1 0
+                                0  0                           0
+                                "Not Global" bit should be 0
+                                   Shared bit should be 0      "Execute Never" bit should be 0
 need to cover
-0x80000000 # code
+0x80000000 # code, then kmalloc space
+                            | supersection index
+VA = 0x80000000 = b1000 0000 0000 0000 0000 0000 0000 0000
+                     table index |
+fld at addr Y
+page table is                  |
+YYYYYYYYYYYYYYYYYY10000000000000
+but must also go to
+YYYYYYYYYYYYYYYYYY10000000111100
+12 bits for table index
+and must map to 0x8000 0000
+
+
 0x4020ffc8 # vectors
 0x48...... # hardware
 0x49...... # hardware
 0x2B...... # ETH2_BASE
 0x2C...... # ETH1_BASE
+0x8FFFFFFF # kernel stack (earth)
+0xA0000000 # kernel stack (tide)
