@@ -14,5 +14,6 @@
 #define SYS_CREATEDAEMON  11
 #define SYS_AWAITEVENT    12
 #define SYS_TASKSTAT      13
+#define SYS_SUSPEND       14
 
 #endif /* KERN_SYSCALLNO_H */

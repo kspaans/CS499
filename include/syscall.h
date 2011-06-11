@@ -10,6 +10,7 @@ int CreateDaemon(int priority, void (*code)());
 int MyTid();
 int MyParentTid();
 void Pass();
+void Suspend();
 void Exit() __attribute__((noreturn));
 /* Send a message to "tid" of type "msgcode" and payload "msg"
  * Returns the status from Reply, or negative values on failure */

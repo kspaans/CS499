@@ -165,6 +165,13 @@ void syscall_Pass(struct task *task) {
 	/* Do nothing. */
 }
 
+int syscall_Suspend(void) {
+	// TODO: this technically can finish without an interrupt occuring (if not implemented)
+	asm("wfi");
+	task_irq();
+	return 0;
+}
+
 void syscall_Exit(struct task *task) {
 	task->state = TASK_DEAD;
 	if(!task->daemon)
@@ -439,6 +446,9 @@ void task_syscall(int code, struct task *task) {
 		break;
 	case SYS_TASKSTAT:
 		ret = syscall_TaskStat(task, task->regs.r0, (useraddr_t)task->regs.r1);
+		break;
+	case SYS_SUSPEND:
+		ret = syscall_Suspend();
 		break;
 	default:
 		ret = ERR_NOSYS;

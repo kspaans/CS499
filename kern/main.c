@@ -15,9 +15,8 @@
 #include <servers/net.h>
 
 void idle() {
-	/* Todo: use the ARM wait-for-interrupt instruction */
-	while (1)
-		Pass();
+	for (;;)
+		Suspend();
 }
 
 /* userprog.c */
