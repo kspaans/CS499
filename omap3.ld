@@ -28,11 +28,12 @@ SECTIONS
     *(COMMON)
   }
 
-  /* gcc exception crap */
-  __exidx_start = .;
-  .ARM.exidx   : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) }
-  __exidx_end = .;
-  .ARM.extab   : { *(.ARM.extab*) }
+  /DISCARD/ :
+  {
+    *(.ARM.exidx*)
+    *(.gnu.linkonce.armexidx.*)
+    *(.ARM.extab*)
+  }
 
   runtime_data_start = .;
 
