@@ -1,0 +1,1 @@
+mw 0x48307250 6      # A more reliable alternative to "reset"
