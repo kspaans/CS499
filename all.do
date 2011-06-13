@@ -2,7 +2,7 @@
 
 export TOP=`pwd`
 
-redo drivers/drivers.a
-redo lib/libs.a
-redo servers/servers.a
-redo kern/kern.elf
+redo bin/drivers.a
+redo bin/libs.a
+redo bin/servers.a
+redo bin/kern.elf
