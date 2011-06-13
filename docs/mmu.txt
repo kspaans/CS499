@@ -40,6 +40,14 @@ how to do flat mapping?
 In ARMv7 Arch Reference
 - Address Space ID (ASID) distinguishes between global and process specific mappings
 - FORMAT:
+  0000 0000 0000 0000  0000 0000 0000 0000
+  1000 0000 0000 1100  0000 1100 0000 1010
+  PA        rsrv       |    ||
+                       `----++-full access
+                    for TEX and C, B bits, will try setting them to:
+			000 01 - device for device memory
+			000 10 - normal for normal memory
+  
   31-24             23-20 19 18 17 16 15    14-12 11-10   9-5  4  3 2 1 0
   base address (PA) rsrv  NS 1  nG S  AP[2] TEX   AP[1:0] rsrv NX C B 1 0
                                 0  0                           0
@@ -52,9 +60,9 @@ VA = 0x80000000 = b1000 0000 0000 0000 0000 0000 0000 0000
                      table index |
 fld at addr Y
 page table is                  |
-YYYYYYYYYYYYYYYYYY10000000000000
+YYYY YYYY YYYY YYYY YY10 0000 0000 0000
 but must also go to
-YYYYYYYYYYYYYYYYYY10000000111100
+YYYY YYYY YYYY YYYY YY10 0000 0011 1100
 12 bits for table index
 and must map to 0x8000 0000
 
