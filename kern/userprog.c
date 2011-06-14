@@ -117,6 +117,23 @@ __attribute__((unused)) static void srrbench_task() {
 	printf("srrbench_task[%d]: benchmark finished.\n", tid);
 }
 
+static void nulltask() {
+}
+static void task_reclamation_2() {
+	for(int i=0; i<1000; ++i) {
+		printk("%05x ", Create(5, nulltask));
+		printk("%05x\n", Create(5, nulltask));
+	}
+}
+__attribute__((unused)) static void task_reclamation_test() {
+	for(int i=0; i<1000; ++i) {
+		printk("%05x ", Create(1, nulltask));
+		printk("%05x ", Create(1, nulltask));
+		printk("%05x\n", Create(3, nulltask));
+	}
+	Create(4, task_reclamation_2);
+}
+
 #define TESTRECV(i,buf,bufsz) { \
 	msglen = MsgReceive(&tid, &msgcode, buf, bufsz); \
 	printf("Receive #%d (child %d): %d", i, msgcode, msglen); \
@@ -231,7 +248,8 @@ __attribute__((unused)) static void hashtable_test() {
 void userprog_init() {
 	//ASSERTNOERR(Create(0, hashtable_test));
 	ASSERTNOERR(Create(1, memcpy_bench));
-	ASSERTNOERR(Create(2, advsrr_task));
+	//ASSERTNOERR(Create(2, advsrr_task));
+	//ASSERTNOERR(Create(2, task_reclamation_test));
 	//ASSERTNOERR(Create(2, srr_task));
 	//ASSERTNOERR(Create(3, srrbench_task));
 

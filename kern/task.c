@@ -8,18 +8,21 @@
 #include <kern/kmalloc.h>
 #include <kern/printk.h>
 
-static int next_tid;
+static taskqueue freequeue;
 static taskqueue taskqueues[TASK_NPRIO];
-
 static taskqueue eventqueues[NEVENTS];
 
+static int next_tidx;
 static struct task *task_lookup[MAX_TASKS];
+
+static int task_count;
 
 /* visible to kernel main */
 int nondaemon_count;
 
 void init_tasks() {
 	int i;
+	taskqueue_init(&freequeue);
 	/* Initialize task queues */
 	for(i=0; i<TASK_NPRIO; i++) {
 		taskqueue_init(&taskqueues[i]);
@@ -28,20 +31,31 @@ void init_tasks() {
 		taskqueue_init(&eventqueues[i]);
 	}
 
-	next_tid = 1;
+	next_tidx = 1;
+	task_count = 0;
 	nondaemon_count = 0;
 }
 
-/* Cheap hack way to look up a TID.
- * Change this if TID allocation is changed. */
+/* Change this if TID allocation is changed. */
 struct task *get_task(int tid) {
-	if(tid <= 0) return NULL;
-	if(tid >= next_tid) return NULL;
-	return task_lookup[tid-1];
+	int idx = TID_IDX(tid);
+	if(idx <= 0) return NULL;
+	if(idx >= next_tidx) return NULL;
+
+	struct task *ret = task_lookup[idx-1];
+	if(ret->tid != tid) return NULL;
+	return ret;
+}
+
+static int get_ptid(struct task *task) {
+	if(get_task(task->ptid))
+		return task->ptid;
+	task->ptid = 0;
+	return 0;
 }
 
 int get_num_tasks() {
-	return next_tid - 1;
+	return task_count;
 }
 
 struct task *task_dequeue() {
@@ -94,6 +108,33 @@ void taskqueue_push(taskqueue* queue, struct task* task) {
 	}
 }
 
+/* Allocate a task and add it to the lookup list. */
+static struct task __attribute__((malloc)) *task_alloc() {
+	struct task *ret;
+	if(freequeue.start != NULL) {
+		ret = taskqueue_pop(&freequeue);
+		ret->tid = MAKE_TID(TID_IDX(ret->tid), TID_GEN(ret->tid)+1);
+	} else {
+		if(next_tidx >= MAX_TASKS)
+			return NULL;
+
+		ret = kmalloc(sizeof(struct task));
+		if(ret == NULL)
+			return NULL;
+
+		void *stack = kmalloc(TASK_STACKSIZE);
+		if(stack == NULL)
+			return NULL;
+
+		ret->stack_start = (int)stack;
+
+		int tidx = next_tidx++;
+		ret->tid = MAKE_TID(tidx, 0);
+	}
+	task_lookup[TID_IDX(ret->tid)-1] = ret;
+	return ret;
+}
+
 static void __attribute__((noreturn)) task_run(void (*code)()) {
 	code();
 	Exit();
@@ -103,35 +144,29 @@ static int do_Create(struct task *task, int priority, void (*code)(), int daemon
 	if(priority < 0 || priority >= TASK_NPRIO)
 		return ERR_INVAL;
 
-	/* TODO: When free lists are implemented, try the free lists instead of
-	 * dying here. */
-	struct task *newtask = kmalloc(sizeof(struct task));
-	if(newtask == NULL)
-		return ERR_NOMEM;
+	struct task *newtask = task_alloc();
 
-	void *newtask_stack = kmalloc(TASK_STACKSIZE);
-	if(newtask_stack == NULL)
+	if(newtask == NULL)
 		return ERR_NOMEM;
 
 	if(daemon != TASK_DAEMON)
 		nondaemon_count++;
+	task_count++;
 
-	int tid = next_tid++;
-
-	task_lookup[tid-1] = newtask;
-	newtask->tid = tid;
-	newtask->parent = task;
+	if(task)
+		newtask->ptid = task->tid;
+	else
+		newtask->ptid = 0;
 	newtask->priority = priority;
 	newtask->daemon = (daemon == TASK_DAEMON);
 	newtask->state = TASK_RUNNING;
-	newtask->stack_start = (int)newtask_stack;
 	taskqueue_init(&newtask->recv_queue);
 
 	/* Set up registers. */
 	newtask->regs.pc = (int)task_run;
 	newtask->regs.psr = get_user_psr();
 	newtask->regs.r0 = (int)code;
-	newtask->regs.sp = (int)(newtask_stack) + TASK_STACKSIZE;
+	newtask->regs.sp = newtask->stack_start + TASK_STACKSIZE;
 	/* set fp and lr to 0 to make backtrace happy */
 	newtask->regs.fp = 0;
 	newtask->regs.lr = 0;
@@ -156,9 +191,7 @@ int syscall_MyTid(struct task *task) {
 }
 
 int syscall_MyParentTid(struct task *task) {
-	if(task->parent != NULL)
-		return task->parent->tid;
-	return 0;
+	return get_ptid(task);
 }
 
 void syscall_Pass(struct task *task) {
@@ -175,7 +208,8 @@ int syscall_Suspend(void) {
 void syscall_Exit(struct task *task) {
 	task->state = TASK_DEAD;
 	if(!task->daemon)
-		nondaemon_count--;
+		--nondaemon_count;
+	--task_count;
 	/* Clean out the send queue. */
 	struct task *sender;
 	while(task->recv_queue.start != NULL) {
@@ -189,16 +223,14 @@ void syscall_Exit(struct task *task) {
 			task_enqueue(sender);
 		}
 	}
+	/* Task must have been running (not blocked or on the ready queue) to call Exit.
+	   So, it is safe to free the task. */
+	taskqueue_push(&freequeue, task);
 }
 
-/* If we ever implement Destroy, some changes need to be made.
+/* Destroy, if implemented, needs to do more work than Exit:
  * - Destroy must remove tasks from the queue that they are on.
  *   - This requires a task to know which queue it is on.
- * - Destroy adds tasks to a free queue.
- *   - Create must allocate from this queue if the available memory is exhausted.
- * - Destroy must clean out the senders (currently already done in Exit)
- * - Destroy may need to kill or reparent all its children
- *   - Requires Destroy to maintain a list of its children
  */
 
 /* Handle a receive transaction, unblocking the receiver. */
@@ -228,7 +260,7 @@ static void handle_receive(struct task *receiver, struct task *sender) {
 /* Message passing */
 int syscall_MsgSend(struct task *sender, int tid, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen) {
 	struct task *receiver = get_task(tid);
-	if(receiver == NULL || receiver->tid != tid || receiver->state == TASK_DEAD)
+	if(receiver == NULL || receiver->state == TASK_DEAD)
 		return ERR_NOTID;
 
 	sender->state = TASK_RECV_BLOCKED;
@@ -269,7 +301,7 @@ int syscall_MsgReceive(struct task *receiver, useraddr_t tid, useraddr_t msgcode
 
 int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen) {
 	struct task *sender = get_task(tid);
-	if(sender == NULL || sender->tid != tid || sender->state == TASK_DEAD)
+	if(sender == NULL || sender->state == TASK_DEAD)
 		return ERR_NOTID;
 	if(sender->state != TASK_REPLY_BLOCKED)
 		return ERR_STATE;
@@ -294,7 +326,7 @@ int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t re
 
 int syscall_MsgRead(struct task *task, int tid, useraddr_t buf, int offset, int len) {
 	struct task *sender = get_task(tid);
-	if(sender == NULL || sender->tid != tid || sender->state == TASK_DEAD)
+	if(sender == NULL || sender->state == TASK_DEAD)
 		return ERR_NOTID;
 	if(sender->state != TASK_REPLY_BLOCKED)
 		return ERR_STATE;
@@ -311,13 +343,13 @@ int syscall_MsgRead(struct task *task, int tid, useraddr_t buf, int offset, int 
 
 int syscall_MsgForward(struct task *task, int srctid, int dsttid, int msgcode) {
 	struct task *sender = get_task(srctid);
-	if(sender == NULL || sender->tid != srctid || sender->state == TASK_DEAD)
+	if(sender == NULL || sender->state == TASK_DEAD)
 		return ERR_NOTID;
 	if(sender->state != TASK_REPLY_BLOCKED)
 		return ERR_STATE;
 
 	struct task *receiver = get_task(dsttid);
-	if(receiver == NULL || receiver->tid != dsttid || receiver->state == TASK_DEAD)
+	if(receiver == NULL || receiver->state == TASK_DEAD)
 		return ERR_NOTID;
 
 	sender->state = TASK_RECV_BLOCKED;
@@ -363,7 +395,7 @@ int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
 	struct task_stat st;
 	if(tid == 0) {
 		if(!stat)
-			return next_tid;
+			return get_num_tasks();
 		st.tid = 0;
 		st.ptid = 0;
 		st.priority = 0;
@@ -377,8 +409,7 @@ int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
 		if(!stat)
 			return 0;
 		st.tid = othertask->tid;
-		if(othertask->parent) st.ptid = othertask->parent->tid;
-		else st.ptid = 0;
+		st.ptid = get_ptid(task);
 		st.priority = othertask->priority;
 		st.daemon = othertask->daemon;
 		st.state = othertask->state;
@@ -483,6 +514,6 @@ void print_task(struct task *task) {
 	PRINT_REG(psr);
 	printk("\n");
 	printk("STATE:\n");
-	printk("tid:%d parent:%p prio:%d, state:%d\n\n", task->tid, task->parent, task->priority, task->state);
+	printk("tid:%08x ptid:%08x prio:%d, state:%d\n\n", task->tid, task->ptid, task->priority, task->state);
 }
 /// debug

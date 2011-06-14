@@ -9,6 +9,11 @@ typedef const void* const_useraddr_t;
 /* Number of non-daemon tasks. The system exits when no non-daemon tasks remain. */
 extern int nondaemon_count;
 
+/* Task index and generation */
+#define TID_IDX(tid) ((tid) & 0x1fff)
+#define TID_GEN(tid) ((tid) >> 13)
+#define MAKE_TID(idx, gen) (((gen) << 13) | (idx))
+
 /* Number of priorities supported.
  * Priority numbers run from 0 (highest priority)
  * to TASK_NPRIO-1 (lowest priority). */
@@ -59,7 +64,7 @@ struct task {
 	/* regs must be first */
 	struct regs regs;
 	int tid;
-	struct task *parent;
+	int ptid;
 	int priority;
 	int daemon;
 	int stack_start;
