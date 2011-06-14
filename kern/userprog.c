@@ -5,12 +5,25 @@
    of #includes up top. */
 #include <syscall.h>
 #include <lib.h>
-extern int consoletx_tid;
-extern int consolerx_tid;
+
 void consolerx_notifier();
 void consoletx_notifier();
+
 void consoletx_task();
 void consolerx_task();
+
+void clockserver_task();
+void clockserver_notifier();
+
+void ethrx_task();
+void icmpserver_task();
+void arpserver_task();
+void udprx_task();
+void udpconrx_task();
+
+void ethrx_notifier();
+void udpconrx_notifier();
+
 #if 0
 
 #include <eth.h>
@@ -255,20 +268,32 @@ __attribute__((unused)) static void hashtable_test() {
 
 /* The first user program */
 void userprog_init() {
+	ChannelOpen(); /* stdin */
+	ChannelOpen(); /* stdout */
+	ChannelOpen(); /* clockserver */
+	ChannelOpen(); /* ethrx */
+	ChannelOpen(); /* icmpserver */
+	ChannelOpen(); /* arpserver */
+	ChannelOpen(); /* udprx */
+	ChannelOpen(); /* udpconrx */
 
-	int stdin = ChannelOpen();
-	int stdout = ChannelOpen();
-
-	consoletx_tid = CreateDaemon(1, consoletx_task);
-	consolerx_tid = CreateDaemon(1, consolerx_task);
+	CreateDaemon(1, consoletx_task);
+	CreateDaemon(1, consolerx_task);
 	CreateDaemon(0, consoletx_notifier);
 	CreateDaemon(0, consolerx_notifier);
 
-	printk("%d %d\n", stdin, stdout);
+	CreateDaemon(1, clockserver_task);
+	CreateDaemon(0, clockserver_notifier);
+
+	CreateDaemon(1, ethrx_task);
+	CreateDaemon(1, icmpserver_task);
+	CreateDaemon(1, arpserver_task);
+	CreateDaemon(1, udprx_task);
+	CreateDaemon(2, udpconrx_task);
+	CreateDaemon(0, ethrx_notifier);
+	CreateDaemon(1, udpconrx_notifier);
+
 	printf("hello, world\n");
-	printk("%d %d\n", stdin, stdout);
-
-
 
 #if 0
 	//ASSERTNOERR(Create(0, hashtable_test));

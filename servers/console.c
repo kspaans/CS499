@@ -7,12 +7,6 @@
 #include <drivers/uart.h>
 #include <mem.h>
 
-#define STDIN_FILENO 0
-#define STDOUT_FILENO 1
-
-int consoletx_tid;
-int consolerx_tid;
-
 enum consolemsg {
 	CONSOLE_TX_NOTIFY_MSG,
 	CONSOLE_RX_NOTIFY_MSG,

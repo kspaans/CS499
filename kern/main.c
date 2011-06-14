@@ -50,13 +50,6 @@ int main() {
 	/* Initialize task queues */
 	init_tasks();
 
-	/* Setup servers */
-#if 0
-	console_start_tasks();
-	clock_start_tasks();
-	net_start_tasks();
-#endif
-
 	/* Initialize idle task */
 	int idle_tid = syscall_CreateDaemon(NULL, 7, idle);
 

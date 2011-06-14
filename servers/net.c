@@ -14,8 +14,6 @@
 #include <servers/clock.h>
 #include <servers/net.h>
 
-#if 0
-
 /* Important points to keep in mind:
 
 1) The network chip has been instructed to add 2 bytes of padding to the start
@@ -24,12 +22,6 @@
    at the expense of a bit of clarity.
    This setting can be changed in the RX_CFG register.
 */
-
-static int ethrx_tid; // general Ethernet receiver
-static int icmpserver_tid; // ICMP server
-static int arpserver_tid; // ARP server (MAC cache, ARP responder)
-static int udprx_tid; // UDP receiver server
-static int udpconrx_tid; // UDP-based console receiver
 
 #define RXPAD 2 /* set in drivers/eth.c with RX_CFG */
 #define FRAME_MAX 1600
@@ -71,7 +63,7 @@ int arp_lookup(uint32_t ip_addr, mac_addr_t *mac_addr, int timeout_msec) {
 		return arp_lookup(GATEWAY_IP, mac_addr, timeout_msec);
 	int count = 0;
 	while(1) {
-		int res = MsgSend(arpserver_tid, ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), mac_addr, sizeof(mac_addr_t));
+		int res = MsgSend(ARPSERVER_FILENO, ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), mac_addr, sizeof(mac_addr_t), NULL);
 		if(res == ERR_ARP_PENDING) {
 			if(count >= timeout_msec) {
 				return ERR_ARP_TIMEOUT;
@@ -222,15 +214,15 @@ static void ethrx_dispatch(uint32_t sts) {
 
 	switch(ntohs(frame.pkt.eth.ethertype)) {
 	case ET_ARP:
-		MsgSend(arpserver_tid, ARP_DISPATCH_MSG, &frame.pkt.ip, sizeof(struct arppkt), NULL, 0);
+		MsgSend(ARPSERVER_FILENO, ARP_DISPATCH_MSG, &frame.pkt.ip, sizeof(struct arppkt), NULL, 0, NULL);
 		break;
 	case ET_IPV4:
 		switch(frame.pkt.ip.ip_p) {
 		case IPPROTO_ICMP:
-			MsgSend(icmpserver_tid, ICMP_DISPATCH_MSG, &frame, len, NULL, 0);
+			MsgSend(ICMPSERVER_FILENO, ICMP_DISPATCH_MSG, &frame, len, NULL, 0, NULL);
 			break;
 		case IPPROTO_UDP:
-			MsgSend(udprx_tid, UDP_RX_DISPATCH_MSG, &frame, len, NULL, 0);
+			MsgSend(UDPRX_FILENO, UDP_RX_DISPATCH_MSG, &frame, len, NULL, 0, NULL);
 			break;
 		default:
 			printf("unknown IP proto %d\n", frame.pkt.ip.ip_p);
@@ -243,11 +235,11 @@ static void ethrx_dispatch(uint32_t sts) {
 	}
 }
 
-static void ethrx_task() {
+void ethrx_task() {
 	int tid, rcvlen, msgcode;
 
 	while(1) {
-		rcvlen = MsgReceive(&tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(ETHRX_FILENO, &tid, &msgcode, NULL, 0);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -265,14 +257,14 @@ static void ethrx_task() {
 	}
 }
 
-static void ethrx_notifier() {
+void ethrx_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_ETH_RECEIVE);
-		MsgSend(ethrx_tid, ETH_RX_NOTIFY_MSG, NULL, 0, NULL, 0);
+		MsgSend(ETHRX_FILENO, ETH_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }
 
-static void icmpserver_task() {
+void icmpserver_task() {
 	union msg {
 		struct {
 			char padding[RXPAD];
@@ -285,7 +277,7 @@ static void icmpserver_task() {
 	int tid, rcvlen, msgcode;
 
 	while(1) {
-		rcvlen = MsgReceive(&tid, &msgcode, &msg, sizeof(msg));
+		rcvlen = MsgReceive(ICMPSERVER_FILENO, &tid, &msgcode, &msg, sizeof(msg));
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -343,7 +335,7 @@ static void arpserver_store(mac_addr_t *mac_arr, intqueue *ipq, hashtable *addrm
 	}
 }
 
-static void arpserver_task() {
+void arpserver_task() {
 	union msg {
 		struct arppkt pkt;
 		uint32_t addr;
@@ -361,7 +353,7 @@ static void arpserver_task() {
 	hashtable_init(&addrmap, addrmap_arr, 1537, NULL, NULL);
 
 	while(1) {
-		rcvlen = MsgReceive(&tid, &msgcode, &msg, sizeof(msg));
+		rcvlen = MsgReceive(ARPSERVER_FILENO, &tid, &msgcode, &msg, sizeof(msg));
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -378,7 +370,7 @@ static void arpserver_task() {
 				send_arp_request(msg.addr);
 				MsgReplyStatus(tid, ERR_ARP_PENDING);
 			} else {
-				MsgReply(tid, 0, loc, sizeof(mac_addr_t));
+				MsgReply(tid, 0, loc, sizeof(mac_addr_t), -1);
 			}
 			break;
 		default:
@@ -388,12 +380,12 @@ static void arpserver_task() {
 	}
 }
 
-static void udprx_task() {
+void udprx_task() {
 	/* TODO */
 	int tid, rcvlen, msgcode;
 
 	while(1) {
-		rcvlen = MsgReceive(&tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(UDPRX_FILENO, &tid, &msgcode, NULL, 0);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -408,12 +400,12 @@ static void udprx_task() {
 	}
 }
 
-static void udpconrx_task() {
+void udpconrx_task() {
 	/* TODO */
 	int tid, rcvlen, msgcode;
 
 	while(1) {
-		rcvlen = MsgReceive(&tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(UDPCONRX_FILENO, &tid, &msgcode, NULL, 0);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -426,7 +418,7 @@ static void udpconrx_task() {
 	}
 }
 
-static void udpconrx_notifier() {
+void udpconrx_notifier() {
 	/* TODO */
 	/*
 	Bind port UDPCON_CLIENT_PORT
@@ -436,15 +428,3 @@ static void udpconrx_notifier() {
 	}
 	*/
 }
-
-void net_start_tasks() {
-	ethrx_tid = KernCreateTask(1, ethrx_task, TASK_DAEMON);
-	icmpserver_tid = KernCreateTask(1, icmpserver_task, TASK_DAEMON);
-	arpserver_tid = KernCreateTask(1, arpserver_task, TASK_DAEMON);
-	udprx_tid = KernCreateTask(1, udprx_task, TASK_DAEMON);
-	udpconrx_tid = KernCreateTask(2, udpconrx_task, TASK_DAEMON);
-	KernCreateTask(0, ethrx_notifier, TASK_DAEMON);
-	KernCreateTask(1, udpconrx_notifier, TASK_DAEMON);
-}
-
-#endif
