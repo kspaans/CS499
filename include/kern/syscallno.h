@@ -15,5 +15,8 @@
 #define SYS_AWAITEVENT    12
 #define SYS_TASKSTAT      13
 #define SYS_SUSPEND       14
+#define SYS_CHANNELOPEN   15
+#define SYS_CHANNELCLOSE  16
+#define SYS_CHANNELDUP    17
 
 #endif /* KERN_SYSCALLNO_H */

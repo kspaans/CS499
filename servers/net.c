@@ -14,6 +14,8 @@
 #include <servers/clock.h>
 #include <servers/net.h>
 
+#if 0
+
 /* Important points to keep in mind:
 
 1) The network chip has been instructed to add 2 bytes of padding to the start
@@ -444,3 +446,5 @@ void net_start_tasks() {
 	KernCreateTask(0, ethrx_notifier, TASK_DAEMON);
 	KernCreateTask(1, udpconrx_notifier, TASK_DAEMON);
 }
+
+#endif

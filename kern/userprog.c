@@ -5,6 +5,13 @@
    of #includes up top. */
 #include <syscall.h>
 #include <lib.h>
+extern int consoletx_tid;
+extern int consolerx_tid;
+void consolerx_notifier();
+void consoletx_notifier();
+void consoletx_task();
+void consolerx_task();
+#if 0
 
 #include <eth.h>
 #include <servers/net.h>
@@ -244,8 +251,26 @@ __attribute__((unused)) static void hashtable_test() {
 #undef DEL
 }
 
+#endif
+
 /* The first user program */
 void userprog_init() {
+
+	int stdin = ChannelOpen();
+	int stdout = ChannelOpen();
+
+	consoletx_tid = CreateDaemon(1, consoletx_task);
+	consolerx_tid = CreateDaemon(1, consolerx_task);
+	CreateDaemon(0, consoletx_notifier);
+	CreateDaemon(0, consolerx_notifier);
+
+	printk("%d %d\n", stdin, stdout);
+	printf("hello, world\n");
+	printk("%d %d\n", stdin, stdout);
+
+
+
+#if 0
 	//ASSERTNOERR(Create(0, hashtable_test));
 	ASSERTNOERR(Create(1, memcpy_bench));
 	//ASSERTNOERR(Create(2, advsrr_task));
@@ -256,4 +281,6 @@ void userprog_init() {
 	ASSERTNOERR(CreateDaemon(4, flash_leds));
 	//ASSERTNOERR(Create(4, console_loop));
 	ASSERTNOERR(Create(4, udp_console_loop));
+#endif
+
 }

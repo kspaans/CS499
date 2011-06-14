@@ -10,5 +10,8 @@
 #define ERR_INTR  -6 /* transaction interrupted */
 #define ERR_NOSYS -7 /* no such system call */
 #define ERR_NOFUNC -8 /* unimplemented or nonexistent function */
+#define EMFILE -9
+#define EINVAL -10
+#define EBADF -11
 
 #endif /* ERRNO_H */

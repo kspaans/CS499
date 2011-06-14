@@ -5,6 +5,8 @@
 #include <task.h>
 #include <servers/clock.h>
 
+
+#if 0
 static int clockserver_tid;
 
 enum clockmsg {
@@ -126,3 +128,4 @@ void clock_start_tasks() {
 	clockserver_tid = KernCreateTask(1, clockserver_task, TASK_DAEMON);
 	KernCreateTask(0, clockserver_notifier, TASK_DAEMON);
 }
+#endif

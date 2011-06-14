@@ -19,6 +19,8 @@ extern int nondaemon_count;
  * to TASK_NPRIO-1 (lowest priority). */
 #define TASK_NPRIO          8
 
+#define MAX_TASK_CHANNELS 64
+
 /* Size of the stack allocated to each task */
 #define TASK_STACKSIZE      65536 /* 64 KB */
 
@@ -40,14 +42,27 @@ typedef struct {
 	struct task* end;
 } taskqueue;
 
+struct channel {
+	int refcount;
+	taskqueue senders;
+	taskqueue receivers;
+};
+
+struct channel_desc {
+	int flags;
+	struct channel *channel;
+};
+
 union tasksrr {
 	struct {
 		int tid;
+		int channel;
 		int code;
 		const_useraddr_t buf;
 		int len;
 		useraddr_t rbuf;
 		int rlen;
+		int *rchan;
 	} send;
 	struct {
 		useraddr_t tidptr;
@@ -71,7 +86,7 @@ struct task {
 	enum taskstate state;
 	/* Receive queue: holds tasks which have sent to this one
 	 * but which haven't been received by this task yet */
-	taskqueue recv_queue;
+	struct channel_desc channels[MAX_TASK_CHANNELS];
 	union tasksrr srr;
 
 	/* for putting tasks in queues */
@@ -116,9 +131,9 @@ int syscall_MyTid(struct task *task);
 int syscall_MyParentTid(struct task *task);
 void syscall_Pass(struct task *task);
 void syscall_Exit(struct task *task);
-int syscall_MsgSend(struct task *task, int tid, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen);
-int syscall_MsgReceive(struct task *task, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen);
-int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen);
+int syscall_MsgSend(struct task *task, int channel, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen, int *replychan);
+int syscall_MsgReceive(struct task *task, int channel, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen);
+int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen, int replychan);
 int syscall_MsgRead(struct task *task, int tid, useraddr_t buf, int offset, int len);
 int syscall_MsgForward(struct task *task, int srctid, int dsttid, int msgcode);
 int syscall_AwaitEvent(struct task* task, int eventid);

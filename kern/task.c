@@ -160,7 +160,6 @@ static int do_Create(struct task *task, int priority, void (*code)(), int daemon
 	newtask->priority = priority;
 	newtask->daemon = (daemon == TASK_DAEMON);
 	newtask->state = TASK_RUNNING;
-	taskqueue_init(&newtask->recv_queue);
 
 	/* Set up registers. */
 	newtask->regs.pc = (int)task_run;
@@ -170,6 +169,13 @@ static int do_Create(struct task *task, int priority, void (*code)(), int daemon
 	/* set fp and lr to 0 to make backtrace happy */
 	newtask->regs.fp = 0;
 	newtask->regs.lr = 0;
+
+	/* duplicate open channels */
+	if (task)
+		memcpy(newtask->channels, task->channels, sizeof(newtask->channels));
+	else
+		memset(newtask->channels, 0, sizeof(newtask->channels));
+
 	task_enqueue(newtask);
 	return newtask->tid;
 }
@@ -205,12 +211,43 @@ int syscall_Suspend(void) {
 	return 0;
 }
 
+int alloc_channel_desc(struct task *task) {
+	for (int i = 0; i < MAX_TASK_CHANNELS; ++i)
+		if (!task->channels[i].channel)
+			return i;
+	return -1;
+}
+
+int syscall_ChannelOpen(struct task *task) {
+	int no = alloc_channel_desc(task);
+	if (no < 0)
+		return EMFILE;
+	struct channel *channel = kmalloc(sizeof(*channel));
+	memset(channel, 0, sizeof(*channel));
+	channel->refcount++;
+	taskqueue_init(&channel->senders);
+	taskqueue_init(&channel->receivers);
+	task->channels[no].channel = channel;
+	return no;
+}
+
+int syscall_ChannelClose(struct task *task, int no) {
+	// TODO
+	return 0;
+}
+
+int syscall_ChannelDup(struct task *task, int no, int flags) {
+	// TODO
+	return 0;
+}
+
 void syscall_Exit(struct task *task) {
 	task->state = TASK_DEAD;
 	if(!task->daemon)
 		--nondaemon_count;
 	--task_count;
 	/* Clean out the send queue. */
+#if 0
 	struct task *sender;
 	while(task->recv_queue.start != NULL) {
 		sender = taskqueue_pop(&task->recv_queue);
@@ -226,6 +263,7 @@ void syscall_Exit(struct task *task) {
 	/* Task must have been running (not blocked or on the ready queue) to call Exit.
 	   So, it is safe to free the task. */
 	taskqueue_push(&freequeue, task);
+#endif
 }
 
 /* Destroy, if implemented, needs to do more work than Exit:
@@ -258,39 +296,50 @@ static void handle_receive(struct task *receiver, struct task *sender) {
 }
 
 /* Message passing */
-int syscall_MsgSend(struct task *sender, int tid, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen) {
-	struct task *receiver = get_task(tid);
-	if(receiver == NULL || receiver->state == TASK_DEAD)
-		return ERR_NOTID;
+int syscall_MsgSend(struct task *sender, int channel, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen, int *replychan) {
+	if (channel < 0 || channel >= MAX_TASK_CHANNELS)
+		return EINVAL;
+	if (!sender->channels[channel].channel)
+		return EBADF;
+	struct channel *chan = sender->channels[channel].channel;
 
 	sender->state = TASK_RECV_BLOCKED;
-	sender->srr.send.tid = tid;
+	sender->srr.send.channel = channel;
 	sender->srr.send.code = msgcode;
 	sender->srr.send.buf = msg;
 	sender->srr.send.len = msglen;
 	sender->srr.send.rbuf = reply;
 	sender->srr.send.rlen = replylen;
-	if(receiver->state == TASK_SEND_BLOCKED) {
+	sender->srr.send.rchan = replychan;
+	if(chan->receivers.start != NULL) {
+		struct task *receiver = taskqueue_pop(&chan->receivers);
 		handle_receive(receiver, sender);
 		task_enqueue(receiver); // receiver unblocked
 	} else {
-		taskqueue_push(&receiver->recv_queue, sender);
+		taskqueue_push(&chan->senders, sender);
 	}
 	/* Return INTR here. Real return value will be posted by syscall_Reply. */
 	return ERR_INTR;
 }
 
-int syscall_MsgReceive(struct task *receiver, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen) {
+int syscall_MsgReceive(struct task *receiver, int channel, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen) {
+	if (channel < 0 || channel >= MAX_TASK_CHANNELS)
+		return EINVAL;
+	if (!receiver->channels[channel].channel)
+		return EBADF;
+	struct channel *chan = receiver->channels[channel].channel;
+
 	receiver->state = TASK_SEND_BLOCKED;
 	receiver->srr.recv.tidptr = tid;
 	receiver->srr.recv.codeptr = msgcode;
 	receiver->srr.recv.buf = msg;
 	receiver->srr.recv.len = msglen;
-	if(receiver->recv_queue.start == NULL) {
+	if(chan->senders.start == NULL) {
+		taskqueue_push(&chan->receivers, receiver);
 		return ERR_INTR; // wait for send
 	}
 
-	struct task *sender = taskqueue_pop(&receiver->recv_queue);
+	struct task *sender = taskqueue_pop(&chan->senders);
 	if(sender->state != TASK_RECV_BLOCKED) {
 		printk("KERNEL FATAL: Task had a non-blocked task on receive queue.\n");
 		return ERR_STATE;
@@ -299,12 +348,21 @@ int syscall_MsgReceive(struct task *receiver, useraddr_t tid, useraddr_t msgcode
 	return receiver->regs.r0; // receiver unblocked
 }
 
-int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen) {
+int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen, int replychan) {
 	struct task *sender = get_task(tid);
 	if(sender == NULL || sender->state == TASK_DEAD)
 		return ERR_NOTID;
 	if(sender->state != TASK_REPLY_BLOCKED)
 		return ERR_STATE;
+	if(replychan >= MAX_TASK_CHANNELS || replychan < -1)
+		return EINVAL;
+
+	struct channel_desc *channel = NULL;
+	if(replychan >= 0) {
+		if (!task->channels[replychan].channel)
+			return EBADF;
+		channel = &task->channels[replychan];
+	}
 
 	/* ret is returned to the receiver (this task),
 	   status is returned to the sender (other task) */
@@ -313,10 +371,28 @@ int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t re
 	if(sender->srr.send.rbuf && reply) {
 		if(sender->srr.send.rlen < replylen) {
 			ret = status = ERR_NOSPC;
+			goto out;
 		} else {
 			memcpy(sender->srr.send.rbuf, reply, replylen);
 		}
 	}
+	if (sender->srr.send.rchan) {
+		if (!channel) {
+			*sender->srr.send.rchan = -1;
+			goto out;
+		}
+
+		int cd = alloc_channel_desc(sender);
+		if (cd < 0) {
+			status = EMFILE;
+			goto out;
+		}
+
+		sender->channels[cd] = *channel;
+		*sender->srr.send.rchan = cd;
+	}
+
+out:
 	/* Push sender return value and unblock it */
 	sender->regs.r0 = status;
 	sender->state = TASK_RUNNING;
@@ -342,6 +418,7 @@ int syscall_MsgRead(struct task *task, int tid, useraddr_t buf, int offset, int 
 }
 
 int syscall_MsgForward(struct task *task, int srctid, int dsttid, int msgcode) {
+#if 0
 	struct task *sender = get_task(srctid);
 	if(sender == NULL || sender->state == TASK_DEAD)
 		return ERR_NOTID;
@@ -361,6 +438,7 @@ int syscall_MsgForward(struct task *task, int srctid, int dsttid, int msgcode) {
 	} else {
 		taskqueue_push(&receiver->recv_queue, sender);
 	}
+#endif
 	return 0;
 }
 
@@ -453,16 +531,19 @@ void task_syscall(int code, struct task *task) {
 	case SYS_MSGSEND:
 		ret = syscall_MsgSend(task, /*tid*/task->regs.r0, /*msgcode*/task->regs.r1,
 			/*msg*/(useraddr_t)task->regs.r2, /*msglen*/task->regs.r3,
-			/*reply*/(useraddr_t)STACK_ARG(task, 4), /*replylen*/STACK_ARG(task, 5));
+			/*reply*/(useraddr_t)STACK_ARG(task, 4), /*replylen*/STACK_ARG(task, 5),
+			/*replychan*/(useraddr_t)STACK_ARG(task, 6));
 		break;
 	case SYS_MSGRECEIVE:
-		ret = syscall_MsgReceive(task, /*tid*/(useraddr_t)task->regs.r0,
-			/*msgcode*/(useraddr_t)task->regs.r1,
-			/*msg*/(useraddr_t)task->regs.r2, /*msglen*/task->regs.r3);
+		ret = syscall_MsgReceive(task, /*channel*/task->regs.r0,
+			/*tid*/(useraddr_t)task->regs.r1,
+			/*msgcode*/(useraddr_t)task->regs.r2, /*msg*/(useraddr_t)task->regs.r3,
+			/*msglen*/STACK_ARG(task, 4));
 		break;
 	case SYS_MSGREPLY:
 		ret = syscall_MsgReply(task, /*tid*/task->regs.r0, /*status*/task->regs.r1,
-			/*reply*/(useraddr_t)task->regs.r2, /*replylen*/task->regs.r3);
+			/*reply*/(useraddr_t)task->regs.r2, /*replylen*/task->regs.r3,
+			/*replychan*/(int)STACK_ARG(task, 4));
 		break;
 	case SYS_MSGREAD:
 		ret = syscall_MsgRead(task, /*tid*/task->regs.r0, /*buf*/(useraddr_t)task->regs.r1,
@@ -480,6 +561,15 @@ void task_syscall(int code, struct task *task) {
 		break;
 	case SYS_SUSPEND:
 		ret = syscall_Suspend();
+		break;
+	case SYS_CHANNELOPEN:
+		ret = syscall_ChannelOpen(task);
+		break;
+	case SYS_CHANNELCLOSE:
+		ret = syscall_ChannelClose(task, task->regs.r0);
+		break;
+	case SYS_CHANNELDUP:
+		ret = syscall_ChannelDup(task, task->regs.r0, task->regs.r1);
 		break;
 	default:
 		ret = ERR_NOSYS;

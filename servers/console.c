@@ -7,8 +7,11 @@
 #include <drivers/uart.h>
 #include <mem.h>
 
-static int consoletx_tid;
-static int consolerx_tid;
+#define STDIN_FILENO 0
+#define STDOUT_FILENO 1
+
+int consoletx_tid;
+int consolerx_tid;
 
 enum consolemsg {
 	CONSOLE_TX_NOTIFY_MSG,
@@ -26,7 +29,7 @@ static void console_printfunc(void *unused, const char *buf, size_t len) {
 	(void)unused;
 	for(int i=0; i<len; i+=CHUNK_SIZE) {
 		int chunk = (i+CHUNK_SIZE < len) ? CHUNK_SIZE : len-i;
-		MsgSend(consoletx_tid, CONSOLE_TX_DATA_MSG, buf+i, chunk, NULL, 0);
+		MsgSend(STDOUT_FILENO, CONSOLE_TX_DATA_MSG, buf+i, chunk, NULL, 0, NULL);
 	}
 }
 
@@ -43,14 +46,14 @@ int vprintf(const char *fmt, va_list va) {
 }
 
 int getchar() {
-	return MsgSend(consolerx_tid, CONSOLE_RX_REQ_MSG, NULL, 0, NULL, 0);
+	return MsgSend(STDIN_FILENO, CONSOLE_RX_REQ_MSG, NULL, 0, NULL, 0, NULL);
 }
 
 void putchar(char c) {
-	MsgSend(consoletx_tid, CONSOLE_TX_DATA_MSG, &c, 1, NULL, 0);
+	MsgSend(STDOUT_FILENO, CONSOLE_TX_DATA_MSG, &c, 1, NULL, 0, NULL);
 }
 
-static void consoletx_task() {
+void consoletx_task() {
 	int tid, rcvlen, msgcode;
 	char rcvbuf[CHUNK_SIZE];
 	char *cur;
@@ -61,7 +64,7 @@ static void consoletx_task() {
 	charqueue_init(&chq, chq_arr, TX_BUF_MAX);
 
 	while(1) {
-		rcvlen = MsgReceive(&tid, &msgcode, rcvbuf, CHUNK_SIZE);
+		rcvlen = MsgReceive(STDOUT_FILENO, &tid, &msgcode, rcvbuf, CHUNK_SIZE);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -119,7 +122,7 @@ static void consoletx_task() {
 	}
 }
 
-static void consolerx_task() {
+void consolerx_task() {
 	int tid, rcvlen, msgcode;
 
 	intqueue tidq;
@@ -131,7 +134,7 @@ static void consolerx_task() {
 	charqueue_init(&chq, chq_arr, RX_BUF_MAX);
 
 	while(1) {
-		rcvlen = MsgReceive(&tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(STDIN_FILENO, &tid, &msgcode, NULL, 0);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -160,23 +163,16 @@ static void consolerx_task() {
 	}
 }
 
-static void consoletx_notifier() {
+void consoletx_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_CONSOLE_TRANSMIT);
-		MsgSend(consoletx_tid, CONSOLE_TX_NOTIFY_MSG, NULL, 0, NULL, 0);
+		MsgSend(STDOUT_FILENO, CONSOLE_TX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }
 
-static void consolerx_notifier() {
+void consolerx_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_CONSOLE_RECEIVE);
-		MsgSend(consolerx_tid, CONSOLE_RX_NOTIFY_MSG, NULL, 0, NULL, 0);
+		MsgSend(STDIN_FILENO, CONSOLE_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
-}
-
-void console_start_tasks() {
-	consoletx_tid = KernCreateTask(1, consoletx_task, TASK_DAEMON);
-	consolerx_tid = KernCreateTask(1, consolerx_task, TASK_DAEMON);
-	KernCreateTask(0, consoletx_notifier, TASK_DAEMON);
-	KernCreateTask(0, consolerx_notifier, TASK_DAEMON);
 }
