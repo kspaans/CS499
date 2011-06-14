@@ -24,8 +24,6 @@ void udpconrx_task();
 void ethrx_notifier();
 void udpconrx_notifier();
 
-#if 0
-
 #include <eth.h>
 #include <servers/net.h>
 __attribute__((unused)) static void udp_console_loop() {
@@ -100,17 +98,18 @@ __attribute__((unused)) static void memcpy_bench() {
 }
 
 #define SRR_RUNS 16384
+int srrbench_chan;
 static void srrbench_child() {
 	char buf[1024];
 	int tid;
 	int i;
 	for(i=0; i<SRR_RUNS; i++) {
-		MsgReceive(&tid, NULL, buf, 4);
-		MsgReply(tid, 4, buf, 4);
+		MsgReceive(srrbench_chan, &tid, NULL, buf, 4);
+		MsgReply(tid, 4, buf, 4, -1);
 	}
 	for(i=0; i<SRR_RUNS; i++) {
-		MsgReceive(&tid, NULL, buf, 64);
-		MsgReply(tid, 64, buf, 64);
+		MsgReceive(srrbench_chan, &tid, NULL, buf, 64);
+		MsgReply(tid, 64, buf, 64, -1);
 	}
 }
 #include <drivers/timers.h>
@@ -125,14 +124,16 @@ static void srrbench_child() {
 __attribute__((unused)) static void srrbench_task() {
 	int tid = MyTid();
 	printf("srrbench_task[%d]: benchmarking SRR transaction\n", tid);
-	int child = Create(0, srrbench_child);
+	//int child = Create(0, srrbench_child);
 	char buf[512];
 	int i;
 	unsigned long long start, elapsed;
 
+	srrbench_chan = ChannelOpen();
+
 	BENCH("Pass", Pass())
-	BENCH("4-bytes", MsgSend(child, 0, buf, 4, buf, 4))
-	BENCH("64-bytes", MsgSend(child, 0, buf, 64, buf, 64))
+	BENCH("4-bytes", MsgSend(srrbench_chan, 0, buf, 4, buf, 4, NULL))
+	BENCH("64-bytes", MsgSend(srrbench_chan, 0, buf, 64, buf, 64, NULL))
 
 	printf("srrbench_task[%d]: benchmark finished.\n", tid);
 }
@@ -154,17 +155,19 @@ __attribute__((unused)) static void task_reclamation_test() {
 	Create(4, task_reclamation_2);
 }
 
+int advsrr_chan1;
 #define TESTRECV(i,buf,bufsz) { \
-	msglen = MsgReceive(&tid, &msgcode, buf, bufsz); \
+	msglen = MsgReceive(advsrr_chan1, &tid, &msgcode, buf, bufsz); \
 	printf("Receive #%d (child %d): %d", i, msgcode, msglen); \
 	if(!buf) printf(" (null) [] "); \
 	else if(msglen > bufsz) printf(" (truncated) [%.*s] ", bufsz, buf); \
 	else printf(" [%.*s] ", msglen, buf); \
-	msglen = MsgRead(tid, msgbuf, 0, 32); \
+	/* msglen = MsgRead(tid, msgbuf, 0, 32); \
 	printf(" read %d [%.*s] ", msglen, msglen, msgbuf); \
-	printf(" reply %d\n", MsgReplyStatus(tid, msgcode)); \
+	printf(" reply %d\n", MsgReplyStatus(tid, msgcode));*/ \
 }
 static void advsrr_child2() {
+#if 0
 	int tid, msgcode, msglen;
 	char msgbuf[32];
 	TESTRECV(1, (char *)NULL, 16);
@@ -173,6 +176,7 @@ static void advsrr_child2() {
 	TESTRECV(4, msgbuf, 32);
 	TESTRECV(5, msgbuf, 16);
 	TESTRECV(6, msgbuf, 8);
+#endif
 }
 static void advsrr_child1() {
 	int child2 = Create(1, advsrr_child2);
@@ -184,6 +188,7 @@ static void advsrr_child1() {
 	TESTRECV(4, msgbuf, 32);
 	TESTRECV(5, msgbuf, 16);
 	TESTRECV(6, msgbuf, 8);
+#if 0
 #define TESTFWD(i,buf,bufsz) { \
 	msglen = MsgReceive(&tid, &msgcode, buf, bufsz); \
 	printf("Forward #%d (child %d): %d %d\n", i, msgcode, msglen, MsgForward(tid, child2, 2)); \
@@ -195,15 +200,17 @@ static void advsrr_child1() {
 	TESTFWD(5, msgbuf, 16);
 	TESTFWD(6, msgbuf, 8);
 #undef TESTFWD
+#endif
 }
 #undef TESTRECV
 __attribute__((unused)) static void advsrr_task() {
 	int tid = MyTid();
+	advsrr_chan1 = ChannelOpen();
 	char data[16];
 	memcpy(data, "abcdefghijklmnopqrstuvwxyz", 16);
 	int child1 = Create(0, advsrr_child1);
 #define TESTSEND(i,buf,bufsz) { \
-	printf("Send #%d: %d\n", i, MsgSend(child1, 1, buf, bufsz, NULL, 0)); \
+	printf("Send #%d: %d\n", i, MsgSend(advsrr_chan1, 1, buf, bufsz, NULL, 0, NULL)); \
 }
 
 	printf("Receive test:\n");
@@ -220,6 +227,7 @@ __attribute__((unused)) static void advsrr_task() {
 	printf("advsrr_task[%d]: send 16, recv 8\n", tid);
 	TESTSEND(6, data, 16);
 
+#if 0
 	printf("\nForward test:\n");
 	printf("advsrr_task[%d]: send NULL, recv NULL\n", tid);
 	TESTSEND(1, NULL, 64);
@@ -233,6 +241,7 @@ __attribute__((unused)) static void advsrr_task() {
 	TESTSEND(5, data, 16);
 	printf("advsrr_task[%d]: send 16, recv 8\n", tid);
 	TESTSEND(6, data, 16);
+#endif
 }
 
 static uint32_t dumbhash(int x) { return 0; }
@@ -264,8 +273,6 @@ __attribute__((unused)) static void hashtable_test() {
 #undef DEL
 }
 
-#endif
-
 /* The first user program */
 void userprog_init() {
 	ChannelOpen(); /* stdin */
@@ -295,7 +302,6 @@ void userprog_init() {
 
 	printf("hello, world\n");
 
-#if 0
 	//ASSERTNOERR(Create(0, hashtable_test));
 	ASSERTNOERR(Create(1, memcpy_bench));
 	//ASSERTNOERR(Create(2, advsrr_task));
@@ -306,6 +312,5 @@ void userprog_init() {
 	ASSERTNOERR(CreateDaemon(4, flash_leds));
 	//ASSERTNOERR(Create(4, console_loop));
 	ASSERTNOERR(Create(4, udp_console_loop));
-#endif
 
 }
