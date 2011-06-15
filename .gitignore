@@ -1,6 +1,6 @@
 obj
-*.[aos]
-*.elf
+bin/*
+!bin/*.do
 .redo
 .do_built
 .do_built.dir
