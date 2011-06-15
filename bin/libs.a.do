@@ -3,6 +3,6 @@ DEPS=(cpu.o lib.o memcpy.o printf.o string.o)
 
 mkdir -p ${PREFIX}
 DEPS=${DEPS[@]/#/${PREFIX}/}
-redo-ifchange ${TOP}/utils/archive ${DEPS}
+redo-ifchange ../utils/archive ${DEPS}
 
-${TOP}/utils/archive $3 ${DEPS}
+../utils/archive $3 ${DEPS}

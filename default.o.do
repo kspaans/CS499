@@ -7,5 +7,5 @@ else
     FILE=$1.s
 fi
 
-redo-ifchange ${TOP}/utils/assemble ${FILE}
-${TOP}/utils/assemble -o $3 ${FILE}
+redo-ifchange utils/assemble ${FILE}
+utils/assemble -o $3 ${FILE}

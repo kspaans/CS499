@@ -5,6 +5,6 @@ LDLIBS="-lgcc"
 
 mkdir -p ${PREFIX}
 DEPS=${DEPS[@]/#/${PREFIX}/}
-redo-ifchange ${TOP}/utils/link ${DEPS}
+redo-ifchange ../utils/link ${DEPS}
 
-${TOP}/utils/link -o $3 ${DEPS} ${LIBS} ${LDLIBS}
+../utils/link -o $3 ${DEPS} ${LIBS} ${LDLIBS}
