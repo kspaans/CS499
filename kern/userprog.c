@@ -284,6 +284,8 @@ void userprog_init() {
 
 	printf("hello, world\n");
 
+	dump_files();
+
 	//ASSERTNOERR(Create(0, hashtable_test));
 	ASSERTNOERR(Create(1, memcpy_bench));
 	//ASSERTNOERR(Create(2, advsrr_task));

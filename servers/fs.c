@@ -144,3 +144,16 @@ void fileserver_task(void) {
 
 	}
 }
+
+void dump_files(void) {
+	char path[PATH_MAX];
+
+	printk("filesystem dump:\n");
+	for (int i = 0; i < FILE_MAX; ++i) {
+		if (fs.files[i].pathlen) {
+			memcpy(path, fs.files[i].path, PATH_MAX);
+			path[PATH_MAX-1] = '\0';
+			printk("[%d] %s\n", i, path);
+		}
+	}
+}
