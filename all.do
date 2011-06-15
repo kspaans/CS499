@@ -1,6 +1,6 @@
 #!/bin/bash
 
-redo bin/drivers.a
-redo bin/libs.a
-redo bin/servers.a
-redo bin/kern.elf
+redo-ifchange bin/drivers.a
+redo-ifchange bin/libs.a
+redo-ifchange bin/servers.a
+redo-ifchange bin/kern.elf
