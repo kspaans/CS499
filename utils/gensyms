@@ -21,7 +21,9 @@ EOF
 
 while read addr type sym; do
   if test "$type" = T -o "$type" = t; then
-    echo "sym $sym 0x$addr"
+    if test "$sym" != "ksyms_start" -a "$sym" != "ksyms_end"; then
+      echo "sym $sym 0x$addr"
+    fi
   fi
 done
 
