@@ -52,13 +52,14 @@ int mkchan(int dirfd, const char *pathname) {
 }
 
 int mkopenchan(const char *pathname) {
-	if (mkchan(ROOT_DIRFD, pathname)) {
-		printf("mkopenchan: failed to make %s\n", pathname);
+	int ret = mkchan(ROOT_DIRFD, pathname);
+	if (ret) {
+		printf("mkopenchan: failed to make %s (%d)\n", pathname, ret);
 		Exit();
 	}
 	int fd = open(ROOT_DIRFD, pathname);
 	if (fd < 0) {
-		printf("mkopenchan: failed to open %s\n", pathname);
+		printf("mkopenchan: failed to open %s (%d)\n", pathname, fd);
 		Exit();
 	}
 	return fd;
@@ -68,7 +69,7 @@ int mkopenchan(const char *pathname) {
 int sendpath(const char *pathname, int msgcode, const void *msg, int msglen, void *reply, int replylen, int *replychan) {
 	int fd = open(ROOT_DIRFD, pathname);
 	if (fd < 0) {
-		printf("sendpath: failed to open %s\n", pathname);
+		printf("sendpath: failed to open %s (%d)\n", pathname, fd);
 		Exit();
 	}
 	int ret = MsgSend(fd, msgcode, msg, msglen, reply, replylen, replychan);
