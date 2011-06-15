@@ -234,7 +234,10 @@ int syscall_ChannelOpen(struct task *task) {
 }
 
 int syscall_ChannelClose(struct task *task, int no) {
-	// TODO
+	if (no < 0 || no >= MAX_TASK_CHANNELS)
+		return EBADF;
+
+	task->channels[no].channel = NULL;
 	return 0;
 }
 
