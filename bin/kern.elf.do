@@ -1,10 +1,10 @@
 PREFIX="../kern/obj/"
-DEPS=(backtrace.o interrupt.o kmalloc.o main.o omap3.o printk.o switch.o syscall.o task.o userprog.o)
-LIBS="drivers.a libs.a servers.a"
+DEPS=(omap3.o)
+LIBS="kern.a drivers.a libs.a servers.a"
 LDLIBS="-lgcc"
 
 mkdir -p ${PREFIX}
 DEPS=${DEPS[@]/#/${PREFIX}/}
-redo-ifchange ../utils/link ${DEPS}
+redo-ifchange ../utils/link ${LIBS} ${DEPS}
 
 ../utils/link -o $3 ${DEPS} ${LIBS} ${LDLIBS}
