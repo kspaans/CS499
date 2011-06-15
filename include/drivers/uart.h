@@ -16,6 +16,7 @@
 # define UART_IIR_RXTO (6 << 1)
 # define UART_IIR_RHR (2 << 1)
 # define UART_IIR_THR (1 << 1)
+# define UART_IIR_RX_STS_ERR (3 << 1)
 # define UART_IIR_IT_MASK 0x3f
 #define UART_FCR_OFFSET 0x08 // W/O, mode A/op
 # define UART_FCR_FIFO_EN 0x01
@@ -66,5 +67,7 @@ void uart_tx(int c);
 int uart_rx();
 int uart_getc();
 void uart_putc(char c);
+void uart_rx_sts_err(void);
+void sysrq(void);
 
 #endif /* _UART_DRIVER_H */

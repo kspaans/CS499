@@ -1,6 +1,8 @@
 #include <types.h>
 #include <kern/printk.h>
 
+#define MAXDEPTH 20
+
 struct apcs_frame {
 	void *fp;
 	void *sp;
@@ -9,7 +11,11 @@ struct apcs_frame {
 };
 
 void unwind_stack(uint32_t *fp) {
+	int depth = 0;
 	while (fp) {
+		if (depth++ > MAXDEPTH)
+			break;
+
 		struct apcs_frame *frame = (void *)(fp - 3);
 		if (!frame->lr)
 			break;

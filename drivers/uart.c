@@ -3,6 +3,7 @@
 #include <drivers/uart.h>
 #include <types.h>
 #include <mem.h>
+#include <kern/printk.h>
 
 static void uart_mode_A() {
 	mem32(UART3_PHYS_BASE + UART_LCR_OFFSET) |= UART_DIV_EN;
@@ -88,4 +89,19 @@ void uart_putc(char c) {
 	while(!(*flags & UART_THRE_MASK))
 		;
 	*data = c;
+}
+
+void uart_rx_sts_err(void) {
+	volatile uint32_t *flags, *data;
+	flags = (uint32_t *)(UART3_PHYS_BASE + UART_LSR_OFFSET);
+	data = (uint32_t *)(UART3_PHYS_BASE + UART_RHR_OFFSET);
+
+	if (read32(UART3_PHYS_BASE + UART_LSR_OFFSET) & UART_BI_MASK) {
+		*data;
+		sysrq();
+		return;
+	}
+
+	panic("uart line status error");
+
 }

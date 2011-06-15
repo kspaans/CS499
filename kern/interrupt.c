@@ -48,12 +48,16 @@ static void uart_isr(int irq) {
 		event_unblock_all(EVENT_CONSOLE_TRANSMIT, 0);
 		uart_intdisable(UART_THR_IT);
 		break;
+	case UART_IIR_RX_STS_ERR:
+		uart_rx_sts_err();
+		break;
 	default:
+		panic("unhandled UART interrupt");
 		break;
 	}
 }
 static void init_uart_irq() {
-	uart_intenable(UART_RHR_IT | UART_THR_IT);
+	uart_intenable(UART_RHR_IT | UART_THR_IT | UART_LINE_STS_IT);
 	intc_register(IRQ_UART3, uart_isr, 1);
 	intc_intenable(IRQ_UART3);
 }

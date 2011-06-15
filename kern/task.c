@@ -7,6 +7,7 @@
 #include <kern/syscallno.h>
 #include <kern/kmalloc.h>
 #include <kern/printk.h>
+#include <kern/backtrace.h>
 
 static taskqueue freequeue;
 static taskqueue taskqueues[TASK_NPRIO];
@@ -580,9 +581,8 @@ void task_syscall(int code, struct task *task) {
 /// debug
 #define PRINT_REG(x) printk(#x ":%08x ", task->regs.x)
 void print_task(struct task *task) {
-	printk("TASK PRINTOUT: %p\n", task);
 	if(task == NULL) return;
-	printk("REGS:\n");
+	printk("task %p tid:%08x ptid:%08x prio:%d, state:%d\n", task, task->tid, task->ptid, task->priority, task->state);
 	PRINT_REG(r0);
 	PRINT_REG(r1);
 	PRINT_REG(r2);
@@ -603,7 +603,21 @@ void print_task(struct task *task) {
 	PRINT_REG(pc);
 	PRINT_REG(psr);
 	printk("\n");
-	printk("STATE:\n");
-	printk("tid:%08x ptid:%08x prio:%d, state:%d\n\n", task->tid, task->ptid, task->priority, task->state);
+
+	printk("stack %08x ", task->regs.pc);
+	unwind_stack((void *)task->regs.fp);
+	printk("\n");
+
+	printk("\n");
 }
 /// debug
+
+void sysrq(void) {
+	printk("SysRq\n");
+	for (int i = 0; i < MAX_TASKS; ++i) {
+		struct task *tsk = task_lookup[i];
+		if (!tsk || !tsk->state)
+			continue;
+		print_task(tsk);
+	}
+}
