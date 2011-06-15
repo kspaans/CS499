@@ -72,7 +72,7 @@ int arp_lookup(uint32_t ip_addr, mac_addr_t *mac_addr, int timeout_msec) {
 
 	int count = 0;
 	while(1) {
-		int res = sendpath("/services/arpserver", ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), mac_addr, sizeof(mac_addr_t), NULL);
+		int res = sendpath("/services/arpserver", ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), mac_addr, sizeof(mac_addr_t));
 		if(res == ERR_ARP_PENDING) {
 			if(count >= timeout_msec) {
 				return ERR_ARP_TIMEOUT;
@@ -223,15 +223,15 @@ static void ethrx_dispatch(uint32_t sts) {
 
 	switch(ntohs(frame.pkt.eth.ethertype)) {
 	case ET_ARP:
-		sendpath("/services/arpserver", ARP_DISPATCH_MSG, &frame.pkt.ip, sizeof(struct arppkt), NULL, 0, NULL);
+		sendpath("/services/arpserver", ARP_DISPATCH_MSG, &frame.pkt.ip, sizeof(struct arppkt), NULL, 0);
 		break;
 	case ET_IPV4:
 		switch(frame.pkt.ip.ip_p) {
 		case IPPROTO_ICMP:
-			sendpath("/services/icmpserver", ICMP_DISPATCH_MSG, &frame, len, NULL, 0, NULL);
+			sendpath("/services/icmpserver", ICMP_DISPATCH_MSG, &frame, len, NULL, 0);
 			break;
 		case IPPROTO_UDP:
-			sendpath("/services/udprx", UDP_RX_DISPATCH_MSG, &frame, len, NULL, 0, NULL);
+			sendpath("/services/udprx", UDP_RX_DISPATCH_MSG, &frame, len, NULL, 0);
 			break;
 		default:
 			printf("unknown IP proto %d\n", frame.pkt.ip.ip_p);

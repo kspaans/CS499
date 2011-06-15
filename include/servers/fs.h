@@ -10,7 +10,7 @@ int mkdir(int dirfd, const char *pathname);
 int mkchan(int dirfd, const char *pathname);
 
 // convenience functions
-int sendpath(const char *pathname, int msgcode, const void *msg, int msglen, void *reply, int replylen, int *replychan);
+int sendpath(const char *pathname, int msgcode, const void *msg, int msglen, void *reply, int replylen);
 int mkopenchan(const char *pathname);
 void close(int dirfd);
 

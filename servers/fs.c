@@ -66,13 +66,13 @@ int mkopenchan(const char *pathname) {
 
 }
 
-int sendpath(const char *pathname, int msgcode, const void *msg, int msglen, void *reply, int replylen, int *replychan) {
+int sendpath(const char *pathname, int msgcode, const void *msg, int msglen, void *reply, int replylen) {
 	int fd = open(ROOT_DIRFD, pathname);
 	if (fd < 0) {
 		printf("sendpath: failed to open %s (%d)\n", pathname, fd);
 		Exit();
 	}
-	int ret = MsgSend(fd, msgcode, msg, msglen, reply, replylen, replychan);
+	int ret = MsgSend(fd, msgcode, msg, msglen, reply, replylen, NULL);
 	close(fd);
 	return ret;
 }

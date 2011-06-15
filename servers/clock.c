@@ -19,11 +19,11 @@ enum clockmsg {
 void msleep(int msec) {
 	if (msec <= 0)
 		return;
-	sendpath("/services/clock", CLOCK_DELAY_MSG, &msec, sizeof(msec), NULL, 0, NULL);
+	sendpath("/services/clock", CLOCK_DELAY_MSG, &msec, sizeof(msec), NULL, 0);
 }
 
 int Time() {
-	return sendpath("/services/clock", CLOCK_TIME_MSG, NULL, 0, NULL, 0, NULL);
+	return sendpath("/services/clock", CLOCK_TIME_MSG, NULL, 0, NULL, 0);
 }
 
 typedef struct {
