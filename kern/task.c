@@ -8,6 +8,7 @@
 #include <kern/kmalloc.h>
 #include <kern/printk.h>
 #include <kern/backtrace.h>
+#include <kern/ksyms.h>
 
 static taskqueue freequeue;
 static taskqueue taskqueues[TASK_NPRIO];
@@ -604,7 +605,7 @@ void print_task(struct task *task) {
 	PRINT_REG(psr);
 	printk("\n");
 
-	printk("stack %08x ", task->regs.pc);
+	printk("stack %08x(%s) ", task->regs.pc, SYMBOL(task->regs.pc));
 	unwind_stack((void *)task->regs.fp);
 	printk("\n");
 

@@ -15,30 +15,31 @@ SECTIONS
     *(.glue_7)
     *(.glue_7t)
     *(.note.gnu.build-id)
+    *(.ksymtab) /* must be last */
   }
 
   .data : /* Initialized data. */
   {
+    data_start = .;
     *(.data)
+    data_end = .;
   }
 
   .bss : /* Uninitialized data. */
   {
+    bss_start = .;
     *(.bss)
     *(COMMON)
+    bss_end = .;
   }
 
-  /DISCARD/ :
-  {
-    *(.ARM.exidx*)
-    *(.gnu.linkonce.armexidx.*)
-    *(.ARM.extab*)
-  }
-
-  runtime_data_start = .;
+  runtime_data_start = ALIGN(0x8000);
 
   .vectors 0x4020FFC8 : /* Exception vectors. */
   {
+    vectors_start = .;
     *(.vectors)
+    vectors_end = .;
   }
+
 }

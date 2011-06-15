@@ -1,0 +1,38 @@
+#!/bin/bash
+
+cat <<EOF
+.macro sym name addr
+.pushsection .ksymtab, "ax"
+.word \addr
+.word 0f
+.subsection 1
+0:
+.string "\name"
+.popsection
+.endm
+.section .ksymtab, "ax"
+.global ksyms_start
+ksyms_start:
+
+sym unmapped 0
+sym vectors vectors_start
+sym unmapped vectors_end
+EOF
+
+while read addr type sym; do
+  if test "$type" = T -o "$type" = t; then
+    echo "sym $sym 0x$addr"
+  fi
+done
+
+cat <<EOF
+sym data data_start
+sym bss bss_start
+sym rdata runtime_data_start
+
+.global ksyms_end
+ksyms_end:
+
+.subsection 1
+.align
+EOF

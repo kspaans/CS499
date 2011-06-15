@@ -1,5 +1,6 @@
 #include <types.h>
 #include <kern/printk.h>
+#include <kern/ksyms.h>
 
 #define MAXDEPTH 20
 
@@ -20,7 +21,7 @@ void unwind_stack(uint32_t *fp) {
 		if (!frame->lr)
 			break;
 		uint32_t addr = (uint32_t)frame->lr - 4;
-		printk("%08x ", addr);
+		printk("%08x(%s) ", addr, SYMBOL(addr));
 		fp = frame->fp;
 	}
 }
