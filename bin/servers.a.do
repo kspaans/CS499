@@ -1,5 +1,5 @@
 PREFIX="../servers/obj/"
-DEPS=(clock.o console.o net.o)
+DEPS=(clock.o console.o net.o fs.o)
 
 mkdir -p ${PREFIX}
 DEPS=${DEPS[@]/#/${PREFIX}/}

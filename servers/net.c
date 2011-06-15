@@ -13,6 +13,7 @@
 
 #include <servers/clock.h>
 #include <servers/net.h>
+#include <servers/fs.h>
 
 /* Important points to keep in mind:
 
@@ -31,6 +32,13 @@
 #define UDPCON_SERVER_IP IP(10,0,0,1)
 #define GATEWAY_IP IP(10,0,0,1)
 #define SUBNET_MASK IP(255,0,0,0)
+
+static int ethrx_fd;
+static int arpserver_fd;
+static int udpconrx_fd;
+
+static void ethrx_notifier();
+static void udpconrx_notifier();
 
 enum netmsg {
 	ETH_RX_NOTIFY_MSG,
@@ -61,9 +69,10 @@ uint16_t ip_checksum(const uint8_t *data, uint16_t len) {
 int arp_lookup(uint32_t ip_addr, mac_addr_t *mac_addr, int timeout_msec) {
 	if((ip_addr & SUBNET_MASK) != (GATEWAY_IP & SUBNET_MASK))
 		return arp_lookup(GATEWAY_IP, mac_addr, timeout_msec);
+
 	int count = 0;
 	while(1) {
-		int res = MsgSend(ARPSERVER_FILENO, ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), mac_addr, sizeof(mac_addr_t), NULL);
+		int res = sendpath("/services/arpserver", ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), mac_addr, sizeof(mac_addr_t), NULL);
 		if(res == ERR_ARP_PENDING) {
 			if(count >= timeout_msec) {
 				return ERR_ARP_TIMEOUT;
@@ -214,15 +223,15 @@ static void ethrx_dispatch(uint32_t sts) {
 
 	switch(ntohs(frame.pkt.eth.ethertype)) {
 	case ET_ARP:
-		MsgSend(ARPSERVER_FILENO, ARP_DISPATCH_MSG, &frame.pkt.ip, sizeof(struct arppkt), NULL, 0, NULL);
+		sendpath("/services/arpserver", ARP_DISPATCH_MSG, &frame.pkt.ip, sizeof(struct arppkt), NULL, 0, NULL);
 		break;
 	case ET_IPV4:
 		switch(frame.pkt.ip.ip_p) {
 		case IPPROTO_ICMP:
-			MsgSend(ICMPSERVER_FILENO, ICMP_DISPATCH_MSG, &frame, len, NULL, 0, NULL);
+			sendpath("/services/icmpserver", ICMP_DISPATCH_MSG, &frame, len, NULL, 0, NULL);
 			break;
 		case IPPROTO_UDP:
-			MsgSend(UDPRX_FILENO, UDP_RX_DISPATCH_MSG, &frame, len, NULL, 0, NULL);
+			sendpath("/services/udprx", UDP_RX_DISPATCH_MSG, &frame, len, NULL, 0, NULL);
 			break;
 		default:
 			printf("unknown IP proto %d\n", frame.pkt.ip.ip_p);
@@ -238,8 +247,12 @@ static void ethrx_dispatch(uint32_t sts) {
 void ethrx_task() {
 	int tid, rcvlen, msgcode;
 
+	ethrx_fd = mkopenchan("/services/ethrx");
+
+	CreateDaemon(0, ethrx_notifier);
+
 	while(1) {
-		rcvlen = MsgReceive(ETHRX_FILENO, &tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(ethrx_fd, &tid, &msgcode, NULL, 0);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -260,7 +273,7 @@ void ethrx_task() {
 void ethrx_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_ETH_RECEIVE);
-		MsgSend(ETHRX_FILENO, ETH_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
+		MsgSend(ethrx_fd, ETH_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }
 
@@ -276,8 +289,10 @@ void icmpserver_task() {
 	} msg;
 	int tid, rcvlen, msgcode;
 
+	int icmpserver_fd = mkopenchan("/services/icmpserver");
+
 	while(1) {
-		rcvlen = MsgReceive(ICMPSERVER_FILENO, &tid, &msgcode, &msg, sizeof(msg));
+		rcvlen = MsgReceive(icmpserver_fd, &tid, &msgcode, &msg, sizeof(msg));
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -352,8 +367,10 @@ void arpserver_task() {
 	struct ht_item addrmap_arr[1537];
 	hashtable_init(&addrmap, addrmap_arr, 1537, NULL, NULL);
 
+	arpserver_fd = mkopenchan("/services/arpserver");
+
 	while(1) {
-		rcvlen = MsgReceive(ARPSERVER_FILENO, &tid, &msgcode, &msg, sizeof(msg));
+		rcvlen = MsgReceive(arpserver_fd, &tid, &msgcode, &msg, sizeof(msg));
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -384,8 +401,10 @@ void udprx_task() {
 	/* TODO */
 	int tid, rcvlen, msgcode;
 
+	int udprx_fd = mkopenchan("/services/udprx");
+
 	while(1) {
-		rcvlen = MsgReceive(UDPRX_FILENO, &tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(udprx_fd, &tid, &msgcode, NULL, 0);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -404,8 +423,12 @@ void udpconrx_task() {
 	/* TODO */
 	int tid, rcvlen, msgcode;
 
+	udpconrx_fd = mkopenchan( "/services/udpconrx");
+
+	CreateDaemon(0, udpconrx_notifier);
+
 	while(1) {
-		rcvlen = MsgReceive(UDPCONRX_FILENO, &tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(udpconrx_fd, &tid, &msgcode, NULL, 0);
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {

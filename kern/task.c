@@ -236,7 +236,7 @@ int syscall_ChannelClose(struct task *task, int no) {
 	return 0;
 }
 
-int syscall_ChannelDup(struct task *task, int no, int flags) {
+int syscall_ChannelDup(struct task *task, int oldfd, int newfd, int flags) {
 	// TODO
 	return 0;
 }
@@ -569,7 +569,7 @@ void task_syscall(int code, struct task *task) {
 		ret = syscall_ChannelClose(task, task->regs.r0);
 		break;
 	case SYS_CHANNELDUP:
-		ret = syscall_ChannelDup(task, task->regs.r0, task->regs.r1);
+		ret = syscall_ChannelDup(task, task->regs.r0, task->regs.r1, task->regs.r2);
 		break;
 	default:
 		ret = ERR_NOSYS;

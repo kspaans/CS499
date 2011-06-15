@@ -7,6 +7,9 @@
 #include <drivers/uart.h>
 #include <mem.h>
 
+static void consoletx_notifier();
+static void consolerx_notifier();
+
 enum consolemsg {
 	CONSOLE_TX_NOTIFY_MSG,
 	CONSOLE_RX_NOTIFY_MSG,
@@ -52,6 +55,8 @@ void consoletx_task() {
 	char rcvbuf[CHUNK_SIZE];
 	char *cur;
 	int newline_seen;
+
+	CreateDaemon(0, consoletx_notifier);
 
 	charqueue chq;
 	char chq_arr[TX_BUF_MAX];
@@ -119,6 +124,8 @@ void consoletx_task() {
 void consolerx_task() {
 	int tid, rcvlen, msgcode;
 
+	CreateDaemon(0, consolerx_notifier);
+
 	intqueue tidq;
 	int tidq_arr[RX_TIDS_MAX];
 	intqueue_init(&tidq, tidq_arr, RX_TIDS_MAX);
@@ -157,14 +164,14 @@ void consolerx_task() {
 	}
 }
 
-void consoletx_notifier() {
+static void consoletx_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_CONSOLE_TRANSMIT);
 		MsgSend(STDOUT_FILENO, CONSOLE_TX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }
 
-void consolerx_notifier() {
+static void consolerx_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_CONSOLE_RECEIVE);
 		MsgSend(STDIN_FILENO, CONSOLE_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);

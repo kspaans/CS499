@@ -8,12 +8,7 @@
 
 #define STDIN_FILENO 0
 #define STDOUT_FILENO 1
-#define CLOCK_FILENO 2
-#define ETHRX_FILENO 3
-#define ICMPSERVER_FILENO 4
-#define ARPSERVER_FILENO 5
-#define UDPRX_FILENO 6
-#define UDPCONRX_FILENO 7
+#define ROOT_DIRFD 2
 
 /* Publically query-able task state. */
 

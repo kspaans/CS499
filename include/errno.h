@@ -13,5 +13,9 @@
 #define EMFILE -9
 #define EINVAL -10
 #define EBADF -11
+#define ESRCH -12
+#define EBADMSG -13
+#define ENOENT -14
+#define ENOSPC -15
 
 #endif /* ERRNO_H */

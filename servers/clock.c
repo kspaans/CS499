@@ -4,6 +4,11 @@
 #include <syscall.h>
 #include <task.h>
 #include <servers/clock.h>
+#include <servers/fs.h>
+
+static void clockserver_notifier();
+
+static int clock_fd;
 
 enum clockmsg {
 	CLOCK_NOTIFY_MSG,
@@ -12,12 +17,13 @@ enum clockmsg {
 };
 
 void msleep(int msec) {
-	if(msec <= 0) return;
-	MsgSend(CLOCK_FILENO, CLOCK_DELAY_MSG, &msec, sizeof(msec), NULL, 0, NULL);
+	if (msec <= 0)
+		return;
+	sendpath("/services/clock", CLOCK_DELAY_MSG, &msec, sizeof(msec), NULL, 0, NULL);
 }
 
 int Time() {
-	return MsgSend(CLOCK_FILENO, CLOCK_TIME_MSG, NULL, 0, NULL, 0, NULL);
+	return sendpath("/services/clock", CLOCK_TIME_MSG, NULL, 0, NULL, 0, NULL);
 }
 
 typedef struct {
@@ -69,9 +75,14 @@ void clockserver_task() {
 	int msgcode;
 	int time = 0;
 	delayinfo delays[DELAYS];
+
+	clock_fd = mkopenchan("/services/clock");
+
+	CreateDaemon(0, clockserver_notifier);
+
 	int num_delays = 0;
 	while(1) {
-		rcvlen = MsgReceive(CLOCK_FILENO, &tid, &msgcode, &rcvdata, sizeof(rcvdata));
+		rcvlen = MsgReceive(clock_fd, &tid, &msgcode, &rcvdata, sizeof(rcvdata));
 		if(rcvlen < 0) {
 			printf("ERROR: Clock server receive failed: %d\n", rcvlen);
 			continue;
@@ -113,9 +124,9 @@ void clockserver_task() {
 	}
 }
 
-void clockserver_notifier() {
+static void clockserver_notifier() {
 	while(1) {
 		AwaitEvent(EVENT_CLOCK_TICK);
-		MsgSend(CLOCK_FILENO, CLOCK_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
+		MsgSend(clock_fd, CLOCK_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }

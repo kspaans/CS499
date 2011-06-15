@@ -6,23 +6,15 @@
 #include <syscall.h>
 #include <lib.h>
 
-void consolerx_notifier();
-void consoletx_notifier();
-
 void consoletx_task();
 void consolerx_task();
-
 void clockserver_task();
-void clockserver_notifier();
-
 void ethrx_task();
 void icmpserver_task();
 void arpserver_task();
 void udprx_task();
 void udpconrx_task();
-
-void ethrx_notifier();
-void udpconrx_notifier();
+void fileserver_task();
 
 #include <eth.h>
 #include <servers/net.h>
@@ -277,28 +269,18 @@ __attribute__((unused)) static void hashtable_test() {
 void userprog_init() {
 	ChannelOpen(); /* stdin */
 	ChannelOpen(); /* stdout */
-	ChannelOpen(); /* clockserver */
-	ChannelOpen(); /* ethrx */
-	ChannelOpen(); /* icmpserver */
-	ChannelOpen(); /* arpserver */
-	ChannelOpen(); /* udprx */
-	ChannelOpen(); /* udpconrx */
+	ChannelOpen(); /* fs */
 
 	CreateDaemon(1, consoletx_task);
 	CreateDaemon(1, consolerx_task);
-	CreateDaemon(0, consoletx_notifier);
-	CreateDaemon(0, consolerx_notifier);
-
 	CreateDaemon(1, clockserver_task);
-	CreateDaemon(0, clockserver_notifier);
-
 	CreateDaemon(1, ethrx_task);
 	CreateDaemon(1, icmpserver_task);
 	CreateDaemon(1, arpserver_task);
 	CreateDaemon(1, udprx_task);
 	CreateDaemon(2, udpconrx_task);
-	CreateDaemon(0, ethrx_notifier);
-	CreateDaemon(1, udpconrx_notifier);
+	CreateDaemon(2, udpconrx_task);
+	CreateDaemon(2, fileserver_task);
 
 	printf("hello, world\n");
 
