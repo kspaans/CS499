@@ -56,12 +56,12 @@ int mkopenchan(const char *pathname) {
 	int ret = mkchan(ROOT_DIRFD, pathname);
 	if (ret) {
 		printf("mkopenchan: failed to make %s (%d)\n", pathname, ret);
-		return ret;
+		Exit();
 	}
 	int fd = open(ROOT_DIRFD, pathname);
 	if (fd < 0) {
 		printf("mkopenchan: failed to open %s (%d)\n", pathname, fd);
-		return fd;
+		Exit();
 	}
 	return fd;
 
