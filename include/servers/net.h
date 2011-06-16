@@ -3,9 +3,9 @@
 
 #include <ip.h>
 
-#define ERR_ETH_BADTX -256
-#define ERR_ARP_PENDING -257
-#define ERR_ARP_TIMEOUT -258
+#define EETH_BADTX -256
+#define EARP_PENDING -257
+#define EARP_TIMEOUT -258
 
 int arp_lookup(uint32_t ip_addr, mac_addr_t *mac_addr, int timeout_msec);
 int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data, uint16_t len);

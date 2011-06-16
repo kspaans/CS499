@@ -13,7 +13,6 @@
 /* Publically query-able task state. */
 
 enum taskstate {
-	TASK_UNBORN,		/* this one is false */
 	TASK_RUNNING,		/* Active or ready to run */
 	TASK_RECV_BLOCKED,	/* Called MsgSend(), waiting for MsgReceive() */
 	TASK_REPLY_BLOCKED,	/* Called MsgSend(), waiting for MsgReply() */

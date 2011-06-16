@@ -95,7 +95,7 @@ void consoletx_task() {
 			// Enqueue the rest of the new data
 			while(rcvlen > 0) {
 				if(charqueue_full(&chq)) {
-					MsgReplyStatus(tid, ERR_NOMEM);
+					MsgReplyStatus(tid, ENOMEM);
 					break;
 				}
 				if(!newline_seen && *cur == '\n') {
@@ -115,7 +115,7 @@ void consoletx_task() {
 				uart_intenable(UART_THR_IT);
 			break;
 		default:
-			MsgReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ENOFUNC);
 			continue;
 		}
 	}
@@ -149,13 +149,13 @@ void consolerx_task() {
 			break;
 		case CONSOLE_RX_REQ_MSG:
 			if(intqueue_full(&tidq)) {
-				MsgReplyStatus(tid, ERR_NOMEM);
+				MsgReplyStatus(tid, ENOMEM);
 				continue;
 			}
 			intqueue_push(&tidq, tid);
 			break;
 		default:
-			MsgReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ENOFUNC);
 			continue;
 		}
 		while(!intqueue_empty(&tidq) && !charqueue_empty(&chq))

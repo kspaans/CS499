@@ -73,9 +73,9 @@ int arp_lookup(uint32_t ip_addr, mac_addr_t *mac_addr, int timeout_msec) {
 	int count = 0;
 	while(1) {
 		int res = sendpath("/services/arpserver", ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), mac_addr, sizeof(mac_addr_t));
-		if(res == ERR_ARP_PENDING) {
+		if(res == EARP_PENDING) {
 			if(count >= timeout_msec) {
-				return ERR_ARP_TIMEOUT;
+				return EARP_TIMEOUT;
 			} else {
 				msleep(50);
 				count += 50;
@@ -89,7 +89,7 @@ int arp_lookup(uint32_t ip_addr, mac_addr_t *mac_addr, int timeout_msec) {
 static int tx_wait_sts(uint32_t btag) {
 	uint32_t sts = eth_tx_wait_sts(ETH1_BASE);
 	if((sts >> 16) != (btag >> 16))
-		return ERR_INVAL;
+		return EINVAL;
 	if(sts & ETH_TX_STS_ERROR)
 		return -(sts & ETH_TX_STS_ERROR) - 0x10000;
 	return 0;
@@ -153,7 +153,7 @@ int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data
 	struct udphdr udp;
 
 	if(len > UDPMTU)
-		return ERR_INVAL;
+		return EINVAL;
 
 	int res = arp_lookup(addr, &eth.dest, 100);
 	if(res < 0)
@@ -264,7 +264,7 @@ void ethrx_task() {
 			eth_intenable(ETH_INT_RSFL);
 			break;
 		default:
-			MsgReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ENOFUNC);
 			continue;
 		}
 	}
@@ -320,7 +320,7 @@ void icmpserver_task() {
 			}
 			break;
 		default:
-			MsgReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ENOFUNC);
 			continue;
 		}
 	}
@@ -385,13 +385,13 @@ void arpserver_task() {
 		case ARP_QUERY_MSG:
 			if(hashtable_get(&addrmap, msg.addr, (void **)&loc) < 0) {
 				send_arp_request(msg.addr);
-				MsgReplyStatus(tid, ERR_ARP_PENDING);
+				MsgReplyStatus(tid, EARP_PENDING);
 			} else {
 				MsgReply(tid, 0, loc, sizeof(mac_addr_t), -1);
 			}
 			break;
 		default:
-			MsgReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ENOFUNC);
 			continue;
 		}
 	}
@@ -413,7 +413,7 @@ void udprx_task() {
 		case UDP_RX_REQ_MSG:
 		case UDP_RX_RELEASE_MSG:
 		default:
-			MsgReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ENOFUNC);
 			continue;
 		}
 	}
@@ -435,7 +435,7 @@ void udpconrx_task() {
 		case UDPCON_RX_NOTIFY_MSG:
 		case UDPCON_RX_REQ_MSG:
 		default:
-			MsgReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ENOFUNC);
 			continue;
 		}
 	}

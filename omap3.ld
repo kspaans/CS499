@@ -2,6 +2,13 @@ ENTRY(omap3_start)
 
 SECTIONS
 {
+  .vectors 0x4020FFC8 : /* Exception vectors. */
+  {
+    vectors_start = .;
+    *(.vectors)
+    vectors_end = .;
+  }
+
   . = 0x80000000;
 
   .text : /* The actual instructions. */
@@ -34,12 +41,4 @@ SECTIONS
   }
 
   runtime_data_start = ALIGN(0x8000);
-
-  .vectors 0x4020FFC8 : /* Exception vectors. */
-  {
-    vectors_start = .;
-    *(.vectors)
-    vectors_end = .;
-  }
-
 }

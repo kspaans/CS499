@@ -144,12 +144,12 @@ static void __attribute__((noreturn)) task_run(void (*code)()) {
 
 static int do_Create(struct task *task, int priority, void (*code)(), int daemon) {
 	if(priority < 0 || priority >= TASK_NPRIO)
-		return ERR_INVAL;
+		return EINVAL;
 
 	struct task *newtask = task_alloc();
 
 	if(newtask == NULL)
-		return ERR_NOMEM;
+		return ENOMEM;
 
 	if(daemon != TASK_DAEMON)
 		nondaemon_count++;
@@ -261,7 +261,7 @@ void syscall_Exit(struct task *task) {
 		} else {
 			/* Unblock sender and tell it the transaction failed. */
 			sender->state = TASK_RUNNING;
-			sender->regs.r0 = ERR_INTR;
+			sender->regs.r0 = EINTR;
 			task_enqueue(sender);
 		}
 	}
@@ -324,7 +324,7 @@ int syscall_MsgSend(struct task *sender, int channel, int msgcode, const_useradd
 		taskqueue_push(&chan->senders, sender);
 	}
 	/* Return INTR here. Real return value will be posted by syscall_Reply. */
-	return ERR_INTR;
+	return EINTR;
 }
 
 int syscall_MsgReceive(struct task *receiver, int channel, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen) {
@@ -341,13 +341,13 @@ int syscall_MsgReceive(struct task *receiver, int channel, useraddr_t tid, usera
 	receiver->srr.recv.len = msglen;
 	if(chan->senders.start == NULL) {
 		taskqueue_push(&chan->receivers, receiver);
-		return ERR_INTR; // wait for send
+		return EINTR; // wait for send
 	}
 
 	struct task *sender = taskqueue_pop(&chan->senders);
 	if(sender->state != TASK_RECV_BLOCKED) {
 		printk("KERNEL FATAL: Task had a non-blocked task on receive queue.\n");
-		return ERR_STATE;
+		return ESTATE;
 	}
 	handle_receive(receiver, sender);
 	return receiver->regs.r0; // receiver unblocked
@@ -356,9 +356,9 @@ int syscall_MsgReceive(struct task *receiver, int channel, useraddr_t tid, usera
 int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen, int replychan) {
 	struct task *sender = get_task(tid);
 	if(sender == NULL || sender->state == TASK_DEAD)
-		return ERR_NOTID;
+		return ESRCH;
 	if(sender->state != TASK_REPLY_BLOCKED)
-		return ERR_STATE;
+		return ESTATE;
 	if(replychan >= MAX_TASK_CHANNELS || replychan < -1)
 		return EINVAL;
 
@@ -375,7 +375,7 @@ int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t re
 	/* Copy the message. */
 	if(sender->srr.send.rbuf && reply) {
 		if(sender->srr.send.rlen < replylen) {
-			ret = status = ERR_NOSPC;
+			ret = status = ENOSPC;
 			goto out;
 		} else {
 			memcpy(sender->srr.send.rbuf, reply, replylen);
@@ -408,9 +408,9 @@ out:
 int syscall_MsgRead(struct task *task, int tid, useraddr_t buf, int offset, int len) {
 	struct task *sender = get_task(tid);
 	if(sender == NULL || sender->state == TASK_DEAD)
-		return ERR_NOTID;
+		return ESRCH;
 	if(sender->state != TASK_REPLY_BLOCKED)
-		return ERR_STATE;
+		return ESTATE;
 
 	if(sender->srr.send.buf == NULL)
 		return 0;
@@ -426,13 +426,13 @@ int syscall_MsgForward(struct task *task, int srctid, int dsttid, int msgcode) {
 #if 0
 	struct task *sender = get_task(srctid);
 	if(sender == NULL || sender->state == TASK_DEAD)
-		return ERR_NOTID;
+		return ESRCH;
 	if(sender->state != TASK_REPLY_BLOCKED)
-		return ERR_STATE;
+		return ESTATE;
 
 	struct task *receiver = get_task(dsttid);
 	if(receiver == NULL || receiver->state == TASK_DEAD)
-		return ERR_NOTID;
+		return ESRCH;
 
 	sender->state = TASK_RECV_BLOCKED;
 	sender->srr.send.tid = dsttid;
@@ -464,14 +464,14 @@ void event_unblock_one(int eventid, int return_value) {
 
 int syscall_AwaitEvent(struct task *task, int eventid) {
 	if(eventid < 0 || eventid >= NEVENTS)
-		return ERR_INVAL;
+		return EINVAL;
 
 	task->state = TASK_EVENT_BLOCKED;
 	task->srr.event.id = eventid;
 	taskqueue_push(&eventqueues[eventid], task);
 
 	// Return INTR... Real value will be posted when unblocked.
-	return ERR_INTR;
+	return EINTR;
 }
 
 int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
@@ -488,7 +488,7 @@ int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
 	} else {
 		struct task *othertask = get_task(tid);
 		if(othertask == NULL)
-			return ERR_NOTID;
+			return ESRCH;
 		if(!stat)
 			return 0;
 		st.tid = othertask->tid;
@@ -577,7 +577,7 @@ void task_syscall(int code, struct task *task) {
 		ret = syscall_ChannelDup(task, task->regs.r0, task->regs.r1, task->regs.r2);
 		break;
 	default:
-		ret = ERR_NOSYS;
+		ret = ENOSYS;
 	}
 	task->regs.r0 = ret;
 }
@@ -585,7 +585,8 @@ void task_syscall(int code, struct task *task) {
 /// debug
 #define PRINT_REG(x) printk(#x ":%08x ", task->regs.x)
 void print_task(struct task *task) {
-	if(task == NULL) return;
+	if(task == NULL)
+		return;
 	printk("task %p tid:%08x ptid:%08x prio:%d, state:%d\n", task, task->tid, task->ptid, task->priority, task->state);
 	PRINT_REG(r0);
 	PRINT_REG(r1);
@@ -618,10 +619,7 @@ void print_task(struct task *task) {
 
 void sysrq(void) {
 	printk("SysRq\n");
-	for (int i = 0; i < MAX_TASKS; ++i) {
-		struct task *tsk = task_lookup[i];
-		if (!tsk || !tsk->state)
-			continue;
-		print_task(tsk);
+	for (int i=0; i < next_tidx-1; ++i) {
+		print_task(task_lookup[i]);
 	}
 }

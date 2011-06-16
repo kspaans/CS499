@@ -99,14 +99,14 @@ void clockserver_task() {
 		case CLOCK_DELAY_MSG:
 			if(rcvlen < sizeof(int)) {
 				printf("Bad clock message");
-				MsgReplyStatus(tid, ERR_INVAL);
+				MsgReplyStatus(tid, EINVAL);
 				break;
 			}
 			rcvdata += time;
 			if(rcvdata <= time) {
 				MsgReplyStatus(tid, 0);
 			} else if (num_delays == DELAYS) {
-				MsgReplyStatus(tid, ERR_NOMEM);
+				MsgReplyStatus(tid, ENOMEM);
 			} else {
 				delayinfo current_info;
 				current_info.tid = tid;
@@ -118,7 +118,7 @@ void clockserver_task() {
 			MsgReplyStatus(tid, time);
 			break;
 		default:
-			MsgReplyStatus(tid, ERR_NOFUNC);
+			MsgReplyStatus(tid, ENOFUNC);
 			break;
 		}
 	}

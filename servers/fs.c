@@ -5,6 +5,7 @@
 #include <task.h>
 #include <string.h>
 #include <servers/fs.h>
+#include <kern/printk.h>
 
 #define FILE_MAX 32
 
