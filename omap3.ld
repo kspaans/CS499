@@ -33,7 +33,10 @@ SECTIONS
     bss_end = .;
   }
 
-  runtime_data_start = ALIGN(0x8000);
+  . = ALIGN(0x4000);
+
+  page_table_start = .;
+  runtime_data_start = . + 0x4000;
 
   .vectors 0x4020FFC8 : /* Exception vectors. */
   {

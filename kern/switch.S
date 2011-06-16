@@ -186,6 +186,7 @@ irq_enter:
 prm_reset:
 	ldr r0, prm_rstctrl
 	mov r1, #6 @ RST_DPLL3 | RST_GS
+	push {r10}
 	str r1, [r0]
 prm_rstctrl:
 	.word 0x48307250 @ PRM_RSTCTRL
