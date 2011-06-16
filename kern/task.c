@@ -609,7 +609,7 @@ void print_task(struct task *task) {
 	PRINT_REG(psr);
 	printk("\n");
 
-	printk("stack pc:%08x(%s) lr:%08x(%s)", task->regs.pc, SYMBOL(task->regs.pc),
+	printk("stack pc:%08x(%s) lr:%08x(%s) ", task->regs.pc, SYMBOL(task->regs.pc),
 	       task->regs.lr, SYMBOL(task->regs.lr));
 	unwind_stack((void *)task->regs.fp);
 	printk("\n");
