@@ -295,5 +295,4 @@ void userprog_init() {
 	ASSERTNOERR(CreateDaemon(4, flash_leds));
 	//ASSERTNOERR(Create(4, console_loop));
 	ASSERTNOERR(Create(4, udp_console_loop));
-
 }

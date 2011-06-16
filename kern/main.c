@@ -35,8 +35,12 @@ int main() {
 	eth_init();
 	uart_init();
 
-	/* silly IP hack for now */
+	printk("MAC address: %02x:%02x:%02x:%02x:%02x:%02x\n",
+		my_mac.addr[0], my_mac.addr[1], my_mac.addr[2],
+		my_mac.addr[3], my_mac.addr[4], my_mac.addr[5]);
+	/* XXX silly IP hack for now */
 	my_ip = IP(10,0,0,my_mac.addr[5]);
+	printk("IP address: 10.0.0.%d\n", my_mac.addr[5]);
 
 	/* For some reason, turning on the caches causes the kernel to hang after finishing
 	   the third invocation. Maybe we have to clear the caches here, or enable the MMU. */
@@ -57,7 +61,7 @@ int main() {
 	get_task(idle_tid)->regs.psr |= 0x1f;
 
 	/* Initialize first user program */
-	syscall_Create(NULL, 7, userprog_init);
+	syscall_Create(NULL, 6, userprog_init);
 
 	while (nondaemon_count > 0) {
 		next = task_dequeue();
