@@ -279,7 +279,6 @@ void userprog_init() {
 	CreateDaemon(1, arpserver_task);
 	CreateDaemon(1, udprx_task);
 	CreateDaemon(2, udpconrx_task);
-	CreateDaemon(2, udpconrx_task);
 	CreateDaemon(2, fileserver_task);
 
 	printf("hello, world\n");

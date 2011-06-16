@@ -61,7 +61,7 @@ int main() {
 #endif
 
 	/* Initialize first user program */
-	syscall_Create(NULL, 2, userprog_init);
+	syscall_Create(NULL, 7, userprog_init);
 
 	while (nondaemon_count > 0) {
 		next = task_dequeue();
