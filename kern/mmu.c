@@ -19,6 +19,8 @@
 #define FLD80 0x800c0c0a
 #define FLD8F 0x8f0c0c0a
 
+uint32_t pagetable[0x1000] __attribute__((aligned(0x4000)));
+
 // 16 * 1024 needed for the page table, 14 bits of stuff see docs/mmu.txt for
 // which addresses need to be in the table
 /*
