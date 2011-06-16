@@ -5,6 +5,8 @@
    of #includes up top. */
 #include <syscall.h>
 #include <lib.h>
+#include <kern/printk.h>
+#include <servers/fs.h>
 
 void consoletx_task();
 void consolerx_task();
@@ -91,6 +93,7 @@ __attribute__((unused)) static void memcpy_bench() {
 
 #define SRR_RUNS 16384
 int srrbench_chan;
+__attribute__((unused))
 static void srrbench_child() {
 	char buf[1024];
 	int tid;
@@ -147,6 +150,7 @@ __attribute__((unused)) static void task_reclamation_test() {
 	Create(4, task_reclamation_2);
 }
 
+#if 0
 int advsrr_chan1;
 #define TESTRECV(i,buf,bufsz) { \
 	msglen = MsgReceive(advsrr_chan1, &tid, &msgcode, buf, bufsz); \
@@ -171,7 +175,9 @@ static void advsrr_child2() {
 #endif
 }
 static void advsrr_child1() {
+#if 0
 	int child2 = Create(1, advsrr_child2);
+#endif
 	int tid, msgcode, msglen;
 	char msgbuf[32];
 	TESTRECV(1, (char *)NULL, 16);
@@ -200,7 +206,9 @@ __attribute__((unused)) static void advsrr_task() {
 	advsrr_chan1 = ChannelOpen();
 	char data[16];
 	memcpy(data, "abcdefghijklmnopqrstuvwxyz", 16);
+#if 0
 	int child1 = Create(0, advsrr_child1);
+#endif
 #define TESTSEND(i,buf,bufsz) { \
 	printf("Send #%d: %d\n", i, MsgSend(advsrr_chan1, 1, buf, bufsz, NULL, 0, NULL)); \
 }
@@ -235,6 +243,7 @@ __attribute__((unused)) static void advsrr_task() {
 	TESTSEND(6, data, 16);
 #endif
 }
+#endif
 
 static uint32_t dumbhash(int x) { return 0; }
 static void hashtable_print(hashtable *ht) {
