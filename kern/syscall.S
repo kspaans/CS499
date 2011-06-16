@@ -1,16 +1,5 @@
 #include <kern/syscallno.h>
 @ Preprocessor workaround: # stringizes the argument, so it must be avoided.
-#ifdef SUPERVISOR_TASKS
-#define SYSCALL(funcname, callno) \
-	.global funcname; \
-	.global kern_##funcname; \
-	.type funcname, %function; \
-funcname: \
-	mov ip, lr; \
-	swi	callno; \
-	mov lr, ip; \
-	bx	lr;
-#else
 #define SYSCALL(funcname, callno) \
 	.global funcname; \
 	.global kern_##funcname; \
@@ -18,7 +7,6 @@ funcname: \
 funcname: \
 	swi	callno; \
 	bx	lr;
-#endif
 
 .text
 .align	2

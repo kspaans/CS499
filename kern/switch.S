@@ -8,11 +8,7 @@ get_user_psr:
 	mrs   r0, cpsr
 	@ Set psr to user mode
 	bic   r0, r0, #0x1f
-#ifdef SUPERVISOR_TASKS
-	orr   r0, r0, #0x13
-#else
 	orr   r0, r0, #0x10
-#endif
 	@ Enable IRQs, enable FIQs
 	bic   r0, r0, #0xc0	@ 0x80=IRQ disable, 0x40=FIQ disable
 	@ Clear condition codes
@@ -47,11 +43,6 @@ init_cpumodes:
 	msr   cpsr_c, r0
 	bx    lr
 
-#ifdef SUPERVISOR_TASKS
-curkstack:
-	.word 0
-#endif
-
 .global task_activate
 .type task_activate, %function
 @ task_activate(struct task *task)
@@ -65,32 +56,11 @@ task_activate:
 	str   r0, [sp, #-4]!
 	@ Load user registers
 	add   r1, r0, #12
-#ifdef SUPERVISOR_TASKS
-	str   sp, curkstack
-	ldmia r1, {r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr}
-#else
 	ldmia r1, {r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr}^
 	@ No banked register access after this, so no nop required
-#endif
 	@ Load pc and spsr
 	ldmia r0, {r0, r1, pc}^
 swi_enter:
-#ifdef SUPERVISOR_TASKS
-	@ Stick stuff on the user stack
-	stmdb sp, {sl, fp, ip, sp}
-	mov   sl, sp
-	@ Grab task struct from kernel stack
-	ldr   sp, curkstack
-	ldr   fp, [sp], #4
-	mov   ip, fp
-	stmia ip!, {r0, r1, lr}
-	stmia ip!, {r2, r3, r4, r5, r6, r7, r8, r9}
-	ldmdb sl, {r0, r1, r2, r3}
-	stmia ip!, {r0, r1, r2, r3}
-	mov   r0, fp
-	@ Restore some of our registers
-	ldmfd sp, {r4, r5, r6, r7, r8, r9, sl, fp, ip}
-#else
 	@ Give ourselves some temporary room
 	stmdb sp, {r0, r1}
 	@ Grab task struct from r0
@@ -104,7 +74,6 @@ swi_enter:
 	stmia r0, {r2, r3, lr}
 	@ We've got r0, so adjust the stack past it
 	add   sp, sp, #4
-#endif
 	@ Store spsr
 	mrs   r1, spsr
 	str   r1, [r0, #64]
@@ -135,22 +104,6 @@ irq_enter:
 	@bic   r0, r0, #0x1f @ Unnecessary because we are in IRQ or FIQ mode (0x11 or 0x12).
 	orr   r0, r0, #0x13
 	msr   cpsr_c, r0
-#ifdef SUPERVISOR_TASKS
-	@ Restore kernel stack
-	ldr   r0, curkstack
-	@ Stash spsr temporarily
-	str   r1, [r0, #-4]
-	@ Grab task struct
-	ldr   r1, [r0]
-	@ Stash user registers
-	add   r1, r1, #12	@ skip r0, r1, pc
-	stmia r1, {r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr}
-	mov   sp, r0
-	sub   r0, r1, #12
-	@ Store spsr
-	ldr   r1, [sp, #-4]
-	str   r1, [r0, #64]
-#else
 	@ Grab task struct from r0
 	ldr   r0, [sp]
 	@ Store spsr
@@ -159,18 +112,12 @@ irq_enter:
 	add   r1, r0, #12	@ skip r0, r1, pc
 	stmia r1, {r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr}^
 	nop	@ needed to access banked regs after stm ^
-#endif
 	@ Stash user r0, r1 and return address
 	ldr   r2, irq_stack_ptr
 	ldmia r2, {r3, r4, r5} @ user r0, r1 and pc (saved lr in irq mode)
 	stmia r0, {r3, r4, r5}
 	@ We've got r0, so adjust the stack past it
 	add   sp, sp, #4
-
-#ifdef SUPERVISOR_TASKS
-	@ Restore our registers
-	ldmfd sp, {r4, r5, r6, r7, r8, r9, sl, fp, ip, lr}
-#endif
 
 	@ handle irq
 	@ void long task_irq()

@@ -53,12 +53,8 @@ int main() {
 	/* Initialize idle task */
 	int idle_tid = syscall_CreateDaemon(NULL, 7, idle);
 
-#ifdef SUPERVISOR_TASKS
-	(void)idle_tid;
-#else
 	 // execute idle task in system mode, so that it can sleep the processor
 	get_task(idle_tid)->regs.psr |= 0x1f;
-#endif
 
 	/* Initialize first user program */
 	syscall_Create(NULL, 7, userprog_init);

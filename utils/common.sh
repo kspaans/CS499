@@ -19,9 +19,6 @@ CFLAGS+=" -fverbose-asm"
 # No unqualified builtin functions
 CFLAGS+=" -fno-builtin"
 
-# Supervisor-mode tasks
-CFLAGS+=" -DSUPERVISOR_TASKS"
-
 if [ "${DEBUG}" != "" ] ; then
     CFLAGS+= -g -DDEBUG -Wno-unused-function
 fi
