@@ -1,6 +1,5 @@
 #!/bin/bash
 
-redo-ifchange ../utils/gensyms
-redo-ifchange kern.map
+redo-ifchange ../utils/gensyms kern.map
 
 ../utils/gensyms < kern.map
