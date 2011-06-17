@@ -24,3 +24,12 @@ init_mmu:
 	mrc p15, 0, r1, c1, c0, 0 @ read CP15 Register 1
 	orr r1, r1, #0x1 	  @ bit 0 to 1 to enable MMU
 	mcr p15, 0, r1, c1, c0, 0 @ enable MMUs
+	bx lr
+
+@ First argument should be a pointer to the page table
+.global set_ttbr
+.type set_ttbr, %function
+set_ttbr:
+	@mrc p15, 0, r1, c2, c0, 0 @ read TTBR0, upper 14 bits are pointer, leave the rest to be zero
+	mcr p15, 0, r0, c2, c0, 0 @ write page table pointer, it should be aligned to a 16KB boundary
+	bx lr

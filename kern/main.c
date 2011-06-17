@@ -9,6 +9,7 @@
 #include <lib.h>
 #include <syscall.h>
 #include <ip.h>
+#include <mmu.h>
 
 #include <servers/clock.h>
 #include <servers/console.h>
@@ -44,9 +45,11 @@ int main() {
 
 	/* For some reason, turning on the caches causes the kernel to hang after finishing
 	   the third invocation. Maybe we have to clear the caches here, or enable the MMU. */
-	printk("Tralala before caches\r\n");
+	//printk("Tralala before caches\r\n");
+	//prep_pagetable();
+	//init_mmu(); // will make the kernel hang
 	//init_cache(); // still broken
-	printk("Tralala after  caches\r\n");
+	//printk("Tralala after  caches\r\n");
 
 	/* Initialize other interrupts */
 	init_interrupts();

@@ -1,6 +1,6 @@
 #ifndef MMU_H
 #define MMU_H
 
-void prep_mmu();
+void prep_pagetable();
 
 #endif
