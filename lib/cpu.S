@@ -32,4 +32,6 @@ init_mmu:
 set_ttbr:
 	@mrc p15, 0, r1, c2, c0, 0 @ read TTBR0, upper 14 bits are pointer, leave the rest to be zero
 	mcr p15, 0, r0, c2, c0, 0 @ write page table pointer, it should be aligned to a 16KB boundary
+	mov r1, #0xFF
+	mcr p15, 0, r1, c3, c0, 0 @ set DACR, so that the domain is readable
 	bx lr
