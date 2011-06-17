@@ -16,8 +16,8 @@ CFLAGS+=" -fno-omit-frame-pointer -mapcs-frame -marm"
 # Make assembly output more readable
 CFLAGS+=" -fverbose-asm"
 
-# No unqualified builtin functions
-CFLAGS+=" -fno-builtin"
+# No C library
+CFLAGS+=" -ffreestanding"
 
 if [ "${DEBUG}" != "" ] ; then
     CFLAGS+= -g -DDEBUG -Wno-unused-function
