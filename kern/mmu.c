@@ -27,6 +27,8 @@
 #define FLD40 0x400c0c0a
 #define FLD80 0x800c0c0a
 #define FLD90 0x900c0c0a
+#define FLD_FLAGS_DEVICE 0xc0c06
+#define FLD_FLAGS_NORMAL 0xc0c0a
 
 uint32_t pagetable[0x1000] __attribute__((aligned(0x4000)));
 
@@ -47,7 +49,15 @@ void prep_pagetable()
 
 	// The top 14 bits of the VA make up the table index, used here to add
 	// the entries and their replicas.
+	// ROBERT EDIT: Just map all memory. Lower 2GB is device, upper 2GB is RAM
 	for (i = 0; i < 16; i += 1) {
+		for(int j=0; j<0x80; j++) {
+			pagetable[j*16 + i] = (j<<24) | FLD_FLAGS_DEVICE;
+		}
+		for(int j=0x80; j<0x100; j++) {
+			pagetable[j*16 + i] = (j<<24) | FLD_FLAGS_DEVICE;
+		}
+		/*
 		pagetable[0x0ac0 / 4 + i] = FLD2B;
 		pagetable[0x0b00 / 4 + i] = FLD2C;
 		pagetable[0x1000 / 4 + i] = FLD40;
@@ -55,6 +65,7 @@ void prep_pagetable()
 		pagetable[0x1240 / 4 + i] = FLD49;
 		pagetable[0x2000 / 4 + i] = FLD80;
 		pagetable[0x2400 / 4 + i] = FLD90;
+		*/
 	}
 
 	//memset(pagetable, 0, sizeof(pagetable)); // start will invalid FLDs -- all 0s
