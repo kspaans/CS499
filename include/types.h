@@ -1,6 +1,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#define arraysize(x) (sizeof(x)/sizeof(*(x)))
+
 typedef signed   int8_t   __attribute__((__mode__(__QI__)));
 typedef unsigned uint8_t  __attribute__((__mode__(__QI__)));
 

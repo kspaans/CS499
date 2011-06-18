@@ -1,5 +1,5 @@
 PREFIX="../kern/obj/"
-DEPS=(backtrace.o interrupt.o kmalloc.o main.o printk.o switch.o syscall.o task.o userprog.o ksyms.o mmu.o)
+DEPS=(backtrace.o interrupt.o kmalloc.o main.o printk.o switch.o syscall.o task.o userprog.o ksyms.o mmu.o info.o)
 
 mkdir -p ${PREFIX}
 DEPS=${DEPS[@]/#/${PREFIX}/}

@@ -63,6 +63,9 @@ int main() {
 	 // execute idle task in system mode, so that it can sleep the processor
 	get_task(idle_tid)->regs.psr |= 0x1f;
 
+void cpu_info(void);
+cpu_info();
+
 	/* Initialize first user program */
 	syscall_Create(NULL, 6, userprog_init);
 
