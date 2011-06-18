@@ -76,7 +76,7 @@ const struct regdesc psr_desc = {
 		ENABLE_BIT(7, "i", "mask irq"),
 		ENABLE_BIT(8, "a", "mask asynchronous abort"),
 		SELECT_BIT(9, "e", "endianness execution state", "little", "big"),
-		HEXA_FIELD(0x0600fc00, "it", "thumb IT state"),
+		HEXA_FIELD(0x0600fc00, "it", "thumb it state"),
 		HEXA_FIELD(0x000f0000, "ge", "simd flags"),
 		UNUSED_BIT(20),
 		UNUSED_BIT(21),
