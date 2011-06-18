@@ -72,7 +72,7 @@ int arp_lookup(uint32_t ip_addr, mac_addr_t *mac_addr, int timeout_msec) {
 
 	int count = 0;
 	while(1) {
-		int res = sendpath("/services/arpserver", ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), mac_addr, sizeof(mac_addr_t));
+		int res = sendpath("/services/arp", ARP_QUERY_MSG, &ip_addr, sizeof(uint32_t), mac_addr, sizeof(mac_addr_t));
 		if(res == EARP_PENDING) {
 			if(count >= timeout_msec) {
 				return EARP_TIMEOUT;
@@ -223,12 +223,12 @@ static void ethrx_dispatch(uint32_t sts) {
 
 	switch(ntohs(frame.pkt.eth.ethertype)) {
 	case ET_ARP:
-		sendpath("/services/arpserver", ARP_DISPATCH_MSG, &frame.pkt.ip, sizeof(struct arppkt), NULL, 0);
+		sendpath("/services/arp", ARP_DISPATCH_MSG, &frame.pkt.ip, sizeof(struct arppkt), NULL, 0);
 		break;
 	case ET_IPV4:
 		switch(frame.pkt.ip.ip_p) {
 		case IPPROTO_ICMP:
-			sendpath("/services/icmpserver", ICMP_DISPATCH_MSG, &frame, len, NULL, 0);
+			sendpath("/services/icmp", ICMP_DISPATCH_MSG, &frame, len, NULL, 0);
 			break;
 		case IPPROTO_UDP:
 			sendpath("/services/udprx", UDP_RX_DISPATCH_MSG, &frame, len, NULL, 0);
@@ -289,7 +289,7 @@ void icmpserver_task() {
 	} msg;
 	int tid, rcvlen, msgcode;
 
-	int icmpserver_fd = mkopenchan("/services/icmpserver");
+	int icmpserver_fd = mkopenchan("/services/icmp");
 
 	while(1) {
 		rcvlen = MsgReceive(icmpserver_fd, &tid, &msgcode, &msg, sizeof(msg));
@@ -367,7 +367,7 @@ void arpserver_task() {
 	struct ht_item addrmap_arr[1537];
 	hashtable_init(&addrmap, addrmap_arr, 1537, NULL, NULL);
 
-	arpserver_fd = mkopenchan("/services/arpserver");
+	arpserver_fd = mkopenchan("/services/arp");
 
 	while(1) {
 		rcvlen = MsgReceive(arpserver_fd, &tid, &msgcode, &msg, sizeof(msg));
