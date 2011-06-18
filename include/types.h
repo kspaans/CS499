@@ -1,6 +1,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <stdbool.h>
+
 #define arraysize(x) (sizeof(x)/sizeof(*(x)))
 
 typedef signed   int8_t   __attribute__((__mode__(__QI__)));
@@ -29,8 +31,17 @@ struct in_addr {
 	in_addr_t s_addr;
 };
 
-typedef struct {
+typedef struct mac_addr {
 	uint8_t addr[6];
-} __attribute__((packed)) mac_addr_t;
+} mac_addr_t;
+
+struct hostdata {
+	const char *hostname;
+	struct mac_addr mac;
+	uint32_t ip;
+	uint32_t ncip;
+	uint16_t ncport;
+	bool has_uart;
+};
 
 #endif /* TYPES_H */

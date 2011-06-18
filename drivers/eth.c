@@ -164,7 +164,6 @@ int eth_init() {
 	/* delay for 0.3s to wait for the stagecoach ks8999 switch */
 	udelay(300000);
 
-	my_mac = eth_mac_addr(ETH1_BASE);
 	return 0;
 }
 

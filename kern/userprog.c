@@ -25,9 +25,9 @@ __attribute__((unused)) static void udp_console_loop() {
 
 	udp_printf("Hello from ");
 	for(int i=0; i<5; i++) {
-		udp_printf("%02x:", my_mac.addr[i]);
+		udp_printf("%02x:", this_host->mac.addr[i]);
 	}
-	udp_printf("%02x\n", my_mac.addr[5]);
+	udp_printf("%02x\n", this_host->mac.addr[5]);
 
 	for(;;) {
 		char c = getchar();
@@ -282,6 +282,9 @@ void userprog_init() {
 
 	CreateDaemon(1, consoletx_task);
 	CreateDaemon(1, consolerx_task);
+
+	net_init();
+
 	CreateDaemon(1, clockserver_task);
 	CreateDaemon(1, ethrx_task);
 	CreateDaemon(1, icmpserver_task);

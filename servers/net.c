@@ -40,6 +40,14 @@ static int udpconrx_fd;
 static void ethrx_notifier();
 static void udpconrx_notifier();
 
+static struct hostdata hosts[] = {
+	{ "tobi",   MAC(0x00, 0x15, 0xc9, 0x28, 0xd9, 0x1b), IP(10, 0, 0, 10), IP(10, 0, 0, 1), 6010, 1 },
+	{ "tide1",  MAC(0x00, 0x15, 0xc9, 0x28, 0xe1, 0xc0), IP(10, 0, 0, 11), IP(10, 0, 0, 1), 6011, 1 },
+	{ "earth1", MAC(0x00, 0x15, 0xc9, 0x28, 0xdf, 0x53), IP(10, 0, 0, 12), IP(10, 0, 0, 1), 6012, 1 },
+};
+
+struct hostdata *this_host;
+
 enum netmsg {
 	ETH_RX_NOTIFY_MSG,
 
@@ -100,7 +108,7 @@ static int send_arp_request(uint32_t addr) {
 	struct arppkt arp;
 
 	memset(&eth.dest, 0xff, 6);
-	eth.src = my_mac;
+	eth.src = this_host->mac;
 	eth.ethertype = htons(ET_ARP);
 
 	arp.arp_htype = htons(ARP_HTYPE_ETH);
@@ -108,8 +116,8 @@ static int send_arp_request(uint32_t addr) {
 	arp.arp_hlen = 6;
 	arp.arp_plen = 4;
 	arp.arp_oper = htons(ARP_OPER_REQUEST);
-	arp.arp_sha = my_mac;
-	arp.arp_spa = htonl(my_ip);
+	arp.arp_sha = this_host->mac;
+	arp.arp_spa = htonl(this_host->ip);
 	memset(&arp.arp_tha, 0x00, 6);
 	arp.arp_tpa = htonl(addr);
 
@@ -126,7 +134,7 @@ static int send_arp_reply(uint32_t addr, mac_addr_t macaddr) {
 	struct arppkt arp;
 
 	eth.dest = macaddr;
-	eth.src = my_mac;
+	eth.src = this_host->mac;
 	eth.ethertype = htons(ET_ARP);
 
 	arp.arp_htype = htons(ARP_HTYPE_ETH);
@@ -134,8 +142,8 @@ static int send_arp_reply(uint32_t addr, mac_addr_t macaddr) {
 	arp.arp_hlen = 6;
 	arp.arp_plen = 4;
 	arp.arp_oper = htons(ARP_OPER_REPLY);
-	arp.arp_sha = my_mac;
-	arp.arp_spa = htonl(my_ip);
+	arp.arp_sha = this_host->mac;
+	arp.arp_spa = htonl(this_host->ip);
 	arp.arp_tha = macaddr;
 	arp.arp_tpa = htonl(addr);
 
@@ -159,7 +167,7 @@ int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data
 	if(res < 0)
 		return res;
 
-	eth.src = my_mac;
+	eth.src = this_host->mac;
 	eth.ethertype = htons(ET_IPV4);
 
 	ip.ip_vhl = IP_VHL_BORING;
@@ -170,7 +178,7 @@ int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data
 	ip.ip_ttl = 64;
 	ip.ip_p = IPPROTO_UDP;
 	ip.ip_sum = 0;
-	ip.ip_src.s_addr = htonl(my_ip);
+	ip.ip_src.s_addr = htonl(this_host->ip);
 	ip.ip_dst.s_addr = htonl(addr);
 	ip.ip_sum = htons(ip_checksum((uint8_t *)&ip, sizeof(struct ip)));
 
@@ -302,9 +310,9 @@ void icmpserver_task() {
 				int len = ntohs(msg.pkt.ip.ip_len) + sizeof(struct ethhdr);
 				msg.pkt.icmp.icmp_type = ICMP_TYPE_ECHO_REPLY;
 				msg.pkt.eth.dest = msg.pkt.eth.src;
-				msg.pkt.eth.src = my_mac;
+				msg.pkt.eth.src = this_host->mac;
 				msg.pkt.ip.ip_dst = msg.pkt.ip.ip_src;
-				msg.pkt.ip.ip_src.s_addr = htonl(my_ip);
+				msg.pkt.ip.ip_src.s_addr = htonl(this_host->ip);
 				msg.pkt.ip.ip_sum = 0;
 				msg.pkt.ip.ip_sum = htons(ip_checksum((uint8_t *)&msg.pkt.ip, sizeof(struct ip)));
 				uint32_t btag = MAKE_COE_BTAG(0x1c1c, len);
@@ -378,7 +386,7 @@ void arpserver_task() {
 			MsgReplyStatus(tid, 0);
 			arpserver_store(mac_arr, &ipq, &addrmap, ntohl(msg.pkt.arp_spa), msg.pkt.arp_sha);
 			if(ntohs(msg.pkt.arp_oper) == ARP_OPER_REQUEST
-				&& ntohl(msg.pkt.arp_tpa) == my_ip) {
+				&& ntohl(msg.pkt.arp_tpa) == this_host->ip) {
 				send_arp_reply(ntohl(msg.pkt.arp_spa), msg.pkt.arp_sha);
 			}
 			break;
@@ -450,4 +458,38 @@ void udpconrx_notifier() {
 		Notify udpconrx_tid
 	}
 	*/
+}
+
+static struct hostdata *get_host_data(struct mac_addr *mac) {
+	for (int i = 0; i < arraysize(hosts); ++i)
+		if (!memcmp(mac, &hosts[i].mac, sizeof(*mac)))
+			return &hosts[i];
+	printf("no IP address for this host");
+	Exit();
+}
+
+void net_init(void) {
+	struct mac_addr mac = eth_mac_addr(ETH1_BASE);
+
+	printf("MAC address: %02x:%02x:%02x:%02x:%02x:%02x\n",
+		mac.addr[0], mac.addr[1], mac.addr[2],
+		mac.addr[3], mac.addr[4], mac.addr[5]);
+
+	this_host = get_host_data(&mac);
+
+	printf("IP address: %d.%d.%d.%d\n",
+		(this_host->ip >> 24) & 0xff,
+		(this_host->ip >> 16) & 0xff,
+		(this_host->ip >> 8)  & 0xff,
+		(this_host->ip >> 0)  & 0xff);
+
+	printf("Host: %s\n", this_host->hostname);
+
+	printf("Console: %s%d.%d.%d.%d:%d\n",
+		this_host->has_uart ? "uart, " : "",
+		(this_host->ncip >> 24) & 0xff,
+		(this_host->ncip >> 16) & 0xff,
+		(this_host->ncip >> 8)  & 0xff,
+		(this_host->ncip >> 0)  & 0xff,
+		this_host->ncport);
 }

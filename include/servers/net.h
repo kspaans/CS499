@@ -1,6 +1,7 @@
 #ifndef SERVER_NET_H
 #define SERVER_NET_H
 
+#include <types.h>
 #include <ip.h>
 
 #define EETH_BADTX -256
@@ -15,5 +16,7 @@ int udp_printf(const char *fmt, ...)
 	__attribute__ ((format (printf, 1, 2)));
 
 void net_start_tasks();
+
+extern struct hostdata *this_host;
 
 #endif /* SERVER_NET_H */
