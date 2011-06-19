@@ -582,7 +582,6 @@ void task_syscall(int code, struct task *task) {
 	task->regs.r0 = ret;
 }
 
-/// debug
 #define PRINT_REG(x) printk(#x ":%08x ", task->regs.x)
 void print_task(struct task *task) {
 	if(task == NULL)
@@ -616,7 +615,6 @@ void print_task(struct task *task) {
 
 	printk("\n");
 }
-/// debug
 
 void sysrq(void) {
 	printk("SysRq\n");

@@ -4,6 +4,7 @@
 #include <syscall.h>
 #include <task.h>
 #include <string.h>
+#include <servers/console.h>
 #include <servers/fs.h>
 #include <kern/printk.h>
 
@@ -13,9 +14,10 @@ enum filemsg {
 	FILE_OPEN,
 	FILE_MKDIR,
 	FILE_MKCHAN,
+	FILE_RMCHAN,
 };
 
-static int file_req(int type, int dirfd, const char *pathname, int expectfd) {
+static int file_req(int type, int dirfd, const char *pathname, bool expectfd) {
 	int ret, reply, fd = -1;
 
 	reply = MsgSend(dirfd, type, pathname, strlen(pathname), NULL, 0,
@@ -37,7 +39,7 @@ fail:
 }
 
 int open(int dirfd, const char *pathname) {
-	return file_req(FILE_OPEN, dirfd, pathname, 1);
+	return file_req(FILE_OPEN, dirfd, pathname, true);
 }
 
 void close(int dirfd) {
@@ -45,11 +47,15 @@ void close(int dirfd) {
 }
 
 int mkdir(int dirfd, const char *pathname) {
-	return file_req(FILE_MKDIR, dirfd, pathname, 0);
+	return file_req(FILE_MKDIR, dirfd, pathname, false);
 }
 
 int mkchan(int dirfd, const char *pathname) {
-	return file_req(FILE_MKCHAN, dirfd, pathname, 0);
+	return file_req(FILE_MKCHAN, dirfd, pathname, false);
+}
+
+int rmchan(int dirfd, const char *pathname) {
+	return file_req(FILE_RMCHAN, dirfd, pathname, false);
 }
 
 int mkopenchan(const char *pathname) {
@@ -172,6 +178,28 @@ static void do_mkchan(int dirfd, int tid, const char *path, size_t pathlen) {
 	MsgReplyStatus(tid, 0);
 }
 
+static void do_rmchan(int dirfd, int tid, const char *path, size_t pathlen) {
+	/* TODO: security */
+	int i = fs_delete(path, pathlen);
+	if(i < 0) {
+		MsgReplyStatus(tid, ENOENT);
+		return;
+	}
+	MsgReplyStatus(tid, 0);
+}
+
+static void add_chan(int dirfd, const char *path, int chan) {
+	size_t pathlen = strlen(path);
+	int i = fs_reserve(path, pathlen);
+	if(i < 0)
+		return;
+	fs.files[i].valid = true;
+	fs.files[i].deleted = false;
+	fs.files[i].chan = chan;
+	fs.files[i].pathlen = pathlen;
+	memcpy(fs.files[i].path, path, pathlen);
+}
+
 void fileserver_task(void) {
 	int tid, msgcode;
 	char path[PATH_MAX];
@@ -182,6 +210,10 @@ void fileserver_task(void) {
 		fs.files[i].pathlen = 0;
 		fs.files[i].valid = false;
 	}
+
+	add_chan(ROOT_DIRFD, "/dev/stdin", STDIN_FILENO);
+	add_chan(ROOT_DIRFD, "/dev/stdout", STDOUT_FILENO);
+	add_chan(ROOT_DIRFD, "/dev/fs", ROOT_DIRFD);
 
 	for (;;) {
 		int len = MsgReceive(ROOT_DIRFD, &tid, &msgcode, path, sizeof(path));
@@ -198,6 +230,9 @@ void fileserver_task(void) {
 				break;
 			case FILE_MKCHAN:
 				do_mkchan(ROOT_DIRFD, tid, path, len);
+				break;
+			case FILE_RMCHAN:
+				do_rmchan(ROOT_DIRFD, tid, path, len);
 				break;
 			default:
 				MsgReplyStatus(tid, EINVAL);

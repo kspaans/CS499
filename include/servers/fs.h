@@ -8,6 +8,7 @@
 int open(int dirfd, const char *pathname);
 int mkdir(int dirfd, const char *pathname);
 int mkchan(int dirfd, const char *pathname);
+int rmchan(int dirfd, const char *pathname);
 
 // convenience functions
 int sendpath(const char *pathname, int msgcode, const void *msg, int msglen, void *reply, int replylen);
