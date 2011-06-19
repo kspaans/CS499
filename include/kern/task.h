@@ -46,6 +46,7 @@ struct channel {
 	int refcount;
 	taskqueue senders;
 	taskqueue receivers;
+	struct channel *next_free_channel;
 };
 
 struct channel_desc {

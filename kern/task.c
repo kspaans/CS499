@@ -22,6 +22,8 @@ static int task_count;
 /* visible to kernel main */
 int nondaemon_count;
 
+static struct channel *free_channel_head;
+
 void init_tasks() {
 	int i;
 	taskqueue_init(&freequeue);
@@ -36,6 +38,7 @@ void init_tasks() {
 	next_tidx = 1;
 	task_count = 0;
 	nondaemon_count = 0;
+	free_channel_head = NULL;
 }
 
 /* Change this if TID allocation is changed. */
@@ -245,7 +248,13 @@ int syscall_ChannelOpen(struct task *task) {
 	int no = alloc_channel_desc(task);
 	if (no < 0)
 		return EMFILE;
-	struct channel *channel = kmalloc(sizeof(*channel));
+	struct channel *channel;
+	if(free_channel_head == NULL) {
+		channel = kmalloc(sizeof(*channel));
+	} else {
+		channel = free_channel_head;
+		free_channel_head = channel->next_free_channel;
+	}
 	memset(channel, 0, sizeof(*channel));
 	channel->refcount++;
 	taskqueue_init(&channel->senders);
@@ -265,6 +274,8 @@ static void close_channel(struct task *task, int no) {
 			panic("Invalid refcount on channel: receivers still exist");
 		if(channel->senders.start != NULL)
 			panic("Invalid refcount on channel: senders still exist");
+		channel->next_free_channel = free_channel_head;
+		free_channel_head = channel;
 	}
 }
 
