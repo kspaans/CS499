@@ -40,10 +40,10 @@ int main() {
 	   the third invocation. Maybe we have to clear the caches here, or enable the MMU. */
 	printk("mmu init\n");
 	prep_pagetable();
-	init_mmu(); // will make the kernel hang
+	init_mmu();
 
 	printk("cache init\n");
-	init_cache(); // still broken
+	init_cache();
 
 	/* Initialize other interrupts */
 	init_interrupts();

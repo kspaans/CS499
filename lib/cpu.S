@@ -29,8 +29,15 @@ init_mmu:
 .global deinit_mmu
 .type deinit_mmu, %function
 deinit_mmu:
+	@ disable caches
+	mrc p15, 0, r1, c1, c0, 0
+	bic r1, r1, #0x4	@ disable data cache
+	bic r1, r1, #0x1000	@ disable instruction cache
+	@ write p15c1 (control reg)
+	mcr p15, 0, r1, c1, c0, 0
+	@ disable mmu
 	mrc p15, 0, r1, c1, c0, 0 @ read CP15 Register 1
-	and r1, r1, #0xFFFFFFFE	  @ bit 0 to 0 to disable MMU
+	bic r1, r1, #0x1	  @ bit 0 to 0 to disable MMU
 	mcr p15, 0, r1, c1, c0, 0 @ disable MMUs
 	bx lr
 
