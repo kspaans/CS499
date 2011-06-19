@@ -90,6 +90,7 @@
 #define MAKE_COE_BTAG(tag,len) (((tag) << 16) | BTAG_CKEN | (((len)+4) & 0x7ff))
 
 int eth_init();
+void eth_deinit();
 void eth_set_rxlevel(int level);
 void eth_set_txlevel(int level);
 int eth_intstatus();

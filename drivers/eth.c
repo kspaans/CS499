@@ -140,6 +140,19 @@ static int eth_dev_init(int base) {
 		;
 	printk("eth: line up\n");
 
+	return 0;
+}
+
+static int eth_dev_cfg(int base, bool from_init) {
+	uint32_t reg;
+	if(from_init) {
+		/* turn off tx/rx */
+		eth_write(base, ETH_TX_CFG_OFFSET, 0);
+		eth_mac_write(base, ETH_MAC_MAC_CR, 0);
+		/* XXX instead of waiting for the RXSTOP interrupt, we just wait a bit */
+		udelay(100);
+	}
+
 	/* configuration */
 	/* offset incoming packets by two bytes to put the IP header on a 4-byte boundary */
 	eth_write(base, ETH_RX_CFG_OFFSET, (2 << 8));
@@ -155,18 +168,49 @@ static int eth_dev_init(int base) {
 	return 0;
 }
 
+static void eth_dev_cfg_deinit(int base) {
+	eth_mac_write(base, ETH_MAC_MAC_CR, 0);
+	udelay(100);
+	eth_write(base, ETH_RX_CFG_OFFSET, 0);
+	eth_mac_write(base, ETH_MAC_MAC_CR, ETH_MAC_TXEN | ETH_MAC_RXEN);
+}
+
 int eth_init() {
-	int res = eth_dev_init(ETH1_BASE);
-	if(res < 0)
-		return res;
+	bool line_reset = true;
+	if((eth_read(ETH1_BASE, ETH_PMT_CTRL_OFFSET) & ETH_PMT_CTRL_READY)
+	  && (eth_phy_read(ETH1_BASE, ETH_MII_BSR) & ETH_MII_BSR_LSTS)) {
+		/* Line is already up, just do base configuration */
+		line_reset = false;
+	}
+
+	int res;
+
+	if(line_reset) {
+		res = eth_dev_init(ETH1_BASE);
+		if(res < 0)
+			return res;
+		res = eth_dev_cfg(ETH1_BASE, false);
+		if(res < 0)
+			return res;
+	} else {
+		res = eth_dev_cfg(ETH1_BASE, true);
+		if(res < 0)
+			return res;
+	}
 
 	eth_write(ETH1_BASE, ETH_INT_EN_OFFSET, 0);
 	eth_write(ETH1_BASE, ETH_INT_STS_OFFSET, 0xFFFFFFFF);
 
-	/* delay for 0.3s to wait for the stagecoach ks8999 switch */
-	udelay(300000);
+	if(line_reset) {
+		/* delay for 0.3s to wait for the stagecoach ks8999 switch */
+		udelay(300000);
+	}
 
 	return 0;
+}
+
+void eth_deinit() {
+	eth_dev_cfg_deinit(ETH1_BASE);
 }
 
 void eth_set_rxlevel(int level) {
