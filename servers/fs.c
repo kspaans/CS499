@@ -167,10 +167,15 @@ static void do_mkchan(int dirfd, int tid, const char *path, size_t pathlen) {
 		MsgReplyStatus(tid, EEXIST);
 		return;
 	}
+	int chan = ChannelOpen();
+	if(chan < 0) {
+		MsgReplyStatus(tid, ENOSPC);
+		return;
+	}
 
 	fs.files[i].valid = true;
 	fs.files[i].deleted = false;
-	fs.files[i].chan = ChannelOpen();
+	fs.files[i].chan = chan;
 	fs.files[i].pathlen = pathlen;
 	memcpy(fs.files[i].path, path, pathlen);
 	MsgReplyStatus(tid, 0);
