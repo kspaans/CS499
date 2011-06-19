@@ -10,9 +10,9 @@ typedef const void* const_useraddr_t;
 extern int nondaemon_count;
 
 /* Task index and generation */
-#define TID_IDX(tid) ((tid) & 0x1fff)
-#define TID_GEN(tid) ((tid) >> 13)
-#define MAKE_TID(idx, gen) (((gen) << 13) | (idx))
+#define TID_IDX(tid) ((tid) & 0xfff)
+#define TID_GEN(tid) ((tid) >> 12)
+#define MAKE_TID(idx, gen) (((gen) << 12) | (idx))
 
 /* Number of priorities supported.
  * Priority numbers run from 0 (highest priority)

@@ -110,7 +110,7 @@ mac_addr_t eth_mac_addr(int base) {
 	return res;
 }
 
-int eth_dev_init(int base) {
+static int eth_dev_init(int base) {
 	uint32_t reg;
 	if(eth_reset(base) != 0)
 		return -1;

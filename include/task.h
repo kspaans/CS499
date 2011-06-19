@@ -1,7 +1,7 @@
 #ifndef TASK_H
 #define TASK_H
 
-#define MAX_TASKS 4096
+#define MAX_TASKS 4095 /* excluding "kernel task" 0 */
 
 #define TASK_DAEMON 1
 #define TASK_NORMAL 0
