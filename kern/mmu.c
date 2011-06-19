@@ -72,12 +72,15 @@ void prep_pagetable()
 	printk("pagetable init\n");
 	set_ttbr(pagetable);
 
-uint32_t ttb;
+	uint32_t ttb;
         asm ("mrc p15, 0, %0, c2, c0, 0" : "=r" (ttb));
-printk("ttb = %08x\n", ttb);
-	asm ("mrc p15, 0, %0, c1, c0, 0" : "=r" (ttb));
-printk("MMU = %08x\n", ttb);
-	asm ("MRC p15, 0, %0, c3, c0, 0" : "=r" (ttb));
-printk("DACR = %08x\n", ttb);
+	printk("  ttb = %08x\n", ttb);
 
+	uint32_t mmu;
+	asm ("mrc p15, 0, %0, c1, c0, 0" : "=r" (mmu));
+	printk("  mmu = %08x\n", mmu);
+
+	uint32_t dacr;
+	asm ("MRC p15, 0, %0, c3, c0, 0" : "=r" (dacr));
+	printk("  dacr = %08x\n", dacr);
 }
