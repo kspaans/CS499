@@ -64,7 +64,6 @@ int mkopenchan(const char *pathname) {
 		Exit();
 	}
 	return fd;
-
 }
 
 int sendpath(const char *pathname, int msgcode, const void *msg, int msglen, void *reply, int replylen) {
@@ -78,43 +77,99 @@ int sendpath(const char *pathname, int msgcode, const void *msg, int msglen, voi
 	return ret;
 }
 
+#define HASH_MAX FILE_MAX
+/* eventually, we may want to set HASH_MAX > FILE_MAX to keep the load factor low */
+
 struct fastfs {
 	struct {
 		char path[PATH_MAX];
 		int pathlen;
 		int chan;
-	} files[FILE_MAX];
+		bool valid, deleted;
+	} files[HASH_MAX];
+	size_t count;
 } fs;
 
+/* djb2 */
+static uint32_t fs_hash(const char *path, size_t pathlen) {
+	uint32_t hash = 5381;
+
+	while(pathlen-- > 0)
+		hash = ((hash << 5) + hash) ^ (*path++); // hash * 33 + c
+	return hash;
+}
+
+static inline int hash_get_entry(const char *path, size_t pathlen, bool accept_invalid) {
+	int i = fs_hash(path, pathlen) % HASH_MAX;
+	int count = HASH_MAX;
+	while(fs.files[i].valid) {
+		if(!fs.files[i].deleted
+		  && fs.files[i].pathlen == pathlen
+		  && memcmp(fs.files[i].path, path, pathlen) == 0) {
+			return i;
+		}
+		if(accept_invalid && fs.files[i].deleted)
+			return i;
+		++i;
+		--count;
+		if(i >= HASH_MAX)
+			i -= HASH_MAX;
+		if(count == 0)
+			return HT_NOKEY;
+	}
+	if(accept_invalid)
+		return i;
+	else
+		return HT_NOKEY;
+}
+
+static int fs_get(const char *path, size_t pathlen) {
+	return hash_get_entry(path, pathlen, false);
+}
+
+static int fs_reserve(const char *path, size_t pathlen) {
+	return hash_get_entry(path, pathlen, true);
+}
+
+static int fs_delete(const char *path, size_t pathlen) {
+	int i = hash_get_entry(path, pathlen, false);
+	if(i >= 0)
+		fs.files[i].deleted = 1;
+	return i;
+}
+
 static void do_open(int dirfd, int tid, const char *path, size_t pathlen) {
-	for (int i = 0; i < FILE_MAX; ++i) {
-		if (fs.files[i].pathlen != pathlen)
-			continue;
-		if (memcmp(fs.files[i].path, path, pathlen))
-			continue;
-		MsgReply(tid, 0, NULL, 0, fs.files[i].chan);
+	int i = fs_get(path, pathlen);
+	if(i < 0) {
+		MsgReplyStatus(tid, ENOENT);
 		return;
 	}
 
-	MsgReplyStatus(tid, ENOENT);
+	MsgReply(tid, 0, NULL, 0, fs.files[i].chan);
 }
 
 static void do_mkdir(int dirfd, int tid, const char *path, size_t pathlen) {
-	MsgReplyStatus(tid, 0);
+	/* TODO */
+	MsgReplyStatus(tid, ENOFUNC);
 }
 
 static void do_mkchan(int dirfd, int tid, const char *path, size_t pathlen) {
-	for (int i = 0; i < FILE_MAX; ++i) {
-		if (!fs.files[i].pathlen) {
-			fs.files[i].chan = ChannelOpen();
-			fs.files[i].pathlen = pathlen;
-			memcpy(fs.files[i].path, path, pathlen);
-			MsgReplyStatus(tid, 0);
-			return;
-		}
+	int i = fs_reserve(path, pathlen);
+	if(i < 0) {
+		MsgReplyStatus(tid, ENOSPC);
+		return;
+	}
+	if(fs.files[i].valid && !fs.files[i].deleted) {
+		MsgReplyStatus(tid, EEXIST);
+		return;
 	}
 
-	MsgReplyStatus(tid, ENOSPC);
+	fs.files[i].valid = true;
+	fs.files[i].deleted = false;
+	fs.files[i].chan = ChannelOpen();
+	fs.files[i].pathlen = pathlen;
+	memcpy(fs.files[i].path, path, pathlen);
+	MsgReplyStatus(tid, 0);
 }
 
 void fileserver_task(void) {
@@ -122,6 +177,11 @@ void fileserver_task(void) {
 	char path[PATH_MAX];
 
 	printf("fileserver init\n");
+
+	for(int i=0; i<HASH_MAX; ++i) {
+		fs.files[i].pathlen = 0;
+		fs.files[i].valid = false;
+	}
 
 	for (;;) {
 		int len = MsgReceive(ROOT_DIRFD, &tid, &msgcode, path, sizeof(path));
@@ -143,19 +203,13 @@ void fileserver_task(void) {
 				MsgReplyStatus(tid, EINVAL);
 				break;
 		}
-
 	}
 }
 
 void dump_files(void) {
-	char path[PATH_MAX];
-
 	printk("filesystem dump:\n");
-	for (int i = 0; i < FILE_MAX; ++i) {
-		if (fs.files[i].pathlen) {
-			memcpy(path, fs.files[i].path, PATH_MAX);
-			path[PATH_MAX-1] = '\0';
-			printk("[%d] %s\n", i, path);
-		}
+	for (int i = 0; i < HASH_MAX; ++i) {
+		if (fs.files[i].valid)
+			printk("[%d] %.*s\n", i, PATH_MAX, fs.files[i].path);
 	}
 }

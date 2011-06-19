@@ -14,5 +14,6 @@
 #define ESRCH -10
 #define EBADMSG -11
 #define ENOENT -12
+#define EEXIST -13
 
 #endif /* ERRNO_H */
