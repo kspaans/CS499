@@ -157,7 +157,7 @@ static void dump_register(const struct regdesc *reg, uint32_t value, int describ
 	if (describe)
 		printk("register %s value 0x%08x\n", reg->name, value);
 	else
-		printk("reg %s val %08x ", reg->name, value);
+		printk("reg %s val 0x%08x ", reg->name, value);
 
 	uint32_t testmask = 0;
 	for (int i = 0; i < arraysize(reg->bits); ++i) {

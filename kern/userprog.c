@@ -278,6 +278,8 @@ void userprog_init() {
 	ChannelOpen(); /* stdout */
 	ChannelOpen(); /* fs */
 
+	printk("console init\n");
+
 	CreateDaemon(1, consoletx_task);
 	CreateDaemon(1, consolerx_task);
 
@@ -290,8 +292,6 @@ void userprog_init() {
 	CreateDaemon(1, udprx_task);
 	CreateDaemon(2, udpconrx_task);
 	CreateDaemon(2, fileserver_task);
-
-	printf("hello, world\n");
 
 	dump_files();
 

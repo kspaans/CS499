@@ -69,7 +69,7 @@ void prep_pagetable()
 
 	//memset(pagetable, 0, sizeof(pagetable)); // start will invalid FLDs -- all 0s
 
-	printk("pagetable init");
+	printk("pagetable init\n");
 	set_ttbr(pagetable);
 
 uint32_t ttb;
