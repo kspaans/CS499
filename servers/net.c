@@ -33,10 +33,6 @@
 #define GATEWAY_IP (this_host->gwip)
 #define SUBNET_MASK (this_host->netmask)
 
-static int ethrx_fd;
-static int arpserver_fd;
-static int udpconrx_fd;
-
 static void ethrx_notifier();
 static void udpconrx_notifier();
 
@@ -255,7 +251,7 @@ static void ethrx_dispatch(uint32_t sts) {
 void ethrx_task() {
 	int tid, rcvlen, msgcode;
 
-	ethrx_fd = mkopenchan("/services/ethrx");
+	int ethrx_fd = mkopenchan("/services/ethrx");
 
 	CreateDaemon(0, ethrx_notifier);
 
@@ -279,6 +275,7 @@ void ethrx_task() {
 }
 
 void ethrx_notifier() {
+	int ethrx_fd = open(ROOT_DIRFD, "/services/ethrx");
 	while(1) {
 		AwaitEvent(EVENT_ETH_RECEIVE);
 		MsgSend(ethrx_fd, ETH_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
@@ -375,7 +372,7 @@ void arpserver_task() {
 	struct ht_item addrmap_arr[1537];
 	hashtable_init(&addrmap, addrmap_arr, 1537, NULL, NULL);
 
-	arpserver_fd = mkopenchan("/services/arp");
+	int arpserver_fd = mkopenchan("/services/arp");
 
 	while(1) {
 		rcvlen = MsgReceive(arpserver_fd, &tid, &msgcode, &msg, sizeof(msg));
@@ -431,7 +428,7 @@ void udpconrx_task() {
 	/* TODO */
 	int tid, rcvlen, msgcode;
 
-	udpconrx_fd = mkopenchan( "/services/udpconrx");
+	int udpconrx_fd = mkopenchan("/services/udpconrx");
 
 	CreateDaemon(0, udpconrx_notifier);
 
