@@ -70,12 +70,10 @@ __attribute__((unused)) static void console_loop() {
 	}
 }
 
-#include <kern/backtrace.h>
 #include <lib.h>
 #include <string.h>
 #include <timer.h>
 __attribute__((unused)) static void memcpy_bench() {
-	backtrace();
 	int tid = MyTid();
 	printf("memcpy_bench[%d]: benchmarking memcpy\n", tid);
 	/* Run some benchmarks! */
