@@ -43,7 +43,6 @@ void prep_pagetable()
 {
 	uint32_t i;
 
-	printk("PAGETABLE AT %p -- size %d bytes\n", pagetable, sizeof(pagetable));
 	// could have fucked up the "N" part for the TTBR#
 	memset(pagetable, 0, sizeof(pagetable)); // start will invalid FLDs -- all 0s
 
@@ -70,8 +69,8 @@ void prep_pagetable()
 
 	//memset(pagetable, 0, sizeof(pagetable)); // start will invalid FLDs -- all 0s
 
+	printk("pagetable init");
 	set_ttbr(pagetable);
-	printk("TTBR setup\r");
 
 uint32_t ttb;
         asm ("mrc p15, 0, %0, c2, c0, 0" : "=r" (ttb));
@@ -81,5 +80,4 @@ printk("MMU = %08x\n", ttb);
 	asm ("MRC p15, 0, %0, c3, c0, 0" : "=r" (ttb));
 printk("DACR = %08x\n", ttb);
 
-	printk("Pagetables setup.\n");
 }
