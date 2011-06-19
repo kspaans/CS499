@@ -7,6 +7,7 @@
 #include <lib.h>
 #include <kern/printk.h>
 #include <servers/fs.h>
+#include <applications.h>
 
 void consoletx_task();
 void consolerx_task();
@@ -230,4 +231,5 @@ void userprog_init() {
 	ASSERTNOERR(CreateDaemon(4, flash_leds));
 	//ASSERTNOERR(Create(4, console_loop));
 	ASSERTNOERR(Create(4, udp_console_loop));
+	ASSERTNOERR(Create(6, gameoflife));
 }
