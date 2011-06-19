@@ -41,12 +41,16 @@ deinit_mmu:
 	mcr p15, 0, r1, c1, c0, 0 @ disable MMUs
 	bx lr
 
-@ First argument should be a pointer to the page table
 .global set_ttbr
 .type set_ttbr, %function
+@ void set_ttbr(uint32_t *pagetable)
 set_ttbr:
-	@mrc p15, 0, r1, c2, c0, 0 @ read TTBR0, upper 14 bits are pointer, leave the rest to be zero
 	mcr p15, 0, r0, c2, c0, 0 @ write page table pointer, it should be aligned to a 16KB boundary
-	mov r1, #0xFF
-	mcr p15, 0, r1, c3, c0, 0 @ set DACR, so that the domain is readable
+	bx lr
+
+.global set_dacr
+.type set_dacr, %function
+@ void set_dacr(uint32_t dacr)
+set_dacr:
+	mcr p15, 0, r0, c3, c0, 0 @ set DACR, so that the domain is readable
 	bx lr

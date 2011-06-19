@@ -1,5 +1,5 @@
 PREFIX="../lib/obj/"
-DEPS=(cpu.o lib.o memcpy.o printf.o string.o)
+DEPS=(lib.o memcpy.o printf.o string.o)
 
 mkdir -p ${PREFIX}
 DEPS=${DEPS[@]/#/${PREFIX}/}

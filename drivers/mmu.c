@@ -3,7 +3,8 @@
  */
 
 #include <types.h>
-#include <mmu.h>
+#include <drivers/cpu.h>
+#include <drivers/mmu.h>
 #include <lib.h>
 #include <string.h> // memset
 #include <kern/printk.h>
@@ -25,7 +26,6 @@ void prep_pagetable()
 
 	// The top 14 bits of the VA make up the table index, used here to add
 	// the entries and their replicas.
-	// ROBERT EDIT: Just map all memory. Lower 2GB is device, upper 2GB is RAM
 	for (i = 0; i < 16; i += 1) {
 		for(int j=0; j<0x80; j++) {
 			pagetable[j*16 + i] = (j<<24) | FLD_FLAGS_DEVICEMEM;
@@ -37,6 +37,7 @@ void prep_pagetable()
 
 	printk("pagetable init\n");
 	set_ttbr(pagetable);
+	set_dacr(0x3); // domain 0 manager access
 
 /*
 uint32_t ttb;
@@ -57,12 +58,4 @@ printk("MEM MODEL FEATURE 3 = %08x\n", ttb);
 	asm ("MRC p15, 0, %0, c0, c0, 3" : "=r" (ttb));
 printk("TLB Type Reigster = %08x\n", ttb);
 */
-
-//	uint32_t mmu;
-//	asm ("mrc p15, 0, %0, c1, c0, 0" : "=r" (mmu));
-//	printk("  mmu = %08x\n", mmu);
-
-//	uint32_t dacr;
-//	asm ("MRC p15, 0, %0, c3, c0, 0" : "=r" (dacr));
-//	printk("  dacr = %08x\n", dacr);
 }

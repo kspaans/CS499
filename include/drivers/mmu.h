@@ -1,5 +1,5 @@
-#ifndef MMU_H
-#define MMU_H
+#ifndef MMU_DRIVER_H
+#define MMU_DRIVER_H
 
 /* First-Level Descriptor Flags */
 #define FLD_TYPE_SECTION  0x2
@@ -35,4 +35,4 @@
 
 void prep_pagetable();
 
-#endif
+#endif /* MMU_DRIVER_H */
