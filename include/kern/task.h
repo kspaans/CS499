@@ -142,4 +142,6 @@ int syscall_TaskStat(struct task* task, int tid, useraddr_t stat);
 void event_unblock_all(int eventid, int return_value);
 void event_unblock_one(int eventid, int return_value);
 
+void cpu_info(void);
+
 #endif /* KERN_TASK_H */

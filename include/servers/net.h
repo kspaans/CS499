@@ -19,4 +19,6 @@ void net_start_tasks();
 
 extern struct hostdata *this_host;
 
+void net_init();
+
 #endif /* SERVER_NET_H */

@@ -471,21 +471,23 @@ static struct hostdata *get_host_data(struct mac_addr *mac) {
 void net_init(void) {
 	struct mac_addr mac = eth_mac_addr(ETH1_BASE);
 
-	printf("MAC address: %02x:%02x:%02x:%02x:%02x:%02x\n",
+	printf("net init\n");
+
+	printf("  MAC address: %02x:%02x:%02x:%02x:%02x:%02x\n",
 		mac.addr[0], mac.addr[1], mac.addr[2],
 		mac.addr[3], mac.addr[4], mac.addr[5]);
 
 	this_host = get_host_data(&mac);
 
-	printf("IP address: %d.%d.%d.%d\n",
+	printf("  IP address: %d.%d.%d.%d\n",
 		(this_host->ip >> 24) & 0xff,
 		(this_host->ip >> 16) & 0xff,
 		(this_host->ip >> 8)  & 0xff,
 		(this_host->ip >> 0)  & 0xff);
 
-	printf("Host: %s\n", this_host->hostname);
+	printf("  Host: %s\n", this_host->hostname);
 
-	printf("Console: %s%d.%d.%d.%d:%d\n",
+	printf("  Console: %s%d.%d.%d.%d:%d\n",
 		this_host->has_uart ? "uart, " : "",
 		(this_host->ncip >> 24) & 0xff,
 		(this_host->ncip >> 16) & 0xff,
