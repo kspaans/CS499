@@ -8,6 +8,7 @@ struct regbits {
 	const char *name;
 	const char *desc;
 	const char **extra;
+	void (*show)(const struct regbits *bits, uint32_t val);
 	void (*describe)(const struct regbits *bits, uint32_t val);
 };
 
@@ -16,18 +17,26 @@ struct regdesc {
 	struct regbits bits[32];
 };
 
-void describe_enable_bit(const struct regbits *bits, uint32_t val) {
-	printk("%s:%d - %s - %s", bits->name, !!val,
-		bits->desc, val ? "enabled" : "disabled");
+
+static void show_bit(const struct regbits *bits, uint32_t val) {
+	printk("%s:%d", bits->name, !!val);
 }
 
-void describe_select_bit(const struct regbits *bits, uint32_t val) {
-	printk("%s:%d - %s - %s", bits->name, !!val,
-		bits->desc, bits->extra[!!val]);
+static void show_hex(const struct regbits *bits, uint32_t val) {
+	printk("%s:0x%x", bits->name, val);
+
 }
 
-void describe_hexa_field(const struct regbits *bits, uint32_t val) {
-	printk("%s:0x%x - %s", bits->name, val, bits->desc);
+static void describe_enable_bit(const struct regbits *bits, uint32_t val) {
+	printk("%s - %s", bits->desc, val ? "enabled" : "disabled");
+}
+
+static void describe_select_bit(const struct regbits *bits, uint32_t val) {
+	printk("%s - %s", bits->desc, bits->extra[!!val]);
+}
+
+static void describe_simple(const struct regbits *bits, uint32_t val) {
+	printk("%s", bits->desc);
 }
 
 void describe_cpsr_mode(const struct regbits *bits, uint32_t val) {
@@ -61,16 +70,16 @@ void describe_cpsr_mode(const struct regbits *bits, uint32_t val) {
 	printk("%s:0x%x - %s - %s", bits->name, val, bits->desc, modename);
 }
 
-#define CUST_FIELD(m, name, desc, extra, func) { m, name, desc, extra, func }
-#define HEXA_FIELD(m, name, desc) { m, name, desc, NULL, describe_hexa_field }
-#define ENABLE_BIT(i, name, desc) { 1 << i, name, desc, NULL, describe_enable_bit }
-#define SELECT_BIT(i, name, desc, d0, d1) { 1 << i, name, desc, (const char*[]) { d0, d1 }, describe_select_bit }
+#define CUST_FIELD(m, name, desc, extra, show, describe) { m, name, desc, extra, show, describe }
+#define HEXA_FIELD(m, name, desc) { m, name, desc, NULL, show_hex, describe_simple }
+#define ENABLE_BIT(i, name, desc) { 1 << i, name, desc, NULL, show_bit, describe_enable_bit }
+#define SELECT_BIT(i, name, desc, d0, d1) { 1 << i, name, desc, (const char*[]) { d0, d1 }, show_bit, describe_select_bit }
 #define UNUSED_BIT(i) { 1 << i }
 
 const struct regdesc psr_desc = {
 	"psr",
 	{
-		CUST_FIELD(ARM_MODE_MASK, "m", "processor mode", NULL, describe_cpsr_mode),
+		CUST_FIELD(ARM_MODE_MASK, "m", "processor mode", NULL, show_hex, describe_cpsr_mode),
 		ENABLE_BIT(5, "t", "thumb mode"),
 		ENABLE_BIT(6, "f", "mask fiq"),
 		ENABLE_BIT(7, "i", "mask irq"),
@@ -144,15 +153,32 @@ static uint32_t read_cpsr(void) {
 	return cpsr;
 }
 
-static void dump_register(const struct regdesc *reg, uint32_t value) {
-	printk("register %s value 0x%08x\n", reg->name, value);
+static void dump_register(const struct regdesc *reg, uint32_t value, int describe) {
+	if (describe)
+		printk("register %s value 0x%08x\n", reg->name, value);
+	else
+		printk("reg %s val %08x ", reg->name, value);
+
 	uint32_t testmask = 0;
 	for (int i = 0; i < arraysize(reg->bits); ++i) {
 		uint32_t bitsval = value & reg->bits[i].mask;
-		if (reg->bits[i].mask && reg->bits[i].describe) {
+		if (!reg->bits[i].mask)
+			continue;
+
+		if (describe && reg->bits[i].describe)
 			printk("  ");
+
+		// brief output
+		if (reg->bits[i].show)
+			reg->bits[i].show(&reg->bits[i], bitsval);
+
+		// detailed output
+		if (describe && reg->bits[i].describe) {
+			printk(" - ");
 			reg->bits[i].describe(&reg->bits[i], bitsval);
 			printk("\n");
+		} else if (reg->bits[i].show) {
+			printk(" ");
 		}
 
 		if (testmask & bitsval)
@@ -160,11 +186,14 @@ static void dump_register(const struct regdesc *reg, uint32_t value) {
 		testmask |= reg->bits[i].mask;
 	}
 
+	if (!describe)
+		printk("\n");
+
 	if (testmask != -1)
 		panic("missing bits in register description: %08x", testmask);
 }
 
 void cpu_info(void) {
-	dump_register(&sctlr_desc, read_sctlr());
-	dump_register(&psr_desc, read_cpsr());
+	dump_register(&sctlr_desc, read_sctlr(), 0);
+	dump_register(&psr_desc, read_cpsr(), 0);
 }
