@@ -51,6 +51,7 @@ struct channel {
 struct channel_desc {
 	int flags;
 	struct channel *channel;
+	int next_free_cd;
 };
 
 union tasksrr {
@@ -84,8 +85,9 @@ struct task {
 	int daemon;
 	int stack_start;
 	enum taskstate state;
-	/* Receive queue: holds tasks which have sent to this one
-	 * but which haven't been received by this task yet */
+
+	int free_cd_head;
+	int next_free_cd;
 	struct channel_desc channels[MAX_TASK_CHANNELS];
 	union tasksrr srr;
 

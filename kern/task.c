@@ -173,10 +173,20 @@ static int do_Create(struct task *task, int priority, void (*code)(), int daemon
 	newtask->regs.lr = 0;
 
 	/* duplicate open channels */
-	if (task)
-		memcpy(newtask->channels, task->channels, sizeof(newtask->channels));
-	else
+	if(task) {
+		newtask->free_cd_head = task->free_cd_head;
+		newtask->next_free_cd = task->next_free_cd;
+		for(int i=0; i<MAX_TASK_CHANNELS; ++i) {
+			newtask->channels[i] = task->channels[i];
+			if(task->channels[i].channel != NULL) {
+				task->channels[i].channel->refcount++;
+			}
+		}
+	} else {
+		newtask->free_cd_head = -1;
+		newtask->next_free_cd = 0;
 		memset(newtask->channels, 0, sizeof(newtask->channels));
+	}
 
 	task_enqueue(newtask);
 	return newtask->tid;
@@ -213,11 +223,22 @@ int syscall_Suspend(void) {
 	return 0;
 }
 
-int alloc_channel_desc(struct task *task) {
-	for (int i = 0; i < MAX_TASK_CHANNELS; ++i)
-		if (!task->channels[i].channel)
-			return i;
-	return -1;
+static void free_channel_desc(struct task *task, int no) {
+	task->channels[no].next_free_cd = task->free_cd_head;
+	task->free_cd_head = no;
+}
+
+static int alloc_channel_desc(struct task *task) {
+	int no;
+	if(task->free_cd_head < 0) {
+		if(task->next_free_cd >= MAX_TASK_CHANNELS)
+			return -1;
+		no = task->next_free_cd++;
+	} else {
+		no = task->free_cd_head;
+		task->free_cd_head = task->channels[no].next_free_cd;
+	}
+	return no;
 }
 
 int syscall_ChannelOpen(struct task *task) {
@@ -233,16 +254,48 @@ int syscall_ChannelOpen(struct task *task) {
 	return no;
 }
 
+static void close_channel(struct task *task, int no) {
+	struct channel *channel = task->channels[no].channel;
+	task->channels[no].channel = NULL;
+	free_channel_desc(task, no);
+
+	channel->refcount--;
+	if(channel->refcount == 0) {
+		if(channel->receivers.start != NULL)
+			panic("Invalid refcount on channel: receivers still exist");
+		if(channel->senders.start != NULL)
+			panic("Invalid refcount on channel: senders still exist");
+	}
+}
+
 int syscall_ChannelClose(struct task *task, int no) {
-	if (no < 0 || no >= MAX_TASK_CHANNELS)
+	if(no < 0 || no >= MAX_TASK_CHANNELS)
 		return EBADF;
 
-	task->channels[no].channel = NULL;
+	if(task->channels[no].channel == NULL)
+		return EBADF;
+
+	close_channel(task, no);
 	return 0;
 }
 
 int syscall_ChannelDup(struct task *task, int oldfd, int newfd, int flags) {
-	// TODO
+	if(oldfd < 0 || oldfd >= MAX_TASK_CHANNELS)
+		return EBADF;
+	if(task->channels[oldfd].channel == NULL)
+		return EBADF;
+	if(oldfd == newfd) {
+		task->channels[oldfd].flags = flags;
+		return 0;
+	}
+
+	if(newfd < 0 || newfd >= MAX_TASK_CHANNELS)
+		return EBADF;
+	if(task->channels[newfd].channel != NULL) {
+		close_channel(task, newfd);
+	}
+	task->channels[oldfd].channel->refcount++;
+	task->channels[newfd] = task->channels[oldfd];
 	return 0;
 }
 
@@ -251,24 +304,15 @@ void syscall_Exit(struct task *task) {
 	if(!task->daemon)
 		--nondaemon_count;
 	--task_count;
-	/* Clean out the send queue. */
-#if 0
-	struct task *sender;
-	while(task->recv_queue.start != NULL) {
-		sender = taskqueue_pop(&task->recv_queue);
-		if(sender->state != TASK_RECV_BLOCKED) {
-			printk("KERNEL FATAL: Exiting task had a non-blocked task on receive queue.\n");
-		} else {
-			/* Unblock sender and tell it the transaction failed. */
-			sender->state = TASK_RUNNING;
-			sender->regs.r0 = EINTR;
-			task_enqueue(sender);
+	/* Close all channels. */
+	for(int i=0; i<MAX_TASK_CHANNELS; ++i) {
+		if(task->channels[i].channel != NULL) {
+			close_channel(task, i);
 		}
 	}
 	/* Task must have been running (not blocked or on the ready queue) to call Exit.
 	   So, it is safe to free the task. */
 	taskqueue_push(&freequeue, task);
-#endif
 }
 
 /* Destroy, if implemented, needs to do more work than Exit:
@@ -345,10 +389,8 @@ int syscall_MsgReceive(struct task *receiver, int channel, useraddr_t tid, usera
 	}
 
 	struct task *sender = taskqueue_pop(&chan->senders);
-	if(sender->state != TASK_RECV_BLOCKED) {
-		printk("KERNEL FATAL: Task had a non-blocked task on receive queue.\n");
-		return ESTATE;
-	}
+	if(sender->state != TASK_RECV_BLOCKED)
+		panic("Task had a non-blocked task on receive queue");
 	handle_receive(receiver, sender);
 	return receiver->regs.r0; // receiver unblocked
 }
@@ -393,6 +435,7 @@ int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t re
 			goto out;
 		}
 
+		channel->channel->refcount++;
 		sender->channels[cd] = *channel;
 		*sender->srr.send.rchan = cd;
 	}
