@@ -178,6 +178,25 @@ __attribute__((unused)) static void hashtable_test() {
 #undef DEL
 }
 
+__attribute__((unused)) static void fstest_task() {
+	int chan;
+	char path[PATH_MAX+1];
+	printf("path_max test\n");
+	memset(path, 'a', PATH_MAX);
+	path[PATH_MAX] = 0;
+	printf(" mkchan: %d\n", mkchan(ROOT_DIRFD, path));
+	printf(" open: %d\n", chan=open(ROOT_DIRFD, path));
+	printf(" rmchan: %d\n", rmchan(ROOT_DIRFD, path));
+	printf(" close: %d\n", close(chan));
+	for(int i=0; i<100; ++i) {
+		sprintf(path, "/tmp/test%d", i);
+		ASSERTNOERR(mkchan(ROOT_DIRFD, path));
+		ASSERTNOERR(chan=open(ROOT_DIRFD, path));
+		ASSERTNOERR(rmchan(ROOT_DIRFD, path));
+		ASSERTNOERR(close(chan));
+	}
+}
+
 /* The first user program */
 void userprog_init() {
 	ChannelOpen(); /* stdin */
@@ -203,6 +222,7 @@ void userprog_init() {
 
 	//ASSERTNOERR(Create(0, hashtable_test));
 	ASSERTNOERR(Create(1, memcpy_bench));
+	ASSERTNOERR(Create(2, fstest_task));
 	//ASSERTNOERR(Create(2, task_reclamation_test));
 	//ASSERTNOERR(Create(2, srr_task));
 	//ASSERTNOERR(Create(3, srrbench_task));

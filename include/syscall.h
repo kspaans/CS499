@@ -26,7 +26,7 @@ int AwaitEvent(int eventid);
 int TaskStat(int tid, struct task_stat *stat);
 
 int ChannelOpen(void);
-void ChannelClose(int no);
+int ChannelClose(int no);
 int ChannelDup(int oldfd, int newfd, int flags);
 
 #endif /* SYSCALL_H */

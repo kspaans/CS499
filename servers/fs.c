@@ -8,8 +8,6 @@
 #include <servers/fs.h>
 #include <kern/printk.h>
 
-#define FILE_MAX 32
-
 enum filemsg {
 	FILE_OPEN,
 	FILE_MKDIR,
@@ -42,8 +40,8 @@ int open(int dirfd, const char *pathname) {
 	return file_req(FILE_OPEN, dirfd, pathname, true);
 }
 
-void close(int dirfd) {
-	ChannelClose(dirfd);
+int close(int dirfd) {
+	return ChannelClose(dirfd);
 }
 
 int mkdir(int dirfd, const char *pathname) {
@@ -185,6 +183,7 @@ static void do_rmchan(int dirfd, int tid, const char *path, size_t pathlen) {
 		MsgReplyStatus(tid, ENOENT);
 		return;
 	}
+	ChannelClose(fs.files[i].chan);
 	MsgReplyStatus(tid, 0);
 }
 
@@ -213,7 +212,7 @@ void fileserver_task(void) {
 
 	add_chan(ROOT_DIRFD, "/dev/stdin", STDIN_FILENO);
 	add_chan(ROOT_DIRFD, "/dev/stdout", STDOUT_FILENO);
-	add_chan(ROOT_DIRFD, "/dev/fs", ROOT_DIRFD);
+	add_chan(ROOT_DIRFD, "/mnt/rootfs", ROOT_DIRFD);
 
 	for (;;) {
 		int len = MsgReceive(ROOT_DIRFD, &tid, &msgcode, path, sizeof(path));
@@ -244,7 +243,7 @@ void fileserver_task(void) {
 void dump_files(void) {
 	printk("filesystem dump:\n");
 	for (int i = 0; i < HASH_MAX; ++i) {
-		if (fs.files[i].valid)
+		if (fs.files[i].valid && !fs.files[i].deleted)
 			printk("[%d] %.*s\n", i, PATH_MAX, fs.files[i].path);
 	}
 }
