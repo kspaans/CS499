@@ -26,6 +26,14 @@ init_mmu:
 	mcr p15, 0, r1, c1, c0, 0 @ enable MMUs
 	bx lr
 
+.global deinit_mmu
+.type deinit_mmu, %function
+deinit_mmu:
+	mrc p15, 0, r1, c1, c0, 0 @ read CP15 Register 1
+	and r1, r1, #0xFFFFFFFE	  @ bit 0 to 0 to disable MMU
+	mcr p15, 0, r1, c1, c0, 0 @ disable MMUs
+	bx lr
+
 @ First argument should be a pointer to the page table
 .global set_ttbr
 .type set_ttbr, %function

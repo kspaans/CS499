@@ -99,6 +99,7 @@ int parse_args(char *buf, char **argv, int argv_len);
 /* CPU functions */
 void init_cache();
 void init_mmu();
+void deinit_mmu();
 void set_ttbr(uint32_t *pagetable);
 
 #endif /* LIB_H */

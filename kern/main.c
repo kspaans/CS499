@@ -74,5 +74,6 @@ int main() {
 		check_stack(next);
 	}
 	intc_reset();
+	deinit_mmu();
 	return 0;
 }

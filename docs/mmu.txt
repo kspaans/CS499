@@ -14,6 +14,12 @@ see c13, Context ID Register (CONTEXTIDR) on pageB3-153.
 [_] mmu during caches		
 [_] mmu before caches		
 [_] mmu after caches		
+[_] enable instruction cache in control register
+[_] enable data        cache in control register
+
+cp15 c10, memory remap registers for TEX / TRE remapping???
+N=24 for ([31:24]) for supersections
+
 try enabling caches...
 try enabling MMU without anything...
 how to do flat mapping?

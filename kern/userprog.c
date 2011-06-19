@@ -73,20 +73,21 @@ __attribute__((unused)) static void console_loop() {
 #include <lib.h>
 #include <string.h>
 #include <timer.h>
+#include <kern/kmalloc.h>
 __attribute__((unused)) static void memcpy_bench() {
 	int tid = MyTid();
 	printf("memcpy_bench[%d]: benchmarking memcpy\n", tid);
 	/* Run some benchmarks! */
-	char buf[1<<14];
-	char buf2[1<<14];
+	char *buf =  kmalloc(1<<25);
+	char *buf2 = kmalloc(1<<25);
 
 	int i;
 	unsigned long long start_time = read_timer();
-	for(i=0; i<(1<<8); i++) {
-		memcpy(buf, buf2, sizeof(buf));
+	for(i=0; i<(1<<2); i++) {
+		memcpy(buf, buf2, 1<<25);
 	}
 	unsigned long long duration = read_timer() - start_time;
-	printf("Did 4MB in %lu milliseconds\n", (unsigned long)(duration/TICKS_PER_MSEC));
+	printf("Did 128MB in %lu milliseconds\n", (unsigned long)(duration/TICKS_PER_MSEC));
 }
 
 #define SRR_RUNS 16384
