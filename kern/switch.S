@@ -128,11 +128,6 @@ irq_enter:
 	@ Return to main
 	bx    lr
 
-	setend be
-	mov r0, r0
-	setend le
-	mov r0, r0
-
 @ PRM reset.
 .global prm_reset
 prm_reset:
