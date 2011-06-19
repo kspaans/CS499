@@ -39,6 +39,8 @@ struct hostdata {
 	const char *hostname;
 	struct mac_addr mac;
 	uint32_t ip;
+	uint32_t netmask;
+	uint32_t gwip;
 	uint32_t ncip;
 	uint16_t ncport;
 	bool has_uart;

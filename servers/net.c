@@ -27,11 +27,11 @@
 #define RXPAD 2 /* set in drivers/eth.c with RX_CFG */
 #define FRAME_MAX 1600
 
-#define UDPCON_CLIENT_PORT 26845
-#define UDPCON_SERVER_PORT 26846
-#define UDPCON_SERVER_IP IP(10,0,0,1)
-#define GATEWAY_IP IP(10,0,0,1)
-#define SUBNET_MASK IP(255,0,0,0)
+#define UDPCON_CLIENT_PORT (this_host->ncport)
+#define UDPCON_SERVER_PORT (this_host->ncport)
+#define UDPCON_SERVER_IP (this_host->ncip)
+#define GATEWAY_IP (this_host->gwip)
+#define SUBNET_MASK (this_host->netmask)
 
 static int ethrx_fd;
 static int arpserver_fd;
@@ -41,9 +41,9 @@ static void ethrx_notifier();
 static void udpconrx_notifier();
 
 static struct hostdata hosts[] = {
-	{ "tobi",   MAC(0x00, 0x15, 0xc9, 0x28, 0xd9, 0x1b), IP(10, 0, 0, 10), IP(10, 0, 0, 1), 6010, 1 },
-	{ "tide1",  MAC(0x00, 0x15, 0xc9, 0x28, 0xe1, 0xc0), IP(10, 0, 0, 11), IP(10, 0, 0, 1), 6011, 1 },
-	{ "earth1", MAC(0x00, 0x15, 0xc9, 0x28, 0xdf, 0x53), IP(10, 0, 0, 12), IP(10, 0, 0, 1), 6012, 1 },
+	{ "tobi",   MAC(0x00, 0x15, 0xc9, 0x28, 0xd9, 0x1b), IP(10, 0, 0, 10), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6010, 1 },
+	{ "tide1",  MAC(0x00, 0x15, 0xc9, 0x28, 0xe1, 0xc0), IP(10, 0, 0, 11), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6011, 1 },
+	{ "earth1", MAC(0x00, 0x15, 0xc9, 0x28, 0xdf, 0x53), IP(10, 0, 0, 12), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6012, 1 },
 };
 
 struct hostdata *this_host;
