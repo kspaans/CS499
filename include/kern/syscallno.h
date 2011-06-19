@@ -10,13 +10,12 @@
 #define SYS_MSGRECEIVE    7
 #define SYS_MSGREPLY      8
 #define SYS_MSGREAD       9
-#define SYS_MSGFORWARD    10
-#define SYS_CREATEDAEMON  11
-#define SYS_AWAITEVENT    12
-#define SYS_TASKSTAT      13
-#define SYS_SUSPEND       14
-#define SYS_CHANNELOPEN   15
-#define SYS_CHANNELCLOSE  16
-#define SYS_CHANNELDUP    17
+#define SYS_CREATEDAEMON  10
+#define SYS_AWAITEVENT    11
+#define SYS_TASKSTAT      12
+#define SYS_SUSPEND       13
+#define SYS_CHANNELOPEN   14
+#define SYS_CHANNELCLOSE  15
+#define SYS_CHANNELDUP    16
 
 #endif /* KERN_SYSCALLNO_H */

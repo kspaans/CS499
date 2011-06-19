@@ -135,7 +135,6 @@ int syscall_MsgSend(struct task *task, int channel, int msgcode, const_useraddr_
 int syscall_MsgReceive(struct task *task, int channel, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen);
 int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen, int replychan);
 int syscall_MsgRead(struct task *task, int tid, useraddr_t buf, int offset, int len);
-int syscall_MsgForward(struct task *task, int srctid, int dsttid, int msgcode);
 int syscall_AwaitEvent(struct task* task, int eventid);
 int syscall_TaskStat(struct task* task, int tid, useraddr_t stat);
 

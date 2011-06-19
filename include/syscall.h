@@ -12,7 +12,7 @@ int MyParentTid();
 void Pass();
 void Suspend();
 void Exit() __attribute__((noreturn));
-/* Send a message to "tid" of type "msgcode" and payload "msg"
+/* Send a message to "channel" of type "msgcode" and payload "msg"
  * Returns the status from Reply, or negative values on failure */
 int MsgSend(int channel, int msgcode, const void *msg, int msglen, void *reply, int replylen, int *replychan);
 /* Wait for a message. The size of the sent message is returned. */
@@ -22,8 +22,6 @@ int MsgReply(int tid, int status, const void *reply, int replylen, int replychan
 #define MsgReplyStatus(tid,status) MsgReply(tid,status,NULL,0, -1)
 /* Read part or all of a received message. The number of bytes actually read is returned. */
 int MsgRead(int tid, void *buf, int offset, int len);
-/* Forward a received message to another task */
-int MsgForward(int sender, int receiver, int msgcode);
 int AwaitEvent(int eventid);
 int TaskStat(int tid, struct task_stat *stat);
 

@@ -422,31 +422,6 @@ int syscall_MsgRead(struct task *task, int tid, useraddr_t buf, int offset, int 
 	return len;
 }
 
-int syscall_MsgForward(struct task *task, int srctid, int dsttid, int msgcode) {
-#if 0
-	struct task *sender = get_task(srctid);
-	if(sender == NULL || sender->state == TASK_DEAD)
-		return ESRCH;
-	if(sender->state != TASK_REPLY_BLOCKED)
-		return ESTATE;
-
-	struct task *receiver = get_task(dsttid);
-	if(receiver == NULL || receiver->state == TASK_DEAD)
-		return ESRCH;
-
-	sender->state = TASK_RECV_BLOCKED;
-	sender->srr.send.tid = dsttid;
-	sender->srr.send.code = msgcode;
-	if(receiver->state == TASK_SEND_BLOCKED) {
-		handle_receive(receiver, sender);
-		task_enqueue(receiver); // receiver unblocked
-	} else {
-		taskqueue_push(&receiver->recv_queue, sender);
-	}
-#endif
-	return 0;
-}
-
 void event_unblock_all(int eventid, int return_value) {
 	while(eventqueues[eventid].start != NULL) {
 		event_unblock_one(eventid, return_value);
@@ -553,10 +528,6 @@ void task_syscall(int code, struct task *task) {
 	case SYS_MSGREAD:
 		ret = syscall_MsgRead(task, /*tid*/task->regs.r0, /*buf*/(useraddr_t)task->regs.r1,
 			/*offset*/task->regs.r2, /*len*/task->regs.r3);
-		break;
-	case SYS_MSGFORWARD:
-		ret = syscall_MsgForward(task, /*sender*/task->regs.r0, /*receiver*/task->regs.r1,
-			/*msgcode*/task->regs.r2);
 		break;
 	case SYS_AWAITEVENT:
 		ret = syscall_AwaitEvent(task, task->regs.r0);

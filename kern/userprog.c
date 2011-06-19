@@ -149,101 +149,6 @@ __attribute__((unused)) static void task_reclamation_test() {
 	Create(4, task_reclamation_2);
 }
 
-#if 0
-int advsrr_chan1;
-#define TESTRECV(i,buf,bufsz) { \
-	msglen = MsgReceive(advsrr_chan1, &tid, &msgcode, buf, bufsz); \
-	printf("Receive #%d (child %d): %d", i, msgcode, msglen); \
-	if(!buf) printf(" (null) [] "); \
-	else if(msglen > bufsz) printf(" (truncated) [%.*s] ", bufsz, buf); \
-	else printf(" [%.*s] ", msglen, buf); \
-	/* msglen = MsgRead(tid, msgbuf, 0, 32); \
-	printf(" read %d [%.*s] ", msglen, msglen, msgbuf); \
-	printf(" reply %d\n", MsgReplyStatus(tid, msgcode));*/ \
-}
-static void advsrr_child2() {
-#if 0
-	int tid, msgcode, msglen;
-	char msgbuf[32];
-	TESTRECV(1, (char *)NULL, 16);
-	TESTRECV(2, msgbuf, 16);
-	TESTRECV(3, (char *)NULL, 16);
-	TESTRECV(4, msgbuf, 32);
-	TESTRECV(5, msgbuf, 16);
-	TESTRECV(6, msgbuf, 8);
-#endif
-}
-static void advsrr_child1() {
-#if 0
-	int child2 = Create(1, advsrr_child2);
-#endif
-	int tid, msgcode, msglen;
-	char msgbuf[32];
-	TESTRECV(1, (char *)NULL, 16);
-	TESTRECV(2, msgbuf, 16);
-	TESTRECV(3, (char *)NULL, 16);
-	TESTRECV(4, msgbuf, 32);
-	TESTRECV(5, msgbuf, 16);
-	TESTRECV(6, msgbuf, 8);
-#if 0
-#define TESTFWD(i,buf,bufsz) { \
-	msglen = MsgReceive(&tid, &msgcode, buf, bufsz); \
-	printf("Forward #%d (child %d): %d %d\n", i, msgcode, msglen, MsgForward(tid, child2, 2)); \
-}
-	TESTFWD(1, NULL, 16);
-	TESTFWD(2, msgbuf, 16);
-	TESTFWD(3, NULL, 16);
-	TESTFWD(4, msgbuf, 32);
-	TESTFWD(5, msgbuf, 16);
-	TESTFWD(6, msgbuf, 8);
-#undef TESTFWD
-#endif
-}
-#undef TESTRECV
-__attribute__((unused)) static void advsrr_task() {
-	int tid = MyTid();
-	advsrr_chan1 = ChannelOpen();
-	char data[16];
-	memcpy(data, "abcdefghijklmnopqrstuvwxyz", 16);
-#if 0
-	int child1 = Create(0, advsrr_child1);
-#endif
-#define TESTSEND(i,buf,bufsz) { \
-	printf("Send #%d: %d\n", i, MsgSend(advsrr_chan1, 1, buf, bufsz, NULL, 0, NULL)); \
-}
-
-	printf("Receive test:\n");
-	printf("advsrr_task[%d]: send NULL, recv NULL\n", tid);
-	TESTSEND(1, NULL, 64);
-	printf("advsrr_task[%d]: send NULL, recv 16\n", tid);
-	TESTSEND(2, NULL, 64);
-	printf("advsrr_task[%d]: send 16, recv NULL\n", tid);
-	TESTSEND(3, data, 16);
-	printf("advsrr_task[%d]: send 16, recv 32\n", tid);
-	TESTSEND(4, data, 16);
-	printf("advsrr_task[%d]: send 16, recv 16\n", tid);
-	TESTSEND(5, data, 16);
-	printf("advsrr_task[%d]: send 16, recv 8\n", tid);
-	TESTSEND(6, data, 16);
-
-#if 0
-	printf("\nForward test:\n");
-	printf("advsrr_task[%d]: send NULL, recv NULL\n", tid);
-	TESTSEND(1, NULL, 64);
-	printf("advsrr_task[%d]: send NULL, recv 16\n", tid);
-	TESTSEND(2, NULL, 64);
-	printf("advsrr_task[%d]: send 16, recv NULL\n", tid);
-	TESTSEND(3, data, 16);
-	printf("advsrr_task[%d]: send 16, recv 32\n", tid);
-	TESTSEND(4, data, 16);
-	printf("advsrr_task[%d]: send 16, recv 16\n", tid);
-	TESTSEND(5, data, 16);
-	printf("advsrr_task[%d]: send 16, recv 8\n", tid);
-	TESTSEND(6, data, 16);
-#endif
-}
-#endif
-
 static uint32_t dumbhash(int x) { return 0; }
 static void hashtable_print(hashtable *ht) {
 	printf("{");
@@ -298,7 +203,6 @@ void userprog_init() {
 
 	//ASSERTNOERR(Create(0, hashtable_test));
 	ASSERTNOERR(Create(1, memcpy_bench));
-	//ASSERTNOERR(Create(2, advsrr_task));
 	//ASSERTNOERR(Create(2, task_reclamation_test));
 	//ASSERTNOERR(Create(2, srr_task));
 	//ASSERTNOERR(Create(3, srrbench_task));
