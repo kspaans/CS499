@@ -2,4 +2,6 @@
 
 redo-ifchange symkern
 
-nm -n symkern
+. ../utils/common.sh
+
+${XPREFIX}nm -n symkern
