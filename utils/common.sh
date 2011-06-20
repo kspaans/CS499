@@ -5,7 +5,7 @@ LD="${XPREFIX}ld"
 AR="${XPREFIX}ar"
 
 # Standard options
-CFLAGS="-pipe -Wall -I include -std=gnu99 -O2"
+CFLAGS="-pipe -Wall -Werror -I include -std=gnu99 -O2"
 
 # ARMv7 instruction set, Cortex-A8 tuning
 CFLAGS+=" -march=armv7-a -mtune=cortex-a8"
