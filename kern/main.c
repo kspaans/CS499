@@ -66,12 +66,8 @@ int main() {
 	syscall_Create(NULL, 6, userprog_init);
 
 	while (nondaemon_count > 0) {
-		next = task_dequeue();
-		if (next == NULL)
-			/* No more tasks. */
-			break;
+		next = schedule();
 		task_activate(next);
-		task_enqueue(next);
 		check_stack(next);
 	}
 	intc_reset();

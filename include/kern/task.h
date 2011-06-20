@@ -38,8 +38,7 @@ struct regs {
 /* Forward declaration */
 struct task;
 typedef struct {
-	struct task* start;
-	struct task* end;
+	struct task *start;
 } taskqueue;
 
 struct channel {
@@ -93,8 +92,9 @@ struct task {
 	union tasksrr srr;
 
 	/* for putting tasks in queues */
-	struct task *prevtask;
-	struct task *nexttask;
+	taskqueue *queue;
+	struct task *next;
+	struct task *prev;
 };
 
 /* Initialize task system */
@@ -117,11 +117,7 @@ void check_stack(struct task* task);
 
 int get_num_tasks();
 
-/* Task queue management */
-void taskqueue_init(taskqueue* queue);
-struct task* taskqueue_pop();
-void taskqueue_push(taskqueue* queue, struct task* task);
-int taskqueue_empty(taskqueue* queue);
+struct task *schedule(void);
 
 /// debug
 void print_task(struct task *task);
