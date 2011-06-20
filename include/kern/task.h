@@ -38,8 +38,7 @@ struct regs {
 /* Forward declaration */
 struct task;
 typedef struct {
-	struct task* start;
-	struct task* end;
+	struct task *start;
 } taskqueue;
 
 struct channel {
@@ -55,28 +54,6 @@ struct channel_desc {
 	int next_free_cd;
 };
 
-union tasksrr {
-	struct {
-		int tid;
-		int channel;
-		int code;
-		const_useraddr_t buf;
-		int len;
-		useraddr_t rbuf;
-		int rlen;
-		int *rchan;
-	} send;
-	struct {
-		useraddr_t tidptr;
-		useraddr_t codeptr;
-		useraddr_t buf;
-		int len;
-	} recv;
-	struct {
-		int id;
-	} event;
-};
-
 struct task {
 	/* regs must be first */
 	struct regs regs;
@@ -90,11 +67,27 @@ struct task {
 	int free_cd_head;
 	int next_free_cd;
 	struct channel_desc channels[MAX_TASK_CHANNELS];
-	union tasksrr srr;
+
+	union {
+		struct {
+			void *sendbuf;
+			size_t sendlen;
+			struct channel *destchan;
+			struct channel *sendchan;
+		};
+		struct {
+			void *recvbuf;
+			size_t recvlen;
+			struct channel *srcchan;
+			int *recvchan;
+		};
+		int eventid;
+	};
 
 	/* for putting tasks in queues */
-	struct task *prevtask;
-	struct task *nexttask;
+	taskqueue *queue;
+	struct task *next;
+	struct task *prev;
 };
 
 /* Initialize task system */
@@ -117,11 +110,7 @@ void check_stack(struct task* task);
 
 int get_num_tasks();
 
-/* Task queue management */
-void taskqueue_init(taskqueue* queue);
-struct task* taskqueue_pop();
-void taskqueue_push(taskqueue* queue, struct task* task);
-int taskqueue_empty(taskqueue* queue);
+struct task *schedule(void);
 
 /// debug
 void print_task(struct task *task);
@@ -134,10 +123,6 @@ int syscall_MyTid(struct task *task);
 int syscall_MyParentTid(struct task *task);
 void syscall_Pass(struct task *task);
 void syscall_Exit(struct task *task);
-int syscall_MsgSend(struct task *task, int channel, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen, int *replychan);
-int syscall_MsgReceive(struct task *task, int channel, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen);
-int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen, int replychan);
-int syscall_MsgRead(struct task *task, int tid, useraddr_t buf, int offset, int len);
 int syscall_AwaitEvent(struct task* task, int eventid);
 int syscall_TaskStat(struct task* task, int tid, useraddr_t stat);
 

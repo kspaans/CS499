@@ -5,7 +5,10 @@ LD="${XPREFIX}ld"
 AR="${XPREFIX}ar"
 
 # Standard options
-CFLAGS="-pipe -Wall -I include -std=gnu99 -O2"
+CFLAGS="-pipe -Wall -Wextra -Wno-unused-parameter -I include -std=gnu99 -O2"
+
+# Debug options
+CFLAGS+=" -Werror -Wno-unused-function"
 
 # ARMv7 instruction set, Cortex-A8 tuning
 CFLAGS+=" -march=armv7-a -mtune=cortex-a8"

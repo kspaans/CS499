@@ -5,4 +5,5 @@ bin/*
 .do_built
 .do_built.dir
 *.did
+.*.swp
 cscope.out

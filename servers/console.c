@@ -24,7 +24,7 @@ enum consolemsg {
 
 static void console_printfunc(void *unused, const char *buf, size_t len) {
 	(void)unused;
-	for(int i=0; i<len; i+=CHUNK_SIZE) {
+	for(size_t i=0; i<len; i+=CHUNK_SIZE) {
 		int chunk = (i+CHUNK_SIZE < len) ? CHUNK_SIZE : len-i;
 		MsgSend(STDOUT_FILENO, CONSOLE_TX_DATA_MSG, buf+i, chunk, NULL, 0, NULL);
 	}

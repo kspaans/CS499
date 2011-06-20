@@ -24,11 +24,7 @@ void fileserver_task();
 __attribute__((unused)) static void udp_tx_loop() {
 	printf("Type characters to send to the remote host; Ctrl+D to quit\n");
 
-	udp_printf("Hello from ");
-	for(int i=0; i<5; i++) {
-		udp_printf("%02x:", this_host->mac.addr[i]);
-	}
-	udp_printf("%02x\n", this_host->mac.addr[5]);
+	udp_printf("Hello from %s\n", this_host->hostname);
 
 	for(;;) {
 		char c = getchar();
@@ -162,7 +158,7 @@ __attribute__((unused)) static void task_reclamation_test() {
 static uint32_t dumbhash(int x) { return 0; }
 static void hashtable_print(hashtable *ht) {
 	printf("{");
-	for(int i=0; i<ht->max; i++) {
+	for(uint32_t i=0; i<ht->max; i++) {
 		if(!ht->arr[i].valid)
 			printf("*");
 		else if(ht->arr[i].deleted)
@@ -241,5 +237,5 @@ void userprog_init() {
 	//ASSERTNOERR(Create(4, console_loop));
 	ASSERTNOERR(Create(4, udp_tx_loop));
 	ASSERTNOERR(CreateDaemon(4, udp_rx_loop));
-	ASSERTNOERR(Create(6, gameoflife));
+//	ASSERTNOERR(Create(6, gameoflife));
 }

@@ -1,6 +1,9 @@
 #ifndef SYSCALL_H
 #define SYSCALL_H
+
 #include <task.h>
+#include <types.h>
+#include <msg.h>
 
 /* Create a new task with specified priority and entry point. */
 int Create(int priority, void (*code)());
@@ -12,16 +15,10 @@ int MyParentTid();
 void Pass();
 void Suspend();
 void Exit() __attribute__((noreturn));
-/* Send a message to "channel" of type "msgcode" and payload "msg"
- * Returns the status from Reply, or negative values on failure */
-int MsgSend(int channel, int msgcode, const void *msg, int msglen, void *reply, int replylen, int *replychan);
-/* Wait for a message. The size of the sent message is returned. */
-int MsgReceive(int channel, int *tid, int *msgcode, void *msg, int msglen);
-/* Reply to a message. status will be returned as the return value from Send. */
-int MsgReply(int tid, int status, const void *reply, int replylen, int replychan);
-#define MsgReplyStatus(tid,status) MsgReply(tid,status,NULL,0, -1)
-/* Read part or all of a received message. The number of bytes actually read is returned. */
-int MsgRead(int tid, void *buf, int offset, int len);
+
+ssize_t sys_send(int chan, void *buf, size_t len, int  sch, int flags);
+ssize_t sys_recv(int chan, void *buf, size_t len, int *rch, int flags);
+
 int AwaitEvent(int eventid);
 int TaskStat(int tid, struct task_stat *stat);
 

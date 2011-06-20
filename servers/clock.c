@@ -97,7 +97,7 @@ void clockserver_task() {
 			}
 			break;
 		case CLOCK_DELAY_MSG:
-			if(rcvlen < sizeof(int)) {
+			if((unsigned)rcvlen < sizeof(int)) {
 				printf("Bad clock message");
 				MsgReplyStatus(tid, EINVAL);
 				break;

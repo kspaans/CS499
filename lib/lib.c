@@ -51,7 +51,7 @@ void hashtable_init(hashtable *ht, struct ht_item *arr, int max, ht_hashfunc has
 
 int hashtable_get(hashtable *ht, int key, void **value) {
 	uint32_t i = ht->hashfunc(key) % ht->max;
-	int count = ht->max;
+	uint32_t count = ht->max;
 	while(ht->arr[i].valid) {
 		if(ht->cmpfunc(key, ht->arr[i].key) == 0 && !ht->arr[i].deleted) {
 			if(value) *value = ht->arr[i].value;

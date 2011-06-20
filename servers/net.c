@@ -44,6 +44,18 @@ static struct hostdata hosts[] = {
 	{ "tobi",   MAC(0x00, 0x15, 0xc9, 0x28, 0xd9, 0x1b), IP(10, 0, 0, 10), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6010, 1 },
 	{ "tide1",  MAC(0x00, 0x15, 0xc9, 0x28, 0xe1, 0xc0), IP(10, 0, 0, 11), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6011, 1 },
 	{ "earth1", MAC(0x00, 0x15, 0xc9, 0x28, 0xdf, 0x53), IP(10, 0, 0, 12), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6012, 1 },
+	{ "tide2",  MAC(0x00, 0x15, 0xc9, 0x28, 0xe1, 0xbf), IP(10, 0, 0, 13), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6013, 0 },
+	{ "earth2", MAC(0x00, 0x15, 0xc9, 0x28, 0xdf, 0x62), IP(10, 0, 0, 14), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6014, 0 },
+	{ "tide3",  MAC(0x00, 0x15, 0xc9, 0x28, 0xe1, 0xbe), IP(10, 0, 0, 15), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6015, 0 },
+	{ "earth3", MAC(0x00, 0x15, 0xc9, 0x28, 0xdf, 0x25), IP(10, 0, 0, 16), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6016, 0 },
+	{ "tide4",  MAC(0x00, 0x15, 0xc9, 0x28, 0xe1, 0xcf), IP(10, 0, 0, 17), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6017, 0 },
+	{ "earth4", MAC(0x00, 0x15, 0xc9, 0x28, 0xdf, 0x34), IP(10, 0, 0, 18), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6018, 0 },
+	{ "tide5",  MAC(0x00, 0x15, 0xc9, 0x28, 0xe1, 0xce), IP(10, 0, 0, 19), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6019, 0 },
+	{ "earth5", MAC(0x00, 0x15, 0xc9, 0x28, 0xdf, 0x24), IP(10, 0, 0, 20), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6020, 0 },
+	{ "tide6",  MAC(0x00, 0x15, 0xc9, 0x28, 0xe1, 0xde), IP(10, 0, 0, 21), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6021, 0 },
+	{ "earth6", MAC(0x00, 0x15, 0xc9, 0x28, 0xdf, 0x33), IP(10, 0, 0, 22), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6022, 0 },
+	{ "tide7",  MAC(0x00, 0x15, 0xc9, 0x28, 0xe1, 0xdd), IP(10, 0, 0, 23), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6023, 0 },
+	{ "earth7", MAC(0x00, 0x15, 0xc9, 0x28, 0xdf, 0x43), IP(10, 0, 0, 24), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6024, 0 },
 };
 
 struct hostdata *this_host;
@@ -198,7 +210,7 @@ int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data
 }
 
 static void udp_printfunc(void *data, const char *buf, size_t len) {
-	for(int i=0; i<len; i+=UDPMTU) {
+	for(size_t i=0; i<len; i+=UDPMTU) {
 		int chunk = (i+UDPMTU < len) ? UDPMTU : len-i;
 		send_udp(UDPCON_CLIENT_PORT, UDPCON_SERVER_IP, UDPCON_SERVER_PORT, buf+i, chunk);
 	}
@@ -659,7 +671,7 @@ void udpconrx_notifier() {
 }
 
 static struct hostdata *get_host_data(struct mac_addr *mac) {
-	for (int i = 0; i < arraysize(hosts); ++i)
+	for (size_t i = 0; i < arraysize(hosts); ++i)
 		if (!memcmp(mac, &hosts[i].mac, sizeof(*mac)))
 			return &hosts[i];
 	printf("no IP address for this host");

@@ -13,6 +13,7 @@
 static taskqueue freequeue;
 static taskqueue taskqueues[TASK_NPRIO];
 static taskqueue eventqueues[NEVENTS];
+static taskqueue replyqueue;
 
 static int next_tidx;
 static struct task *task_lookup[MAX_TASKS];
@@ -24,9 +25,14 @@ int nondaemon_count;
 
 static struct channel *free_channel_head;
 
+static void taskqueue_init(taskqueue *queue);
+static void taskqueue_enqueue(taskqueue *queue, struct task *task);
+static void task_move(struct task *task, taskqueue *queue);
+
 void init_tasks() {
 	int i;
 	taskqueue_init(&freequeue);
+	taskqueue_init(&replyqueue);
 	/* Initialize task queues */
 	for(i=0; i<TASK_NPRIO; i++) {
 		taskqueue_init(&taskqueues[i]);
@@ -63,63 +69,86 @@ int get_num_tasks() {
 	return task_count;
 }
 
-struct task *task_dequeue() {
-	int i;
-	for(i=0; i<TASK_NPRIO; i++) {
-		if(taskqueues[i].start != NULL) {
-			return taskqueue_pop(&taskqueues[i]);
-		}
-	}
-	return NULL;
-}
-
-void task_enqueue(struct task *task) {
-	if(task->state != TASK_RUNNING)
-		return;
-	taskqueue_push(&taskqueues[task->priority], task);
-}
-
 void check_stack(struct task* task) {
 	if(task->regs.sp<task->stack_start) {
 		printk("Error: Task %d has overflowed its stack.\n", task->tid);
 	}
 }
 
-void taskqueue_init(taskqueue* queue) {
-	queue->start = queue->end = NULL;
+static void taskqueue_init(taskqueue* queue) {
+	queue->start = NULL;
 }
 
-struct task* taskqueue_pop(taskqueue* queue) {
-	struct task* ret = queue->start;
-	queue->start = ret->nexttask;
-	if(queue->start != NULL) {
-		queue->start->prevtask = NULL;
-	} else {
-		queue->end = NULL;
-	}
-	ret->nexttask = NULL;
+static bool taskqueue_empty(taskqueue *queue) {
+	return queue->start == NULL;
+}
+
+static struct task *taskqueue_advance(taskqueue *queue) {
+	struct task *ret = queue->start;
+	queue->start = queue->start->next;
 	return ret;
 }
 
-void taskqueue_push(taskqueue* queue, struct task* task) {
-	if(queue->end == NULL) {
-		queue->start = queue->end = task;
-		task->nexttask = task->prevtask = NULL;
+static struct task *taskqueue_peek(taskqueue *queue) {
+	return queue->start;
+}
+
+struct task *schedule(void) {
+	for (int i = 0; i < TASK_NPRIO; ++i)
+		if (!taskqueue_empty(&taskqueues[i]))
+			return taskqueue_advance(&taskqueues[i]);
+
+	panic("no task to schedule");
+}
+
+static void taskqueue_enqueue(taskqueue *queue, struct task *task) {
+	if (taskqueue_empty(queue)) {
+		queue->start = task;
+		task->next = task;
+		task->prev = task;
 	} else {
-		queue->end->nexttask = task;
-		task->nexttask = NULL;
-		task->prevtask = queue->end;
-		queue->end = task;
+		struct task *next = queue->start;
+		struct task *prev = next->prev;
+		task->next = next;
+		task->prev = prev;
+		prev->next = task;
+		next->prev = task;
 	}
+	task->queue = queue;
+}
+
+static void taskqueue_dequeue(taskqueue *queue, struct task *task) {
+	if (task->queue->start == task)
+		task->queue->start = task->next;
+
+	task->next->prev = task->prev;
+	task->prev->next = task->next;
+
+	if (task->next == task)
+		task->queue->start = NULL;
+
+	task->queue = NULL;
+}
+
+static void task_move(struct task *task, taskqueue *queue) {
+	taskqueue_dequeue(task->queue, task);
+	taskqueue_enqueue(queue, task);
+}
+
+static void set_task_state(struct task *task, int state, taskqueue *queue) {
+	task->state = state;
+	task_move(task, queue);
+}
+
+static void set_task_running(struct task *task) {
+	set_task_state(task, TASK_RUNNING, &taskqueues[task->priority]);
 }
 
 /* Allocate a task and add it to the lookup list. */
 static struct task __attribute__((malloc)) *task_alloc() {
 	struct task *ret;
-	if(freequeue.start != NULL) {
-		ret = taskqueue_pop(&freequeue);
-		ret->tid = MAKE_TID(TID_IDX(ret->tid), TID_GEN(ret->tid)+1);
-	} else {
+
+	if (taskqueue_empty(&freequeue)) {
 		if(next_tidx >= MAX_TASKS)
 			return NULL;
 
@@ -135,7 +164,15 @@ static struct task __attribute__((malloc)) *task_alloc() {
 
 		int tidx = next_tidx++;
 		ret->tid = MAKE_TID(tidx, 0);
+
+		ret->queue = NULL;
+
+		taskqueue_enqueue(&freequeue, ret);
+	} else {
+		ret = taskqueue_peek(&freequeue);
+		ret->tid = MAKE_TID(TID_IDX(ret->tid), TID_GEN(ret->tid)+1);
 	}
+
 	task_lookup[TID_IDX(ret->tid)-1] = ret;
 	return ret;
 }
@@ -191,7 +228,10 @@ static int do_Create(struct task *task, int priority, void (*code)(), int daemon
 		memset(newtask->channels, 0, sizeof(newtask->channels));
 	}
 
-	task_enqueue(newtask);
+	set_task_running(newtask);
+
+	//printk("created %p %d %s\n", newtask, newtask->tid, SYMBOL_EXACT(code));
+
 	return newtask->tid;
 }
 
@@ -270,7 +310,7 @@ static void close_channel(struct task *task, int no) {
 
 	channel->refcount--;
 	if(channel->refcount == 0) {
-		if(channel->receivers.start != NULL)
+		if(!taskqueue_empty(&channel->receivers))
 			panic("Invalid refcount on channel: receivers still exist");
 		if(channel->senders.start != NULL)
 			panic("Invalid refcount on channel: senders still exist");
@@ -311,7 +351,6 @@ int syscall_ChannelDup(struct task *task, int oldfd, int newfd, int flags) {
 }
 
 void syscall_Exit(struct task *task) {
-	task->state = TASK_DEAD;
 	if(!task->daemon)
 		--nondaemon_count;
 	--task_count;
@@ -323,7 +362,7 @@ void syscall_Exit(struct task *task) {
 	}
 	/* Task must have been running (not blocked or on the ready queue) to call Exit.
 	   So, it is safe to free the task. */
-	taskqueue_push(&freequeue, task);
+	set_task_state(task, TASK_DEAD, &freequeue);
 }
 
 /* Destroy, if implemented, needs to do more work than Exit:
@@ -332,162 +371,105 @@ void syscall_Exit(struct task *task) {
  */
 
 /* Handle a receive transaction, unblocking the receiver. */
-static void handle_receive(struct task *receiver, struct task *sender) {
+static void handle_receive(struct channel *chan) {
+	if (taskqueue_empty(&chan->receivers))
+		return;
+	if (taskqueue_empty(&chan->senders))
+		return;
+
+	struct task *sender = taskqueue_peek(&chan->senders);
+	struct task *receiver = taskqueue_peek(&chan->receivers);
+
+	if (sender->state != TASK_SEND_BLOCKED)
+		panic("Task had a non-blocked task on send queue");
+	if (receiver->state != TASK_RECV_BLOCKED)
+		panic("Task had a non-blocked task on receive queue");
+
+	// TODO: nasty case, for now I want this to be loud
+	if (sender->sendlen > receiver->recvlen)
+		panic("message is too long");
+	if (!sender->sendbuf || !receiver->recvbuf)
+		panic("missing buffers");
+
 	/* Copy the message */
-	if(receiver->srr.recv.buf && sender->srr.send.buf) {
-		int len;
-		if(receiver->srr.recv.len < sender->srr.send.len)
-			len = receiver->srr.recv.len;
-		else
-			len = sender->srr.send.len;
-		memcpy(receiver->srr.recv.buf, sender->srr.send.buf, len);
+	memcpy(receiver->recvbuf, sender->sendbuf, sender->sendlen);
+
+	// transfer channel from sender to receiver
+	if (sender->sendchan) {
+
+		// TODO: decide what error this is
+		if (!receiver->recvchan)
+			panic("unwilling to receive channel");
+
+		int cd = alloc_channel_desc(receiver);
+		if (cd < 0)
+			panic("out of channel descriptors");
+		receiver->channels[cd].channel = sender->sendchan;
+		*receiver->recvchan = cd;
+		sender->sendchan->refcount++;
 	}
 
-	/* Copy the status data */
-	if(receiver->srr.recv.tidptr)
-		memcpy(receiver->srr.recv.tidptr, (void *)&sender->tid, sizeof(int));
-	if(receiver->srr.recv.codeptr)
-		memcpy(receiver->srr.recv.codeptr, (void *)&sender->srr.send.code, sizeof(int));
+	// receiver unblocked, return length of message
+	set_task_running(receiver);
+	receiver->regs.r0 = sender->sendlen;
 
-	sender->state = TASK_REPLY_BLOCKED;
-	// return full send length; receiver should check for truncation
-	receiver->regs.r0 = sender->srr.send.len;
-	receiver->state = TASK_RUNNING;
+	// sender unblocked, return success
+	set_task_running(sender);
+	sender->regs.r0 = 0;
+}
+
+static bool valid_channel(struct task *task, int chan) {
+	return chan >= 0 && chan < MAX_TASK_CHANNELS && task->channels[chan].channel;
 }
 
 /* Message passing */
-int syscall_MsgSend(struct task *sender, int channel, int msgcode, const_useraddr_t msg, int msglen, useraddr_t reply, int replylen, int *replychan) {
-	if (channel < 0 || channel >= MAX_TASK_CHANNELS)
-		return EINVAL;
-	if (!sender->channels[channel].channel)
+static int syscall_send(struct task *task, int chan, void *buf, size_t len, int sch, int flags) {
+	if (!valid_channel(task, chan))
 		return EBADF;
-	struct channel *chan = sender->channels[channel].channel;
-
-	sender->state = TASK_RECV_BLOCKED;
-	sender->srr.send.channel = channel;
-	sender->srr.send.code = msgcode;
-	sender->srr.send.buf = msg;
-	sender->srr.send.len = msglen;
-	sender->srr.send.rbuf = reply;
-	sender->srr.send.rlen = replylen;
-	sender->srr.send.rchan = replychan;
-	if(chan->receivers.start != NULL) {
-		struct task *receiver = taskqueue_pop(&chan->receivers);
-		handle_receive(receiver, sender);
-		task_enqueue(receiver); // receiver unblocked
-	} else {
-		taskqueue_push(&chan->senders, sender);
-	}
-	/* Return INTR here. Real return value will be posted by syscall_Reply. */
-	return EINTR;
-}
-
-int syscall_MsgReceive(struct task *receiver, int channel, useraddr_t tid, useraddr_t msgcode, useraddr_t msg, int msglen) {
-	if (channel < 0 || channel >= MAX_TASK_CHANNELS)
-		return EINVAL;
-	if (!receiver->channels[channel].channel)
+	if (sch != -1 && !valid_channel(task, sch))
 		return EBADF;
-	struct channel *chan = receiver->channels[channel].channel;
+	struct channel *destchan = task->channels[chan].channel;
+	struct channel *sendchan = sch != -1 ? task->channels[sch].channel : NULL;
 
-	receiver->state = TASK_SEND_BLOCKED;
-	receiver->srr.recv.tidptr = tid;
-	receiver->srr.recv.codeptr = msgcode;
-	receiver->srr.recv.buf = msg;
-	receiver->srr.recv.len = msglen;
-	if(chan->senders.start == NULL) {
-		taskqueue_push(&chan->receivers, receiver);
-		return EINTR; // wait for send
-	}
+	set_task_state(task, TASK_SEND_BLOCKED, &destchan->senders);
 
-	struct task *sender = taskqueue_pop(&chan->senders);
-	if(sender->state != TASK_RECV_BLOCKED)
-		panic("Task had a non-blocked task on receive queue");
-	handle_receive(receiver, sender);
-	return receiver->regs.r0; // receiver unblocked
+	task->sendbuf = buf;
+	task->sendlen = len;
+	task->destchan = destchan;
+	task->sendchan = sendchan;
+
+	handle_receive(destchan);
+
+	return task->regs.r0;
 }
 
-int syscall_MsgReply(struct task *task, int tid, int status, const_useraddr_t reply, int replylen, int replychan) {
-	struct task *sender = get_task(tid);
-	if(sender == NULL || sender->state == TASK_DEAD)
-		return ESRCH;
-	if(sender->state != TASK_REPLY_BLOCKED)
-		return ESTATE;
-	if(replychan >= MAX_TASK_CHANNELS || replychan < -1)
-		return EINVAL;
+static int syscall_recv(struct task *task, int chan, void *buf, size_t len, int *rch, int flags) {
+	if (!valid_channel(task, chan))
+		return EBADF;
+	struct channel *srcchan = task->channels[chan].channel;
 
-	struct channel_desc *channel = NULL;
-	if(replychan >= 0) {
-		if (!task->channels[replychan].channel)
-			return EBADF;
-		channel = &task->channels[replychan];
-	}
+	set_task_state(task, TASK_RECV_BLOCKED, &srcchan->receivers);
 
-	/* ret is returned to the receiver (this task),
-	   status is returned to the sender (other task) */
-	int ret = 0;
-	/* Copy the message. */
-	if(sender->srr.send.rbuf && reply) {
-		if(sender->srr.send.rlen < replylen) {
-			ret = status = ENOSPC;
-			goto out;
-		} else {
-			memcpy(sender->srr.send.rbuf, reply, replylen);
-		}
-	}
-	if (sender->srr.send.rchan) {
-		if (!channel) {
-			*sender->srr.send.rchan = -1;
-			goto out;
-		}
+	task->recvbuf = buf;
+	task->recvlen = len;
+	task->srcchan = srcchan;
+	task->recvchan = rch;
 
-		int cd = alloc_channel_desc(sender);
-		if (cd < 0) {
-			status = EMFILE;
-			goto out;
-		}
+	handle_receive(srcchan);
 
-		channel->channel->refcount++;
-		sender->channels[cd] = *channel;
-		*sender->srr.send.rchan = cd;
-	}
-
-out:
-	/* Push sender return value and unblock it */
-	sender->regs.r0 = status;
-	sender->state = TASK_RUNNING;
-	task_enqueue(sender);
-	return ret;
-}
-
-int syscall_MsgRead(struct task *task, int tid, useraddr_t buf, int offset, int len) {
-	struct task *sender = get_task(tid);
-	if(sender == NULL || sender->state == TASK_DEAD)
-		return ESRCH;
-	if(sender->state != TASK_REPLY_BLOCKED)
-		return ESTATE;
-
-	if(sender->srr.send.buf == NULL)
-		return 0;
-
-	if(len > sender->srr.send.len - offset)
-		len = sender->srr.send.len - offset;
-
-	memcpy(buf, (char *)sender->srr.send.buf + offset, len);
-	return len;
+	return task->regs.r0;
 }
 
 void event_unblock_all(int eventid, int return_value) {
-	while(eventqueues[eventid].start != NULL) {
+	while (!taskqueue_empty(&eventqueues[eventid]))
 		event_unblock_one(eventid, return_value);
-	}
 }
 
 void event_unblock_one(int eventid, int return_value) {
-	if(eventqueues[eventid].start != NULL) {
-		struct task *task = taskqueue_pop(&eventqueues[eventid]);
+	if (!taskqueue_empty(&eventqueues[eventid])) {
+		struct task *task = taskqueue_advance(&eventqueues[eventid]);
 		task->regs.r0 = return_value;
-		task->state = TASK_RUNNING;
-		task_enqueue(task);
+		set_task_running(task);
 	}
 }
 
@@ -495,9 +477,8 @@ int syscall_AwaitEvent(struct task *task, int eventid) {
 	if(eventid < 0 || eventid >= NEVENTS)
 		return EINVAL;
 
-	task->state = TASK_EVENT_BLOCKED;
-	task->srr.event.id = eventid;
-	taskqueue_push(&eventqueues[eventid], task);
+	set_task_state(task, TASK_EVENT_BLOCKED, &eventqueues[eventid]);
+	task->eventid = eventid;
 
 	// Return INTR... Real value will be posted when unblocked.
 	return EINTR;
@@ -513,7 +494,6 @@ int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
 		st.priority = 0;
 		st.daemon = 0;
 		st.state = TASK_RUNNING;
-		st.srrtid = -1;
 	} else {
 		struct task *othertask = get_task(tid);
 		if(othertask == NULL)
@@ -525,15 +505,6 @@ int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
 		st.priority = othertask->priority;
 		st.daemon = othertask->daemon;
 		st.state = othertask->state;
-		if(st.state == TASK_RUNNING || st.state == TASK_DEAD) {
-			st.srrtid = -1;
-		} else if(st.state == TASK_SEND_BLOCKED) {
-			st.srrtid = 0;
-		} else if(st.state == TASK_EVENT_BLOCKED) {
-			st.srrtid = othertask->srr.event.id;
-		} else {
-			st.srrtid = othertask->srr.send.tid;
-		}
 	}
 	memcpy(stat, (void *)&st, sizeof(struct task_stat));
 	return 0;
@@ -562,26 +533,21 @@ void task_syscall(int code, struct task *task) {
 		syscall_Exit(task);
 		ret = 0;
 		break;
-	case SYS_MSGSEND:
-		ret = syscall_MsgSend(task, /*tid*/task->regs.r0, /*msgcode*/task->regs.r1,
-			/*msg*/(useraddr_t)task->regs.r2, /*msglen*/task->regs.r3,
-			/*reply*/(useraddr_t)STACK_ARG(task, 4), /*replylen*/STACK_ARG(task, 5),
-			/*replychan*/(useraddr_t)STACK_ARG(task, 6));
+	case SYS_SEND:
+		ret = syscall_send(task,
+			(int)/* chan */task->regs.r0,
+			(void *)/* buf */task->regs.r1,
+			(size_t)/* len */task->regs.r2,
+			(int)/* sch */task->regs.r3,
+			(int)/* flags */STACK_ARG(task, 4));
 		break;
-	case SYS_MSGRECEIVE:
-		ret = syscall_MsgReceive(task, /*channel*/task->regs.r0,
-			/*tid*/(useraddr_t)task->regs.r1,
-			/*msgcode*/(useraddr_t)task->regs.r2, /*msg*/(useraddr_t)task->regs.r3,
-			/*msglen*/STACK_ARG(task, 4));
-		break;
-	case SYS_MSGREPLY:
-		ret = syscall_MsgReply(task, /*tid*/task->regs.r0, /*status*/task->regs.r1,
-			/*reply*/(useraddr_t)task->regs.r2, /*replylen*/task->regs.r3,
-			/*replychan*/(int)STACK_ARG(task, 4));
-		break;
-	case SYS_MSGREAD:
-		ret = syscall_MsgRead(task, /*tid*/task->regs.r0, /*buf*/(useraddr_t)task->regs.r1,
-			/*offset*/task->regs.r2, /*len*/task->regs.r3);
+	case SYS_RECV:
+		ret = syscall_recv(task,
+			(int)/* chan */task->regs.r0,
+			(void *)/* buf */task->regs.r1,
+			(size_t)/* len */task->regs.r2,
+			(int *)/* rch */task->regs.r3,
+			(int)/* flags */STACK_ARG(task, 4));
 		break;
 	case SYS_AWAITEVENT:
 		ret = syscall_AwaitEvent(task, task->regs.r0);
