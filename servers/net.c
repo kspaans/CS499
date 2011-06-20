@@ -194,7 +194,7 @@ int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data
 }
 
 static void udp_printfunc(void *data, const char *buf, size_t len) {
-	for(int i=0; i<len; i+=UDPMTU) {
+	for(size_t i=0; i<len; i+=UDPMTU) {
 		int chunk = (i+UDPMTU < len) ? UDPMTU : len-i;
 		send_udp(UDPCON_CLIENT_PORT, UDPCON_SERVER_IP, UDPCON_SERVER_PORT, buf+i, chunk);
 	}
@@ -458,7 +458,7 @@ void udpconrx_notifier() {
 }
 
 static struct hostdata *get_host_data(struct mac_addr *mac) {
-	for (int i = 0; i < arraysize(hosts); ++i)
+	for (size_t i = 0; i < arraysize(hosts); ++i)
 		if (!memcmp(mac, &hosts[i].mac, sizeof(*mac)))
 			return &hosts[i];
 	printf("no IP address for this host");

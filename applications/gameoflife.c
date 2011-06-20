@@ -27,7 +27,7 @@ void display(uint8_t **field, size_t x, size_t y)
  */
 uint8_t surround(uint8_t **field, size_t curx, size_t cury, size_t x, size_t y)
 {
-	uint8_t count = 0;
+//	uint8_t count = 0;
 	int8_t  leftmost = curx - 1;
 	int8_t  topmost  = cury - 1;
 
@@ -54,17 +54,17 @@ void age(uint8_t **field, size_t x, size_t y)
 	uint8_t *cptrs[x];
 	uint8_t count;
 
-	for (int i = 0; i < x; i += 1) {
+	for (size_t i = 0; i < x; i += 1) {
 		cptrs[i] = copy[i];
 	}
-	for (int i = 0; i < x; i += 1) {
-		for (int j = 0; j < y; j += 1) {
+	for (size_t i = 0; i < x; i += 1) {
+		for (size_t j = 0; j < y; j += 1) {
 			cptrs[i][j] = field[i][j];
 		}
 	}
 
-	for (int i = 0; i < x; i += 1) {
-		for (int j = 0; j < y; j += 1) {
+	for (size_t i = 0; i < x; i += 1) {
+		for (size_t j = 0; j < y; j += 1) {
 			count = surround(cptrs, i, j, x, y);
 			if (count > 3 || count < 2) {
 				field[i][j] = 0; // cell dies
@@ -80,7 +80,7 @@ void gameoflife()
 	uint8_t *field[X_SIZE];
 	uint8_t universe[X_SIZE][Y_SIZE] = {};
 
-	for (int i = 0; i < X_SIZE; i += 1) {
+	for (size_t i = 0; i < X_SIZE; i += 1) {
 		field[i] = universe[i];
 	}
 	// start it with a glider

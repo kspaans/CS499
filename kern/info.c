@@ -74,7 +74,7 @@ void describe_cpsr_mode(const struct regbits *bits, uint32_t val) {
 #define HEXA_FIELD(m, name, desc) { m, name, desc, NULL, show_hex, describe_simple }
 #define ENABLE_BIT(i, name, desc) { 1 << i, name, desc, NULL, show_bit, describe_enable_bit }
 #define SELECT_BIT(i, name, desc, d0, d1) { 1 << i, name, desc, (const char*[]) { d0, d1 }, show_bit, describe_select_bit }
-#define UNUSED_BIT(i) { 1 << i }
+#define UNUSED_BIT(i) { 1 << i, NULL, NULL, NULL, NULL, NULL }
 
 const struct regdesc psr_desc = {
 	"psr",
@@ -160,7 +160,7 @@ static void dump_register(const struct regdesc *reg, uint32_t value, int describ
 		printk("reg %s val 0x%08x ", reg->name, value);
 
 	uint32_t testmask = 0;
-	for (int i = 0; i < arraysize(reg->bits); ++i) {
+	for (size_t i = 0; i < arraysize(reg->bits); ++i) {
 		uint32_t bitsval = value & reg->bits[i].mask;
 		if (!reg->bits[i].mask)
 			continue;
@@ -189,7 +189,7 @@ static void dump_register(const struct regdesc *reg, uint32_t value, int describ
 	if (!describe)
 		printk("\n");
 
-	if (testmask != -1)
+	if (testmask != 0xffffffff)
 		panic("missing bits in register description: %08x", testmask);
 }
 

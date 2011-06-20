@@ -248,7 +248,7 @@ struct fifobuf {
 	uint32_t data[8];
 };
 
-static void eth_tx_wait_ready(int base, int ndw) {
+static void eth_tx_wait_ready(int base, unsigned int ndw) {
 	while((eth_read(base, ETH_TX_FIFO_INF_OFFSET) & 0xffff) < (ndw << 2))
 		;
 }

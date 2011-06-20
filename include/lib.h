@@ -41,7 +41,7 @@ QUEUE(int,intqueue)
 
 /* Hash tables */
 struct ht_item {
-	int key;
+	uint32_t key;
 	void *value;
 	char deleted;
 	char valid;
@@ -52,8 +52,8 @@ typedef int (*ht_cmpfunc)(int key1, int key2);
 
 typedef struct {
 	struct ht_item *arr;
-	int count;
-	int max;
+	uint32_t count;
+	uint32_t max;
 	ht_hashfunc hashfunc;
 	ht_cmpfunc cmpfunc;
 } hashtable;

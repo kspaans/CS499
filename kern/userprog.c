@@ -153,7 +153,7 @@ __attribute__((unused)) static void task_reclamation_test() {
 static uint32_t dumbhash(int x) { return 0; }
 static void hashtable_print(hashtable *ht) {
 	printf("{");
-	for(int i=0; i<ht->max; i++) {
+	for(uint32_t i=0; i<ht->max; i++) {
 		if(!ht->arr[i].valid)
 			printf("*");
 		else if(ht->arr[i].deleted)

@@ -87,7 +87,7 @@ int sendpath(const char *pathname, int msgcode, const void *msg, int msglen, voi
 struct fastfs {
 	struct {
 		char path[PATH_MAX];
-		int pathlen;
+		size_t pathlen;
 		int chan;
 		bool valid, deleted;
 	} files[HASH_MAX];
