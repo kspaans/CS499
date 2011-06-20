@@ -230,7 +230,7 @@ static int do_Create(struct task *task, int priority, void (*code)(), int daemon
 
 	set_task_running(newtask);
 
-	printk("created %p %d %s\n", newtask, newtask->tid, SYMBOL_EXACT(code));
+	//printk("created %p %d %s\n", newtask, newtask->tid, SYMBOL_EXACT(code));
 
 	return newtask->tid;
 }
