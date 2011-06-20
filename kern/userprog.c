@@ -24,11 +24,7 @@ void fileserver_task();
 __attribute__((unused)) static void udp_console_loop() {
 	printf("Type characters to send to the remote host; Ctrl+D to quit\n");
 
-	udp_printf("Hello from ");
-	for(int i=0; i<5; i++) {
-		udp_printf("%02x:", this_host->mac.addr[i]);
-	}
-	udp_printf("%02x\n", this_host->mac.addr[5]);
+	udp_printf("Hello from %s\n", this_host->hostname);
 
 	for(;;) {
 		char c = getchar();
