@@ -10,11 +10,9 @@
 /* User mode asserts */
 #define STRINGIFY(x) #x
 #define STRINGIFY2(x) STRINGIFY(x)
-#define ASSERT(str, a, b) { \
-	if((a) != (b)) { \
-		printf("\033[1;41mAssert \"" #a " == " #b "\" failed at " __FILE__ ":" STRINGIFY2(__LINE__) ": "); \
-		printf("%s: ", str); \
-		printf( #a "=%d, " #b "=%d\033[m\n", (int)(a), (int)(b)); \
+#define ASSERT(x) { \
+	if(!(x)) { \
+		printf("\033[1;41mAssert \"" #x "\" failed at " __FILE__ ":" STRINGIFY2(__LINE__) ": "); \
 		Exit(); \
 	} \
 }

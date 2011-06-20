@@ -15,5 +15,6 @@
 #define EBADMSG -11
 #define ENOENT -12
 #define EEXIST -13
+#define EBUSY -14
 
 #endif /* ERRNO_H */

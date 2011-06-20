@@ -15,6 +15,10 @@
 #include <servers/net.h>
 #include <servers/fs.h>
 
+/* TODO Use userspace malloc (once implemented) */
+#include <kern/kmalloc.h>
+#define malloc kmalloc
+
 /* Important points to keep in mind:
 
 1) The network chip has been instructed to add 2 bytes of padding to the start
@@ -212,6 +216,22 @@ int udp_printf(const char *fmt, ...) {
 	return ret;
 }
 
+int udp_getchar() {
+	return sendpath("/services/udpconrx", UDPCON_RX_REQ_MSG, NULL, 0, NULL, 0);
+}
+
+int udp_bind(uint16_t port) {
+	return sendpath("/services/udprx", UDP_RX_BIND_MSG, &port, sizeof(port), NULL, 0);
+}
+
+int udp_release(uint16_t port) {
+	return sendpath("/services/udprx", UDP_RX_RELEASE_MSG, &port, sizeof(port), NULL, 0);
+}
+
+int udp_wait(uint16_t port, struct packet_rec *rec, int recsize) {
+	return sendpath("/services/udprx", UDP_RX_REQ_MSG, &port, sizeof(port), rec, recsize);
+}
+
 static void ethrx_dispatch(uint32_t sts) {
 	union msg {
 		struct {
@@ -402,21 +422,153 @@ void arpserver_task() {
 	}
 }
 
+#define UDP_BUF_MAX 65536
+
+struct packet_rec_buf {
+	char buf[UDP_BUF_MAX];
+	int head, tail, top;
+	struct packet_rec_buf *next_free;
+	int tid;
+};
+
+/* align record to 4 byte boundary */
+static size_t calc_rec_size(size_t data_len) {
+	return ((data_len + sizeof(struct packet_rec)) + 3) & (~3);
+}
+
+static struct packet_rec *pop_pkt(struct packet_rec_buf *buf) {
+	/* Pop the packet record at the head */
+	/* XXX */
+	if(buf->head != buf->tail) {
+		struct packet_rec *pkt = (struct packet_rec *)(buf->buf + buf->head);
+		buf->head += calc_rec_size(pkt->data_len);
+		return pkt;
+	}
+	return NULL;
+}
+
+static struct packet_rec *alloc_pkt(struct packet_rec_buf *buf, size_t rec_size) {
+	/* Allocate a packet record at the tail */
+	/* XXX */
+	if(buf->tail < 1024) {
+		struct packet_rec *pkt = (struct packet_rec *)(buf->buf + buf->tail);
+		buf->tail += rec_size;
+		return pkt;
+	}
+	return NULL;
+}
+
 void udprx_task() {
-	/* TODO */
+	union msg {
+		struct {
+			char padding[RXPAD];
+			struct ethhdr eth;
+			struct ip ip;
+			struct udphdr udp;
+			char data[0];
+		} __attribute__((packed)) pkt;
+		uint16_t port;
+		char raw[FRAME_MAX];
+	} msg;
+
 	int tid, rcvlen, msgcode;
 
 	int udprx_fd = mkopenchan("/services/udprx");
 
+	struct packet_rec_buf *free_head = NULL;
+	struct packet_rec_buf *buf;
+	struct packet_rec *pkt;
+
+	hashtable portmap;
+	struct ht_item portmap_arr[389];
+	hashtable_init(&portmap, portmap_arr, 389, NULL, NULL);
+
 	while(1) {
-		rcvlen = MsgReceive(udprx_fd, &tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(udprx_fd, &tid, &msgcode, &msg, sizeof(msg));
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
-		case UDP_RX_DISPATCH_MSG:
-		case UDP_RX_BIND_MSG:
-		case UDP_RX_REQ_MSG:
-		case UDP_RX_RELEASE_MSG:
+		case UDP_RX_DISPATCH_MSG: {
+			MsgReplyStatus(tid, 0);
+			if(hashtable_get(&portmap, ntohs(msg.pkt.udp.uh_dport), (void **)&buf) < 0) {
+				/* TODO: send ICMP port-unreachable message? */
+				break;
+			}
+			size_t datalen = ntohs(msg.pkt.udp.uh_ulen) - sizeof(struct udphdr);
+			struct packet_rec *pkt = alloc_pkt(buf, calc_rec_size(datalen));
+			if(pkt != NULL) {
+				pkt->src_ip = ntohl(msg.pkt.ip.ip_src.s_addr);
+				pkt->dst_ip = ntohl(msg.pkt.ip.ip_dst.s_addr);
+				pkt->src_port = ntohs(msg.pkt.udp.uh_sport);
+				pkt->dst_port = ntohs(msg.pkt.udp.uh_dport);
+				pkt->data_len = datalen;
+				memcpy(pkt->data, msg.pkt.data, datalen);
+			}
+			if(buf->tid != -1) {
+				pkt = pop_pkt(buf);
+				if(pkt != NULL) {
+					int nbytes = calc_rec_size(pkt->data_len);
+					MsgReply(buf->tid, nbytes, pkt, nbytes, -1);
+					buf->tid = -1;
+				}
+			}
+			break;
+		}
+		case UDP_RX_BIND_MSG: {
+			if(hashtable_get(&portmap, msg.port, NULL) >= 0) {
+				MsgReplyStatus(tid, EEXIST);
+				break;
+			}
+			if(free_head != NULL) {
+				buf = free_head;
+				free_head = buf->next_free;
+			} else {
+				buf = malloc(sizeof(*buf));
+			}
+			if(hashtable_put(&portmap, msg.port, buf) < 0) {
+				buf->next_free = free_head;
+				free_head = buf;
+				MsgReplyStatus(tid, ENOMEM);
+				break;
+			}
+			buf->head = buf->tail = buf->top = 0;
+			buf->tid = -1;
+			MsgReplyStatus(tid, 0);
+			break;
+		}
+		case UDP_RX_RELEASE_MSG: {
+			if(hashtable_get(&portmap, msg.port, (void **)&buf) < 0) {
+				MsgReplyStatus(tid, ENOENT);
+				break;
+			}
+			if(buf->tid != -1) {
+				MsgReplyStatus(tid, EBUSY);
+				break;
+			}
+			buf->next_free = free_head;
+			free_head = buf;
+			MsgReplyStatus(tid, 0);
+			break;
+		}
+		case UDP_RX_REQ_MSG: {
+			if(hashtable_get(&portmap, msg.port, (void **)&buf) < 0) {
+				MsgReplyStatus(tid, ENOENT);
+				break;
+			}
+			if(buf->tid != -1) {
+				MsgReplyStatus(tid, EBUSY);
+				break;
+			}
+			pkt = pop_pkt(buf);
+			if(pkt != NULL) {
+				int nbytes = calc_rec_size(pkt->data_len);
+				MsgReply(tid, nbytes, pkt, nbytes, -1);
+			} else {
+				// block task until packet comes in
+				buf->tid = tid;
+			}
+			break;
+		}
 		default:
 			MsgReplyStatus(tid, ENOFUNC);
 			continue;
@@ -424,37 +576,70 @@ void udprx_task() {
 	}
 }
 
+#define RX_BUF_MAX 16384
+#define RX_TIDS_MAX 64
+
 void udpconrx_task() {
-	/* TODO */
 	int tid, rcvlen, msgcode;
 
 	int udpconrx_fd = mkopenchan("/services/udpconrx");
 
 	CreateDaemon(0, udpconrx_notifier);
 
+	char buf[1024];
+
+	intqueue tidq;
+	int tidq_arr[RX_TIDS_MAX];
+	intqueue_init(&tidq, tidq_arr, RX_TIDS_MAX);
+
+	charqueue chq;
+	char chq_arr[RX_BUF_MAX];
+	charqueue_init(&chq, chq_arr, RX_BUF_MAX);
+
 	while(1) {
-		rcvlen = MsgReceive(udpconrx_fd, &tid, &msgcode, NULL, 0);
+		rcvlen = MsgReceive(udpconrx_fd, &tid, &msgcode, buf, sizeof(buf));
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
 		case UDPCON_RX_NOTIFY_MSG:
+			MsgReplyStatus(tid, 0);
+			for(int i=0,j=0; i<rcvlen; ++i,++j) {
+				if(j == sizeof(buf)) {
+					MsgRead(tid, buf, sizeof(buf), i);
+					j = 0;
+				}
+				if(charqueue_full(&chq))
+					charqueue_pop(&chq);
+				charqueue_push(&chq, buf[j]);
+			}
+			break;
 		case UDPCON_RX_REQ_MSG:
+			if(intqueue_full(&tidq)) {
+				MsgReplyStatus(tid, ENOMEM);
+				continue;
+			}
+			intqueue_push(&tidq, tid);
+			break;
 		default:
 			MsgReplyStatus(tid, ENOFUNC);
 			continue;
 		}
+		while(!intqueue_empty(&tidq) && !charqueue_empty(&chq))
+			MsgReplyStatus(intqueue_pop(&tidq), charqueue_pop(&chq));
 	}
 }
 
 void udpconrx_notifier() {
-	/* TODO */
-	/*
-	Bind port UDPCON_CLIENT_PORT
+	union {
+		struct packet_rec rec;
+		char pkt[FRAME_MAX];
+	} reply;
+
+	ASSERTNOERR(udp_bind(UDPCON_CLIENT_PORT));
 	while(1) {
-		Request udprx_tid
-		Notify udpconrx_tid
+		ASSERTNOERR(udp_wait(UDPCON_CLIENT_PORT, &reply.rec, sizeof(reply)));
+		ASSERTNOERR(sendpath("/services/udpconrx", UDPCON_RX_NOTIFY_MSG, &reply.rec.data, reply.rec.data_len, NULL, 0));
 	}
-	*/
 }
 
 static struct hostdata *get_host_data(struct mac_addr *mac) {

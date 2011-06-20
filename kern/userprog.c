@@ -21,7 +21,7 @@ void fileserver_task();
 
 #include <eth.h>
 #include <servers/net.h>
-__attribute__((unused)) static void udp_console_loop() {
+__attribute__((unused)) static void udp_tx_loop() {
 	printf("Type characters to send to the remote host; Ctrl+D to quit\n");
 
 	udp_printf("Hello from ");
@@ -37,6 +37,15 @@ __attribute__((unused)) static void udp_console_loop() {
 		if(c == '\r')
 			c = '\n';
 		udp_printf("%c", c);
+	}
+}
+
+#include <eth.h>
+#include <servers/net.h>
+__attribute__((unused)) static void udp_rx_loop() {
+	for(;;) {
+		char c = udp_getchar();
+		printf("%c", c);
 	}
 }
 
@@ -230,6 +239,7 @@ void userprog_init() {
 
 	ASSERTNOERR(CreateDaemon(4, flash_leds));
 	//ASSERTNOERR(Create(4, console_loop));
-	ASSERTNOERR(Create(4, udp_console_loop));
+	ASSERTNOERR(Create(4, udp_tx_loop));
+	ASSERTNOERR(CreateDaemon(4, udp_rx_loop));
 	ASSERTNOERR(Create(6, gameoflife));
 }
