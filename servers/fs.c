@@ -217,7 +217,7 @@ void fileserver_task(void) {
 
 	add_chan(ROOT_DIRFD, "/dev/stdin", STDIN_FILENO);
 	add_chan(ROOT_DIRFD, "/dev/stdout", STDOUT_FILENO);
-	add_chan(ROOT_DIRFD, "/mnt/rootfs", ROOT_DIRFD);
+	add_chan(ROOT_DIRFD, "/", ROOT_DIRFD);
 
 	for (;;) {
 		int len = MsgReceive(ROOT_DIRFD, &tid, &msgcode, path, sizeof(path));
