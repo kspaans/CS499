@@ -438,24 +438,40 @@ static size_t calc_rec_size(size_t data_len) {
 
 static struct packet_rec *pop_pkt(struct packet_rec_buf *buf) {
 	/* Pop the packet record at the head */
-	/* XXX */
-	if(buf->head != buf->tail) {
-		struct packet_rec *pkt = (struct packet_rec *)(buf->buf + buf->head);
-		buf->head += calc_rec_size(pkt->data_len);
-		return pkt;
+	if(buf->head == buf->tail) {
+		/* buffer is empty */
+		return NULL;
 	}
-	return NULL;
+
+	struct packet_rec *pkt = (struct packet_rec *)(buf->buf + buf->head);
+	buf->head += calc_rec_size(pkt->data_len);
+	if(buf->head == buf->top) {
+		/* wraparound */
+		buf->head = 0;
+	}
+	return pkt;
 }
 
 static struct packet_rec *alloc_pkt(struct packet_rec_buf *buf, size_t rec_size) {
 	/* Allocate a packet record at the tail */
-	/* XXX */
-	if(buf->tail < 1024) {
-		struct packet_rec *pkt = (struct packet_rec *)(buf->buf + buf->tail);
-		buf->tail += rec_size;
-		return pkt;
+	if(buf->head == buf->tail) {
+		buf->head = buf->tail = buf->top = 0;
 	}
-	return NULL;
+	if(rec_size >= UDP_BUF_MAX)
+		return NULL;
+	if(buf->tail + rec_size >= UDP_BUF_MAX) {
+		/* wraparound */
+		buf->top = buf->tail;
+		if(buf->head == 0)
+			pop_pkt(buf);
+		buf->tail = 0;
+	}
+	while(buf->tail < buf->head && buf->tail + rec_size >= buf->head)
+		pop_pkt(buf);
+
+	struct packet_rec *pkt = (struct packet_rec *)(buf->buf + buf->tail);
+	buf->tail += rec_size;
+	return pkt;
 }
 
 void udprx_task() {
