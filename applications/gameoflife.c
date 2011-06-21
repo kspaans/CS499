@@ -31,7 +31,7 @@ void display(uint8_t **field, size_t x, size_t y)
 
 void display_json(uint8_t **field, size_t x, size_t y)
 {
-	char buf[X_SIZE * Y_SIZE * 2] = {}; /* should be enough for the JSON */
+	char buf[X_SIZE * Y_SIZE * 4] = {}; /* should be enough for the JSON */
 	size_t idx = 0;
 
 	sprintf(buf, "[");
