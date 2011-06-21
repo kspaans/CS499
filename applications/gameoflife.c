@@ -4,10 +4,17 @@
  */
 #include <types.h>
 #include <kern/printk.h>
+#include <ip.h>
+#include <servers/net.h>
 #include <string.h>
+#include <lib.h>
 
 #define X_SIZE 10
 #define Y_SIZE 10
+
+#define UDP_SRCPORT 8889
+#define UDP_DSTPORT UDP_SRCPORT
+#define GUMSTIX_CS IP(10, 0, 0, 1)
 
 /*
  * Put (0,0) cell in the upper-left
@@ -22,8 +29,38 @@ void display(uint8_t **field, size_t x, size_t y)
 	}
 }
 
+void display_json(uint8_t **field, size_t x, size_t y)
+{
+	char buf[X_SIZE * Y_SIZE * 2] = {}; /* should be enough for the JSON */
+	size_t idx = 0;
+
+	sprintf(buf, "[");
+	idx += 1;
+	for (size_t i = 0; i < x; i += 1) {
+		if (i) {
+			sprintf(buf + idx, ",");
+			idx += 1;
+		}
+		sprintf(buf + idx, "[");
+		idx += 1;
+		for (size_t j = 0; j < y; j += 1) {
+			if (j) {
+				sprintf(buf + idx, ",");
+				idx += 1;
+			}
+			sprintf(buf + idx, "%d", field[i][j]);
+			idx += 1; // all values should be 0 or 1
+		}
+		sprintf(buf + idx, "]");
+		idx += 1;
+	}
+	sprintf(buf + idx, "]");
+	idx += 1;
+	send_udp(UDP_SRCPORT, GUMSTIX_CS, UDP_DSTPORT, buf, idx);
+}
+
 /*
- * Use warp-around semantics for the edges of the field
+ * Use wrap-around semantics for the edges of the field
  */
 uint8_t surround(uint8_t **field, size_t curx, size_t cury, size_t x, size_t y)
 {
@@ -89,17 +126,26 @@ void gameoflife()
 	field[2][0] = field[2][1] = field[2][2] = 1;
 
 	printk("Cyleway's Game of Life\n");
+
 	display(field, X_SIZE, Y_SIZE);
 	age(field, X_SIZE, Y_SIZE);
 	printk("-- -- -- --\n");
+
 	display(field, X_SIZE, Y_SIZE);
+	display_json(field, X_SIZE, Y_SIZE);
 	age(field, X_SIZE, Y_SIZE);
 	printk("-- -- -- --\n");
+
 	display(field, X_SIZE, Y_SIZE);
+	display_json(field, X_SIZE, Y_SIZE);
 	age(field, X_SIZE, Y_SIZE);
 	printk("-- -- -- --\n");
+
 	display(field, X_SIZE, Y_SIZE);
+	display_json(field, X_SIZE, Y_SIZE);
 	age(field, X_SIZE, Y_SIZE);
 	printk("-- -- -- --\n");
+
 	display(field, X_SIZE, Y_SIZE);
+	display_json(field, X_SIZE, Y_SIZE);
 }
