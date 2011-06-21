@@ -46,4 +46,9 @@ struct hostdata {
 	bool has_uart;
 };
 
+struct iovec {
+	void *iov_base;
+	size_t iov_len;
+};
+
 #endif /* TYPES_H */
