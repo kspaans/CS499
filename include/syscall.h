@@ -16,8 +16,8 @@ void Pass();
 void Suspend();
 void Exit() __attribute__((noreturn));
 
-ssize_t sys_send(int chan, void *buf, size_t len, int  sch, int flags);
-ssize_t sys_recv(int chan, void *buf, size_t len, int *rch, int flags);
+ssize_t sys_send(int chan, const struct iovec *ivo, int iovlen, int  sch, int flags);
+ssize_t sys_recv(int chan, const struct iovec *iov, int iovlen, int *rch, int flags);
 
 int AwaitEvent(int eventid);
 int TaskStat(int tid, struct task_stat *stat);

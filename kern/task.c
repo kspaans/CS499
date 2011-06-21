@@ -385,14 +385,17 @@ static void handle_receive(struct channel *chan) {
 	if (receiver->state != TASK_RECV_BLOCKED)
 		panic("Task had a non-blocked task on receive queue");
 
+	size_t sendlen = iov_length(sender->sendbuf, sender->sendlen);
+	size_t recvlen = iov_length(receiver->recvbuf, receiver->recvlen);
+
 	// TODO: nasty case, for now I want this to be loud
-	if (sender->sendlen > receiver->recvlen)
+	if (sendlen > recvlen)
 		panic("message is too long");
 	if (!sender->sendbuf || !receiver->recvbuf)
 		panic("missing buffers");
 
 	/* Copy the message */
-	memcpy(receiver->recvbuf, sender->sendbuf, sender->sendlen);
+	iov_copy(sender->sendbuf, sender->sendlen, receiver->recvbuf, receiver->recvlen);
 
 	// transfer channel from sender to receiver
 	if (sender->sendchan) {
@@ -411,7 +414,7 @@ static void handle_receive(struct channel *chan) {
 
 	// receiver unblocked, return length of message
 	set_task_running(receiver);
-	receiver->regs.r0 = sender->sendlen;
+	receiver->regs.r0 = sendlen;
 
 	// sender unblocked, return success
 	set_task_running(sender);
@@ -423,7 +426,7 @@ static bool valid_channel(struct task *task, int chan) {
 }
 
 /* Message passing */
-static int syscall_send(struct task *task, int chan, void *buf, size_t len, int sch, int flags) {
+static int syscall_send(struct task *task, int chan, const struct iovec *iov, int iovlen, int sch, int flags) {
 	if (!valid_channel(task, chan))
 		return EBADF;
 	if (sch != -1 && !valid_channel(task, sch))
@@ -433,8 +436,8 @@ static int syscall_send(struct task *task, int chan, void *buf, size_t len, int 
 
 	set_task_state(task, TASK_SEND_BLOCKED, &destchan->senders);
 
-	task->sendbuf = buf;
-	task->sendlen = len;
+	task->sendbuf = iov;
+	task->sendlen = iovlen;
 	task->destchan = destchan;
 	task->sendchan = sendchan;
 
@@ -443,15 +446,15 @@ static int syscall_send(struct task *task, int chan, void *buf, size_t len, int 
 	return task->regs.r0;
 }
 
-static int syscall_recv(struct task *task, int chan, void *buf, size_t len, int *rch, int flags) {
+static int syscall_recv(struct task *task, int chan, const struct iovec *iov, int iovlen, int *rch, int flags) {
 	if (!valid_channel(task, chan))
 		return EBADF;
 	struct channel *srcchan = task->channels[chan].channel;
 
 	set_task_state(task, TASK_RECV_BLOCKED, &srcchan->receivers);
 
-	task->recvbuf = buf;
-	task->recvlen = len;
+	task->recvbuf = iov;
+	task->recvlen = iovlen;
 	task->srcchan = srcchan;
 	task->recvchan = rch;
 

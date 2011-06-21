@@ -70,14 +70,14 @@ struct task {
 
 	union {
 		struct {
-			void *sendbuf;
-			size_t sendlen;
+			const struct iovec *sendbuf;
+			int sendlen;
 			struct channel *destchan;
 			struct channel *sendchan;
 		};
 		struct {
-			void *recvbuf;
-			size_t recvlen;
+			const struct iovec *recvbuf;
+			int recvlen;
 			struct channel *srcchan;
 			int *recvchan;
 		};

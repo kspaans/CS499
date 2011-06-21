@@ -96,4 +96,7 @@ unsigned long strtoul(const char *start, const char **end, int base);
 // Destructively parse args from a buffer. argv will refer to positions within buf.
 int parse_args(char *buf, char **argv, int argv_len);
 
+int iov_length(const struct iovec *iov, int iovlen);
+void iov_copy(const struct iovec *srciov, int srclen, const struct iovec *dstiov, int dstlen);
+
 #endif /* LIB_H */
