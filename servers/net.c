@@ -438,7 +438,7 @@ void arpserver_task() {
 
 struct packet_rec_buf {
 	char buf[UDP_BUF_MAX];
-	int head, tail, top;
+	size_t head, tail, top;
 	struct packet_rec_buf *next_free;
 	int tid;
 };
@@ -493,7 +493,7 @@ void udprx_task() {
 			struct ethhdr eth;
 			struct ip ip;
 			struct udphdr udp;
-			char data[0];
+			char data[];
 		} __attribute__((packed)) pkt;
 		uint16_t port;
 		char raw[FRAME_MAX];
@@ -614,7 +614,7 @@ void udpconrx_task() {
 
 	CreateDaemon(0, udpconrx_notifier);
 
-	char buf[1024];
+	char buf[FRAME_MAX];
 
 	intqueue tidq;
 	int tidq_arr[RX_TIDS_MAX];
@@ -631,14 +631,10 @@ void udpconrx_task() {
 		switch(msgcode) {
 		case UDPCON_RX_NOTIFY_MSG:
 			MsgReplyStatus(tid, 0);
-			for(int i=0,j=0; i<rcvlen; ++i,++j) {
-				if(j == sizeof(buf)) {
-					MsgRead(tid, buf, sizeof(buf), i);
-					j = 0;
-				}
+			for(int i=0; i<rcvlen; ++i) {
 				if(charqueue_full(&chq))
 					charqueue_pop(&chq);
-				charqueue_push(&chq, buf[j]);
+				charqueue_push(&chq, buf[i]);
 			}
 			break;
 		case UDPCON_RX_REQ_MSG:
