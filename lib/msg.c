@@ -59,7 +59,7 @@ int MsgReceive(int channel, int *tid, int *msgcode, void *msg, int msglen) {
 
 int MsgReply(int tid, int status, const void *reply, int replylen, int replychan) {
 	int newlen = replylen + sizeof(status);
-	int newmsg[newlen];
+	char newmsg[newlen];
 
 	memcpy(&newmsg[0], &status, sizeof(status));
 	memcpy(&newmsg[sizeof(status)], reply, replylen);
