@@ -7,7 +7,7 @@
 #include <lib.h>
 #include <kern/printk.h>
 #include <servers/fs.h>
-#include <applications.h>
+#include <apps.h>
 
 void consoletx_task();
 void consolerx_task();
@@ -204,7 +204,7 @@ __attribute__((unused)) static void fstest_task() {
 }
 
 /* The first user program */
-void userprog_init() {
+void init_task() {
 	channel(0); /* stdin */
 	channel(0); /* stdout */
 	channel(0); /* fs */

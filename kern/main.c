@@ -21,8 +21,7 @@ void idle() {
 		sys_suspend();
 }
 
-/* userprog.c */
-void userprog_init();
+void init_task();
 
 int main() {
 	struct task *next;
@@ -60,7 +59,7 @@ int main() {
 	printk("userspace init\n");
 
 	/* Initialize first user program */
-	syscall_spawn(NULL, 6, userprog_init, 0);
+	syscall_spawn(NULL, 6, init_task, 0);
 
 	while (nondaemon_count > 0) {
 		next = schedule();

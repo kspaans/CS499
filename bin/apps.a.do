@@ -1,5 +1,5 @@
-PREFIX="../applications/obj/"
-DEPS=(gameoflife.o)
+PREFIX="../apps/obj/"
+DEPS=(gameoflife.o init.o)
 
 mkdir -p ${PREFIX}
 DEPS=${DEPS[@]/#/${PREFIX}/}

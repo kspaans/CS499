@@ -1,7 +1,7 @@
 PREFIX="../kern/obj/"
 DEPS=(omap3.o)
 LOCALDEPS=(ksyms.o)
-LIBS="kern.a drivers.a servers.a apps.a libs.a"
+LIBS="kern.a apps.a servers.a drivers.a libs.a"
 LDLIBS="-lgcc"
 
 mkdir -p ${PREFIX}
