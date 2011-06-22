@@ -5,9 +5,9 @@
 #include <types.h>
 #include <msg.h>
 
-#define CREATE_DAEMON 1
+#define SPAWN_DAEMON 1
 
-int sys_create(int priority, void (*code)(), int flags);
+int sys_spawn(int priority, void (*code)(), int flags);
 int sys_gettid();
 int sys_getptid();
 void sys_yield();
@@ -25,7 +25,7 @@ int sys_waitevent(int eventid);
 int sys_taskstat(int tid, struct task_stat *stat);
 
 // "wrappers" for userspace
-#define create(priority, code, flags) sys_create(priority, code, flags)
+#define spawn(priority, code, flags) sys_spawn(priority, code, flags)
 #define gettid() sys_gettid()
 #define getptid() sys_getptid()
 #define yield() sys_yield()

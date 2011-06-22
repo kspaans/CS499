@@ -11,7 +11,7 @@ funcname: \
 .text
 .align	2
 
-SYSCALL(sys_create, SYS_CREATE)
+SYSCALL(sys_spawn, SYS_SPAWN)
 SYSCALL(sys_gettid, SYS_GETTID)
 SYSCALL(sys_getptid, SYS_GETPTID)
 SYSCALL(sys_yield, SYS_YIELD)

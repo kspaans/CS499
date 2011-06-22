@@ -1,7 +1,7 @@
 #ifndef KERN_SYSCALLNO_H
 #define KERN_SYSCALLNO_H
 
-#define SYS_CREATE        1
+#define SYS_SPAWN        1
 #define SYS_GETTID         2
 #define SYS_GETPTID        3
 #define SYS_YIELD          4

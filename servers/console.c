@@ -56,7 +56,7 @@ void consoletx_task() {
 	char *cur;
 	int newline_seen;
 
-	create(0, consoletx_notifier, CREATE_DAEMON);
+	spawn(0, consoletx_notifier, SPAWN_DAEMON);
 
 	charqueue chq;
 	char chq_arr[TX_BUF_MAX];
@@ -124,7 +124,7 @@ void consoletx_task() {
 void consolerx_task() {
 	int tid, rcvlen, msgcode;
 
-	create(0, consolerx_notifier, CREATE_DAEMON);
+	spawn(0, consolerx_notifier, SPAWN_DAEMON);
 
 	intqueue tidq;
 	int tidq_arr[RX_TIDS_MAX];

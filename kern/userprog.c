@@ -124,7 +124,7 @@ static void srrbench_child() {
 __attribute__((unused)) static void srrbench_task() {
 	int tid = gettid();
 	printf("srrbench_task[%d]: benchmarking SRR transaction\n", tid);
-	//int child = create(0, srrbench_child, 0);
+	//int child = spawn(0, srrbench_child, 0);
 	char buf[512];
 	int i;
 	unsigned long long start, elapsed;
@@ -142,17 +142,17 @@ static void nulltask() {
 }
 static void task_reclamation_2() {
 	for(int i=0; i<1000; ++i) {
-		printk("%05x ", create(5, nulltask, 0));
-		printk("%05x\n", create(5, nulltask, 0));
+		printk("%05x ", spawn(5, nulltask, 0));
+		printk("%05x\n", spawn(5, nulltask, 0));
 	}
 }
 __attribute__((unused)) static void task_reclamation_test() {
 	for(int i=0; i<1000; ++i) {
-		printk("%05x ", create(1, nulltask, 0));
-		printk("%05x ", create(1, nulltask, 0));
-		printk("%05x\n", create(3, nulltask, 0));
+		printk("%05x ", spawn(1, nulltask, 0));
+		printk("%05x ", spawn(1, nulltask, 0));
+		printk("%05x\n", spawn(3, nulltask, 0));
 	}
-	create(4, task_reclamation_2, 0);
+	spawn(4, task_reclamation_2, 0);
 }
 
 static uint32_t dumbhash(int x) { return 0; }
@@ -211,31 +211,31 @@ void userprog_init() {
 
 	printk("console init\n");
 
-	create(1, consoletx_task, CREATE_DAEMON);
-	create(1, consolerx_task, CREATE_DAEMON);
+	spawn(1, consoletx_task, SPAWN_DAEMON);
+	spawn(1, consolerx_task, SPAWN_DAEMON);
 
 	net_init();
 
-	create(1, clockserver_task, CREATE_DAEMON);
-	create(1, ethrx_task, CREATE_DAEMON);
-	create(1, icmpserver_task, CREATE_DAEMON);
-	create(1, arpserver_task, CREATE_DAEMON);
-	create(1, udprx_task, CREATE_DAEMON);
-	create(2, udpconrx_task, CREATE_DAEMON);
-	create(2, fileserver_task, CREATE_DAEMON);
+	spawn(1, clockserver_task, SPAWN_DAEMON);
+	spawn(1, ethrx_task, SPAWN_DAEMON);
+	spawn(1, icmpserver_task, SPAWN_DAEMON);
+	spawn(1, arpserver_task, SPAWN_DAEMON);
+	spawn(1, udprx_task, SPAWN_DAEMON);
+	spawn(2, udpconrx_task, SPAWN_DAEMON);
+	spawn(2, fileserver_task, SPAWN_DAEMON);
 
 	dump_files();
 
-	//ASSERTNOERR(create(0, hashtable_test, 0));
-	ASSERTNOERR(create(1, memcpy_bench, 0));
-	ASSERTNOERR(create(2, fstest_task, 0));
-	//ASSERTNOERR(create(2, task_reclamation_test, 0));
-	//ASSERTNOERR(create(2, srr_task, 0));
-	//ASSERTNOERR(create(3, srrbench_task, 0));
+	//ASSERTNOERR(spawn(0, hashtable_test, 0));
+	ASSERTNOERR(spawn(1, memcpy_bench, 0));
+	ASSERTNOERR(spawn(2, fstest_task, 0));
+	//ASSERTNOERR(spawn(2, task_reclamation_test, 0));
+	//ASSERTNOERR(spawn(2, srr_task, 0));
+	//ASSERTNOERR(spawn(3, srrbench_task, 0));
 
-	ASSERTNOERR(create(4, flash_leds, CREATE_DAEMON));
-	//ASSERTNOERR(create(4, console_loop, 0));
-	ASSERTNOERR(create(4, udp_tx_loop, 0));
-	ASSERTNOERR(create(4, udp_rx_loop, CREATE_DAEMON));
-//	ASSERTNOERR(create(6, gameoflife, 0));
+	ASSERTNOERR(spawn(4, flash_leds, SPAWN_DAEMON));
+	//ASSERTNOERR(spawn(4, console_loop, 0));
+	ASSERTNOERR(spawn(4, udp_tx_loop, 0));
+	ASSERTNOERR(spawn(4, udp_rx_loop, SPAWN_DAEMON));
+//	ASSERTNOERR(spawn(6, gameoflife, 0));
 }

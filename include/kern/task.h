@@ -117,7 +117,7 @@ void print_task(struct task *task);
 /// debug
 
 /* System calls */
-int syscall_create(struct task *task, int priority, void (*code)(), int flags);
+int syscall_spawn(struct task *task, int priority, void (*code)(), int flags);
 /*
 int syscall_gettid(struct task *task);
 int syscall_getptid(struct task *task);

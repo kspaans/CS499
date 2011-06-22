@@ -53,14 +53,14 @@ int main() {
 	init_tasks();
 
 	/* Initialize idle task */
-	syscall_create(NULL, 7, idle, CREATE_DAEMON);
+	syscall_spawn(NULL, 7, idle, SPAWN_DAEMON);
 
 	cpu_info();
 
 	printk("userspace init\n");
 
 	/* Initialize first user program */
-	syscall_create(NULL, 6, userprog_init, 0);
+	syscall_spawn(NULL, 6, userprog_init, 0);
 
 	while (nondaemon_count > 0) {
 		next = schedule();

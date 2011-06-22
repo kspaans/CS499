@@ -235,8 +235,8 @@ static int do_create(struct task *task, int priority, void (*code)(), int daemon
 	return newtask->tid;
 }
 
-int syscall_create(struct task *task, int priority, void (*code)(), int flags) {
-	int type = (flags & CREATE_DAEMON) ? TASK_DAEMON : TASK_NORMAL;
+int syscall_spawn(struct task *task, int priority, void (*code)(), int flags) {
+	int type = (flags & SPAWN_DAEMON) ? TASK_DAEMON : TASK_NORMAL;
 	return do_create(task, priority, code, type);
 }
 
@@ -509,8 +509,8 @@ int syscall_taskstat(struct task *task, int tid, useraddr_t stat) {
 void task_syscall(int code, struct task *task) {
 	int ret;
 	switch (code) {
-	case SYS_CREATE:
-		ret = syscall_create(task, task->regs.r0, (void *)task->regs.r1, (int)task->regs.r2);
+	case SYS_SPAWN:
+		ret = syscall_spawn(task, task->regs.r0, (void *)task->regs.r1, (int)task->regs.r2);
 		break;
 	case SYS_GETTID:
 		ret = syscall_gettid(task);
