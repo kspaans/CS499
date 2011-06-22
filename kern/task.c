@@ -29,7 +29,7 @@ static void taskqueue_init(taskqueue *queue);
 static void taskqueue_enqueue(taskqueue *queue, struct task *task);
 static void task_move(struct task *task, taskqueue *queue);
 
-void init_tasks() {
+void init_tasks(void) {
 	int i;
 	taskqueue_init(&freequeue);
 	taskqueue_init(&replyqueue);
@@ -48,7 +48,7 @@ void init_tasks() {
 }
 
 /* Change this if TID allocation is changed. */
-struct task *get_task(int tid) {
+static struct task *get_task(int tid) {
 	int idx = TID_IDX(tid);
 	if(idx <= 0) return NULL;
 	if(idx >= next_tidx) return NULL;
@@ -65,7 +65,7 @@ static int get_ptid(struct task *task) {
 	return 0;
 }
 
-int get_num_tasks() {
+static int get_num_tasks(void) {
 	return task_count;
 }
 
@@ -145,7 +145,7 @@ static void set_task_running(struct task *task) {
 }
 
 /* Allocate a task and add it to the lookup list. */
-static struct task __attribute__((malloc)) *task_alloc() {
+static struct task __attribute__((malloc)) *task_alloc(void) {
 	struct task *ret;
 
 	if (taskqueue_empty(&freequeue)) {
@@ -239,19 +239,19 @@ int syscall_spawn(struct task *task, int priority, void (*code)(), int flags) {
 	return newtask->tid;
 }
 
-int syscall_gettid(struct task *task) {
+static int syscall_gettid(struct task *task) {
 	return task->tid;
 }
 
-int syscall_getptid(struct task *task) {
+static int syscall_getptid(struct task *task) {
 	return get_ptid(task);
 }
 
-void syscall_yield(struct task *task) {
+static void syscall_yield(struct task *task) {
 	/* Do nothing. */
 }
 
-int syscall_suspend(void) {
+static int syscall_suspend(void) {
 	// TODO: this technically can finish without an interrupt occuring (if not implemented)
 	asm("wfi");
 	task_irq();
@@ -276,7 +276,7 @@ static int alloc_channel_desc(struct task *task) {
 	return no;
 }
 
-int syscall_channel(struct task *task) {
+static int syscall_channel(struct task *task) {
 	int no = alloc_channel_desc(task);
 	if (no < 0)
 		return EMFILE;
@@ -311,7 +311,7 @@ static void close_channel(struct task *task, int no) {
 	}
 }
 
-int syscall_close(struct task *task, int no) {
+static int syscall_close(struct task *task, int no) {
 	if(no < 0 || no >= MAX_TASK_CHANNELS)
 		return EBADF;
 
@@ -322,7 +322,7 @@ int syscall_close(struct task *task, int no) {
 	return 0;
 }
 
-int syscall_dup(struct task *task, int oldfd, int newfd, int flags) {
+static int syscall_dup(struct task *task, int oldfd, int newfd, int flags) {
 	if(oldfd < 0 || oldfd >= MAX_TASK_CHANNELS)
 		return EBADF;
 	if(task->channels[oldfd].channel == NULL)
@@ -342,7 +342,7 @@ int syscall_dup(struct task *task, int oldfd, int newfd, int flags) {
 	return 0;
 }
 
-void syscall_exit(struct task *task) {
+static void syscall_exit(struct task *task) {
 	if(!task->daemon)
 		--nondaemon_count;
 	--task_count;
@@ -468,7 +468,7 @@ void event_unblock_one(int eventid, int return_value) {
 	}
 }
 
-int syscall_waitevent(struct task *task, int eventid) {
+static int syscall_waitevent(struct task *task, int eventid) {
 	if(eventid < 0 || eventid >= NEVENTS)
 		return EINVAL;
 
@@ -479,7 +479,7 @@ int syscall_waitevent(struct task *task, int eventid) {
 	return EINTR;
 }
 
-int syscall_taskstat(struct task *task, int tid, useraddr_t stat) {
+static int syscall_taskstat(struct task *task, int tid, useraddr_t stat) {
 	struct task_stat st;
 	if(tid == 0) {
 		if(!stat)

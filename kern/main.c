@@ -16,14 +16,14 @@
 #include <servers/console.h>
 #include <servers/net.h>
 
-void idle() {
+static void idle_task(void) {
 	for (;;)
 		sys_suspend();
 }
 
 void init_task();
 
-int main() {
+int main(void) {
 	struct task *next;
 
 	/* Basic hardware initialization */
@@ -52,7 +52,7 @@ int main() {
 	init_tasks();
 
 	/* Initialize idle task */
-	syscall_spawn(NULL, 7, idle, SPAWN_DAEMON);
+	syscall_spawn(NULL, 7, idle_task, SPAWN_DAEMON);
 
 	cpu_info();
 

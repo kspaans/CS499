@@ -175,7 +175,7 @@ static void eth_dev_cfg_deinit(int base) {
 	eth_mac_write(base, ETH_MAC_MAC_CR, ETH_MAC_TXEN | ETH_MAC_RXEN);
 }
 
-int eth_init() {
+int eth_init(void) {
 	bool line_reset = true;
 	if((eth_read(ETH1_BASE, ETH_PMT_CTRL_OFFSET) & ETH_PMT_CTRL_READY)
 	  && (eth_phy_read(ETH1_BASE, ETH_MII_BSR) & ETH_MII_BSR_LSTS)) {
@@ -209,7 +209,7 @@ int eth_init() {
 	return 0;
 }
 
-void eth_deinit() {
+void eth_deinit(void) {
 	eth_dev_cfg_deinit(ETH1_BASE);
 }
 
@@ -225,7 +225,7 @@ void eth_set_txlevel(int level) {
 	write32(ETH1_BASE + ETH_FIFO_INT_OFFSET, reg);
 }
 
-int eth_intstatus() {
+int eth_intstatus(void) {
 	return read32(ETH1_BASE + ETH_INT_STS_OFFSET);
 }
 

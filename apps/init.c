@@ -9,19 +9,19 @@
 #include <servers/fs.h>
 #include <apps.h>
 
-void consoletx_task();
-void consolerx_task();
-void clockserver_task();
-void ethrx_task();
-void icmpserver_task();
-void arpserver_task();
-void udprx_task();
-void udpconrx_task();
-void fileserver_task();
+void consoletx_task(void);
+void consolerx_task(void);
+void clockserver_task(void);
+void ethrx_task(void);
+void icmpserver_task(void);
+void arpserver_task(void);
+void udprx_task(void);
+void udpconrx_task(void);
+void fileserver_task(void);
 
 #include <eth.h>
 #include <servers/net.h>
-__attribute__((unused)) static void udp_tx_loop() {
+__attribute__((unused)) static void udp_tx_loop(void) {
 	printf("Type characters to send to the remote host; Ctrl+D to quit\n");
 
 	udp_printf("Hello from %s\n", this_host->hostname);
@@ -38,7 +38,7 @@ __attribute__((unused)) static void udp_tx_loop() {
 
 #include <eth.h>
 #include <servers/net.h>
-__attribute__((unused)) static void udp_rx_loop() {
+__attribute__((unused)) static void udp_rx_loop(void) {
 	for(;;) {
 		char c = udp_getchar();
 		printf("%c", c);
@@ -47,7 +47,7 @@ __attribute__((unused)) static void udp_rx_loop() {
 
 #include <drivers/leds.h>
 #include <servers/clock.h>
-__attribute__((unused)) static void flash_leds() {
+__attribute__((unused)) static void flash_leds(void) {
 	printf("Now flashing the blinkenlights.\n");
 	for(;;) {
 		for(enum leds led = LED1; led <= LED5; led++) {
@@ -60,7 +60,7 @@ __attribute__((unused)) static void flash_leds() {
 
 #include <machine.h>
 #include <drivers/uart.h>
-__attribute__((unused)) static void console_loop() {
+__attribute__((unused)) static void console_loop(void) {
 	volatile uint32_t *flags, *data;
 	flags = (uint32_t *)(UART3_PHYS_BASE + UART_LSR_OFFSET);
 	data = (uint32_t *)(UART3_PHYS_BASE + UART_RHR_OFFSET);
@@ -80,7 +80,7 @@ __attribute__((unused)) static void console_loop() {
 #include <string.h>
 #include <timer.h>
 #include <kern/kmalloc.h>
-__attribute__((unused)) static void memcpy_bench() {
+__attribute__((unused)) static void memcpy_bench(void) {
 	int tid = gettid();
 	printf("memcpy_bench[%d]: benchmarking memcpy\n", tid);
 	/* Run some benchmarks! */
@@ -99,7 +99,7 @@ __attribute__((unused)) static void memcpy_bench() {
 #define SRR_RUNS 16384
 int srrbench_chan;
 __attribute__((unused))
-static void srrbench_child() {
+static void srrbench_child(void) {
 	char buf[1024];
 	int tid;
 	int i;
@@ -121,7 +121,7 @@ static void srrbench_child() {
 	printf("%d ms\n", (int)(elapsed/TICKS_PER_MSEC)); \
 	printf("%d ns/loop\n", (int)(elapsed*1000000/TICKS_PER_MSEC/SRR_RUNS)); \
 }
-__attribute__((unused)) static void srrbench_task() {
+__attribute__((unused)) static void srrbench_task(void) {
 	int tid = gettid();
 	printf("srrbench_task[%d]: benchmarking SRR transaction\n", tid);
 	//int child = spawn(0, srrbench_child, 0);
@@ -138,15 +138,15 @@ __attribute__((unused)) static void srrbench_task() {
 	printf("srrbench_task[%d]: benchmark finished.\n", tid);
 }
 
-static void nulltask() {
+static void nulltask(void) {
 }
-static void task_reclamation_2() {
+static void task_reclamation_2(void) {
 	for(int i=0; i<1000; ++i) {
 		printk("%05x ", spawn(5, nulltask, 0));
 		printk("%05x\n", spawn(5, nulltask, 0));
 	}
 }
-__attribute__((unused)) static void task_reclamation_test() {
+__attribute__((unused)) static void task_reclamation_test(void) {
 	for(int i=0; i<1000; ++i) {
 		printk("%05x ", spawn(1, nulltask, 0));
 		printk("%05x ", spawn(1, nulltask, 0));
@@ -170,7 +170,7 @@ static void hashtable_print(hashtable *ht) {
 	}
 	printf("}\n");
 }
-__attribute__((unused)) static void hashtable_test() {
+__attribute__((unused)) static void hashtable_test(void) {
 	hashtable ht;
 	struct ht_item ht_arr[3];
 	hashtable_init(&ht, ht_arr, 3, dumbhash, NULL);
@@ -184,7 +184,7 @@ __attribute__((unused)) static void hashtable_test() {
 #undef DEL
 }
 
-__attribute__((unused)) static void fstest_task() {
+__attribute__((unused)) static void fstest_task(void) {
 	int chan;
 	char path[PATH_MAX+1];
 	printf("path_max test\n");
@@ -204,7 +204,7 @@ __attribute__((unused)) static void fstest_task() {
 }
 
 /* The first user program */
-void init_task() {
+void init_task(void) {
 	channel(0); /* stdin */
 	channel(0); /* stdout */
 	channel(0); /* fs */

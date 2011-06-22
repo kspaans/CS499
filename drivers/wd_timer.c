@@ -5,7 +5,7 @@
 #include <types.h>
 #include <mem.h>
 
-static void wdt_post_wait() {
+static void wdt_post_wait(void) {
 	while(mem32(WDT3_PHYS_BASE + WWPS))
 		;
 }
@@ -36,13 +36,13 @@ void wdt_go(int value) {
 	wdt_post_wait();
 }
 
-void wdt_stop() {
+void wdt_stop(void) {
 	write32(WDT3_PHYS_BASE + WSPR, WSPR_STOP_1);
 	wdt_post_wait();
 	write32(WDT3_PHYS_BASE + WSPR, WSPR_STOP_2);
 	wdt_post_wait();
 }
 
-void wdt_reload() {
+void wdt_reload(void) {
 	++mem32(WDT3_PHYS_BASE + WTGR);
 }

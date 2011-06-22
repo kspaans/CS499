@@ -99,16 +99,8 @@ void task_activate(struct task *task); /* asm function */
 /* SWI and IRQ handlers */
 void task_syscall(int code, struct task *task); /* in task.c */
 void task_irq(); /* in interrupt.c */
-/* Get the next ready task */
-struct task *task_dequeue();
-/* Enqueue a ready task */
-void task_enqueue(struct task *task);
-/* Lookup a task given its TID */
-struct task *get_task(int tid);
 /* Check for stack overflow */
 void check_stack(struct task* task);
-
-int get_num_tasks();
 
 struct task *schedule(void);
 
@@ -118,14 +110,6 @@ void print_task(struct task *task);
 
 /* System calls */
 int syscall_spawn(struct task *task, int priority, void (*code)(), int flags);
-/*
-int syscall_gettid(struct task *task);
-int syscall_getptid(struct task *task);
-void syscall_yield(struct task *task);
-void syscall_exit(struct task *task);
-int syscall_waitevent(struct task* task, int eventid);
-int syscall_taskstat(struct task* task, int tid, useraddr_t stat);
-*/
 
 void event_unblock_all(int eventid, int return_value);
 void event_unblock_one(int eventid, int return_value);

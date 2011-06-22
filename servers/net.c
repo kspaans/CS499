@@ -37,8 +37,8 @@
 #define GATEWAY_IP (this_host->gwip)
 #define SUBNET_MASK (this_host->netmask)
 
-static void ethrx_notifier();
-static void udpconrx_notifier();
+static void ethrx_notifier(void);
+static void udpconrx_notifier(void);
 
 static struct hostdata hosts[] = {
 	{ "tobi",   MAC(0x00, 0x15, 0xc9, 0x28, 0xd9, 0x1b), IP(10, 0, 0, 10), IP(255, 255, 255, 0), IP(10, 0, 0, 1), IP(10, 0, 0, 1), 6010, 1 },
@@ -77,7 +77,7 @@ enum netmsg {
 	UDPCON_RX_REQ_MSG,
 };
 
-uint16_t ip_checksum(const uint8_t *data, uint16_t len) {
+static uint16_t ip_checksum(const uint8_t *data, uint16_t len) {
 	uint32_t sum = 0;
 	int i;
 	for(i=0; i<len; i+=2) {
@@ -228,7 +228,7 @@ int udp_printf(const char *fmt, ...) {
 	return ret;
 }
 
-int udp_getchar() {
+int udp_getchar(void) {
 	return sendpath("/services/udpconrx", UDPCON_RX_REQ_MSG, NULL, 0, NULL, 0);
 }
 
@@ -280,7 +280,7 @@ static void ethrx_dispatch(uint32_t sts) {
 	}
 }
 
-void ethrx_task() {
+void ethrx_task(void) {
 	int tid, rcvlen, msgcode;
 
 	int ethrx_fd = mkopenchan("/services/ethrx");
@@ -306,7 +306,7 @@ void ethrx_task() {
 	}
 }
 
-void ethrx_notifier() {
+static void ethrx_notifier(void) {
 	int ethrx_fd = open(ROOT_DIRFD, "/services/ethrx");
 	while(1) {
 		waitevent(EVENT_ETH_RECEIVE);
@@ -314,7 +314,7 @@ void ethrx_notifier() {
 	}
 }
 
-void icmpserver_task() {
+void icmpserver_task(void) {
 	union msg {
 		struct {
 			char padding[RXPAD];
@@ -387,7 +387,7 @@ static void arpserver_store(mac_addr_t *mac_arr, intqueue *ipq, hashtable *addrm
 	}
 }
 
-void arpserver_task() {
+void arpserver_task(void) {
 	union msg {
 		struct arppkt pkt;
 		uint32_t addr;
@@ -486,7 +486,7 @@ static struct packet_rec *alloc_pkt(struct packet_rec_buf *buf, size_t rec_size)
 	return pkt;
 }
 
-void udprx_task() {
+void udprx_task(void) {
 	union msg {
 		struct {
 			char padding[RXPAD];
@@ -607,7 +607,7 @@ void udprx_task() {
 #define RX_BUF_MAX 16384
 #define RX_TIDS_MAX 64
 
-void udpconrx_task() {
+void udpconrx_task(void) {
 	int tid, rcvlen, msgcode;
 
 	int udpconrx_fd = mkopenchan("/services/udpconrx");
@@ -653,7 +653,7 @@ void udpconrx_task() {
 	}
 }
 
-void udpconrx_notifier() {
+static void udpconrx_notifier(void) {
 	union {
 		struct packet_rec rec;
 		char pkt[FRAME_MAX];

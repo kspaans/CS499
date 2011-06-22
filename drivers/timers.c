@@ -23,7 +23,7 @@ static void timer4_isr(int irq) {
 }
 
 /* Timers */
-void timers_init() {
+void timers_init(void) {
 	/* Make the system clock predictable */
 	uint32_t reg = mem32(PRM_GLOBAL_BASE + PRM_CLKSRC_CTRL_OFFSET);
 	reg &= ~PRM_CLKSRC_CTRL_SYSCLKDIV_MASK;
@@ -87,7 +87,7 @@ void timer_intreset(int base) {
 	timer_post_wait(base);
 }
 
-unsigned long long read_timer() {
+unsigned long long read_timer(void) {
 	return (gpt3_ovf_count << 32) + mem32(GPTIMER3 + TCRR);
 }
 

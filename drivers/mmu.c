@@ -18,7 +18,7 @@ uint32_t pagetable[0x1000] __attribute__((aligned(0x4000)));
  * first-level descriptors. Importnant to note the layout described here, that
  * the FLDs have to be repeated (due to overlaping index bits, see docs).
  */
-void prep_pagetable()
+void prep_pagetable(void)
 {
 	uint32_t i;
 

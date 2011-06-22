@@ -5,11 +5,11 @@
 #include <mem.h>
 #include <kern/printk.h>
 
-static void uart_mode_A() {
+static void uart_mode_A(void) {
 	mem32(UART3_PHYS_BASE + UART_LCR_OFFSET) |= UART_DIV_EN;
 }
 
-static void uart_mode_op() {
+static void uart_mode_op(void) {
 	mem32(UART3_PHYS_BASE + UART_LCR_OFFSET) &= ~UART_DIV_EN;
 }
 
@@ -18,7 +18,7 @@ static void uart_set_divisor(int div) {
 	write32(UART3_PHYS_BASE + UART_DLL_OFFSET, div & 0xff);
 }
 
-void uart_init() {
+void uart_init(void) {
 	/* reset device */
 	write32(UART3_PHYS_BASE + UART_SYSC_OFFSET, UART_SYSC_SOFTRESET);
 	while(!(mem32(UART3_PHYS_BASE + UART_SYSS_OFFSET) & UART_SYSS_RESETDONE))
@@ -43,7 +43,7 @@ void uart_init() {
 	write32(UART3_PHYS_BASE + UART_MDR1_OFFSET, UART_MODE_UART16x);
 }
 
-int uart_intstatus() {
+int uart_intstatus(void) {
 	return read32(UART3_PHYS_BASE + UART_IIR_OFFSET);
 }
 
@@ -55,11 +55,11 @@ void uart_intdisable(int interrupt) {
 	mem32(UART3_PHYS_BASE + UART_IER_OFFSET) &= ~interrupt;
 }
 
-int uart_txfull() {
+int uart_txfull(void) {
 	return mem32(UART3_PHYS_BASE + UART_SSR_OFFSET) & UART_SSR_TX_FIFO_FULL;
 }
 
-int uart_rxempty() {
+int uart_rxempty(void) {
 	return !(mem32(UART3_PHYS_BASE + UART_LSR_OFFSET) & UART_DRS_MASK);
 }
 
@@ -67,11 +67,11 @@ void uart_tx(int c) {
 	write32(UART3_PHYS_BASE + UART_THR_OFFSET, c);
 }
 
-int uart_rx() {
+int uart_rx(void) {
 	return read32(UART3_PHYS_BASE + UART_RHR_OFFSET);
 }
 
-int uart_getc() {
+int uart_getc(void) {
 	volatile uint32_t *flags, *data;
 	flags = (uint32_t *)(UART3_PHYS_BASE + UART_LSR_OFFSET);
 	data = (uint32_t *)(UART3_PHYS_BASE + UART_RHR_OFFSET);

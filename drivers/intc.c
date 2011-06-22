@@ -32,7 +32,7 @@ void intc_intdisable(int slot) {
 	intcps_vectors[slot>>5].mir_set = 1<<(slot & 31);
 }
 
-void intc_init() {
+void intc_init(void) {
 	/* Reset module */
 	write32(INTC_PHYS_BASE + INTCPS_SYSCONFIG_OFFSET, INTCPS_SOFTRESET);
 	while(!(mem32(INTC_PHYS_BASE + INTCPS_SYSSTATUS_OFFSET) & INTCPS_RESETDONE))
@@ -43,14 +43,14 @@ void intc_init() {
 	}
 }
 
-void intc_reset() {
+void intc_reset(void) {
 	/* Mask all interrupts */
 	for(int i=0; i<3; i++) {
 		intcps_vectors[i].mir = 0xffffffff;
 	}
 }
 
-void intc_dispatch() {
+void intc_dispatch(void) {
 	int irq = mem32(INTC_PHYS_BASE + INTCPS_SIR_IRQ_OFFSET) & INTCPS_ACTIVEIRQ_MASK;
 	if(isrs[irq] == NULL) {
 		printk("ERROR: Bad IRQ %d\n", irq);

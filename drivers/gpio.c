@@ -52,7 +52,7 @@ void gpio_irq(int irq) {
 	write32(gpio_bases[bank] + GPIO_IRQSTATUS1_OFFSET, 1<<pin);
 }
 
-void gpio_init() {
+void gpio_init(void) {
 	for(int i=0; i<6; i++) {
 		write32(gpio_bases[i] + GPIO_IRQENABLE1_OFFSET, 0x00000000);
 		for(int j=0; j<32; j++) {

@@ -7,8 +7,8 @@
 #include <drivers/uart.h>
 #include <mem.h>
 
-static void consoletx_notifier();
-static void consolerx_notifier();
+static void consoletx_notifier(void);
+static void consolerx_notifier(void);
 
 enum consolemsg {
 	CONSOLE_TX_NOTIFY_MSG,
@@ -42,7 +42,7 @@ int vprintf(const char *fmt, va_list va) {
 	return func_vprintf(console_printfunc, NULL, fmt, va);
 }
 
-int getchar() {
+int getchar(void) {
 	return MsgSend(STDIN_FILENO, CONSOLE_RX_REQ_MSG, NULL, 0, NULL, 0, NULL);
 }
 
@@ -50,7 +50,7 @@ void putchar(char c) {
 	MsgSend(STDOUT_FILENO, CONSOLE_TX_DATA_MSG, &c, 1, NULL, 0, NULL);
 }
 
-void consoletx_task() {
+void consoletx_task(void) {
 	int tid, rcvlen, msgcode;
 	char rcvbuf[CHUNK_SIZE];
 	char *cur;
@@ -121,7 +121,7 @@ void consoletx_task() {
 	}
 }
 
-void consolerx_task() {
+void consolerx_task(void) {
 	int tid, rcvlen, msgcode;
 
 	spawn(0, consolerx_notifier, SPAWN_DAEMON);
@@ -164,14 +164,14 @@ void consolerx_task() {
 	}
 }
 
-static void consoletx_notifier() {
+static void consoletx_notifier(void) {
 	while(1) {
 		waitevent(EVENT_CONSOLE_TRANSMIT);
 		MsgSend(STDOUT_FILENO, CONSOLE_TX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }
 
-static void consolerx_notifier() {
+static void consolerx_notifier(void) {
 	while(1) {
 		waitevent(EVENT_CONSOLE_RECEIVE);
 		MsgSend(STDIN_FILENO, CONSOLE_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);

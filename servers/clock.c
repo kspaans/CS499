@@ -22,7 +22,7 @@ void msleep(int msec) {
 	sendpath("/services/clock", CLOCK_DELAY_MSG, &msec, sizeof(msec), NULL, 0);
 }
 
-int Time() {
+int time(void) {
 	return sendpath("/services/clock", CLOCK_TIME_MSG, NULL, 0, NULL, 0);
 }
 
@@ -68,7 +68,7 @@ static void delayinfoheap_push(delayinfo *delays, int *n, delayinfo value) {
 
 #define DELAYS 5000
 
-void clockserver_task() {
+void clockserver_task(void) {
 	int tid;
 	int rcvlen;
 	int rcvdata;
@@ -124,7 +124,7 @@ void clockserver_task() {
 	}
 }
 
-static void clockserver_notifier() {
+static void clockserver_notifier(void) {
 	while(1) {
 		waitevent(EVENT_CLOCK_TICK);
 		MsgSend(clock_fd, CLOCK_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);

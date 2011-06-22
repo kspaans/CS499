@@ -13,7 +13,7 @@ static void clock_isr(int irq) {
 	event_unblock_all(EVENT_CLOCK_TICK, 0);
 	timer_intreset(GPTIMER5);
 }
-static void init_clock_irq() {
+static void init_clock_irq(void) {
 	intc_register(IRQ_GPT5, clock_isr, 0);
 	timer_go(GPTIMER5, -26000, 1);
 	intc_intenable(IRQ_GPT5);
@@ -29,7 +29,7 @@ static void eth_isr(int irqpin) {
 		eth_intdisable(ETH_INT_RSFL);
 	}
 }
-static void init_eth_irq() {
+static void init_eth_irq(void) {
 	eth_set_rxlevel(0); // interrupt if RX level > 0
 	eth_intenable(ETH_INT_RSFL);
 	gpio_register(GPIO_ETH1_IRQ, eth_isr, GPIOIRQ_LEVELDETECT0);
@@ -56,18 +56,18 @@ static void uart_isr(int irq) {
 		break;
 	}
 }
-static void init_uart_irq() {
+static void init_uart_irq(void) {
 	uart_intenable(UART_RHR_IT | UART_THR_IT | UART_LINE_STS_IT);
 	intc_register(IRQ_UART3, uart_isr, 1);
 	intc_intenable(IRQ_UART3);
 }
 
-void init_interrupts() {
+void init_interrupts(void) {
 	init_clock_irq();
 	init_eth_irq();
 	init_uart_irq();
 }
 
-void task_irq() {
+void task_irq(void) {
 	intc_dispatch();
 }

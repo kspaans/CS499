@@ -112,7 +112,7 @@ void age(uint8_t **field, size_t x, size_t y)
 	}
 }
 
-void gameoflife()
+void gameoflife(void)
 {
 	uint8_t *field[X_SIZE];
 	uint8_t universe[X_SIZE][Y_SIZE] = {};

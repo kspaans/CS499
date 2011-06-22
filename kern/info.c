@@ -39,7 +39,7 @@ static void describe_simple(const struct regbits *bits, uint32_t val) {
 	printk("%s", bits->desc);
 }
 
-void describe_cpsr_mode(const struct regbits *bits, uint32_t val) {
+static void describe_cpsr_mode(const struct regbits *bits, uint32_t val) {
 	const char *modename;
 	switch (val) {
 		case ARM_MODE_USER:
