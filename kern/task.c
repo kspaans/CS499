@@ -182,7 +182,11 @@ static void __attribute__((noreturn)) task_run(void (*code)()) {
 	sys_exit();
 }
 
-static int do_create(struct task *task, int priority, void (*code)(), int daemon) {
+int syscall_spawn(struct task *task, int priority, void (*code)(), int flags) {
+	int daemon = !!(flags & SPAWN_DAEMON);
+
+	if (flags & ~(SPAWN_DAEMON))
+		return EINVAL;
 	if(priority < 0 || priority >= TASK_NPRIO)
 		return EINVAL;
 
@@ -191,7 +195,7 @@ static int do_create(struct task *task, int priority, void (*code)(), int daemon
 	if(newtask == NULL)
 		return ENOMEM;
 
-	if(daemon != TASK_DAEMON)
+	if(!daemon)
 		nondaemon_count++;
 	task_count++;
 
@@ -200,7 +204,7 @@ static int do_create(struct task *task, int priority, void (*code)(), int daemon
 	else
 		newtask->ptid = 0;
 	newtask->priority = priority;
-	newtask->daemon = (daemon == TASK_DAEMON);
+	newtask->daemon = daemon;
 	newtask->state = TASK_RUNNING;
 
 	/* Set up registers. */
@@ -233,11 +237,6 @@ static int do_create(struct task *task, int priority, void (*code)(), int daemon
 	//printk("created %p %d %s\n", newtask, newtask->tid, SYMBOL_EXACT(code));
 
 	return newtask->tid;
-}
-
-int syscall_spawn(struct task *task, int priority, void (*code)(), int flags) {
-	int type = (flags & SPAWN_DAEMON) ? TASK_DAEMON : TASK_NORMAL;
-	return do_create(task, priority, code, type);
 }
 
 int syscall_gettid(struct task *task) {

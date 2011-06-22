@@ -3,9 +3,6 @@
 
 #define MAX_TASKS 4095 /* excluding "kernel task" 0 */
 
-#define TASK_DAEMON 1
-#define TASK_NORMAL 0
-
 #define STDIN_FILENO 0
 #define STDOUT_FILENO 1
 #define ROOT_DIRFD 2
