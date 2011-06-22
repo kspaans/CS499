@@ -56,7 +56,7 @@ void consoletx_task() {
 	char *cur;
 	int newline_seen;
 
-	CreateDaemon(0, consoletx_notifier);
+	create(0, consoletx_notifier, CREATE_DAEMON);
 
 	charqueue chq;
 	char chq_arr[TX_BUF_MAX];
@@ -124,7 +124,7 @@ void consoletx_task() {
 void consolerx_task() {
 	int tid, rcvlen, msgcode;
 
-	CreateDaemon(0, consolerx_notifier);
+	create(0, consolerx_notifier, CREATE_DAEMON);
 
 	intqueue tidq;
 	int tidq_arr[RX_TIDS_MAX];
@@ -166,14 +166,14 @@ void consolerx_task() {
 
 static void consoletx_notifier() {
 	while(1) {
-		AwaitEvent(EVENT_CONSOLE_TRANSMIT);
+		waitevent(EVENT_CONSOLE_TRANSMIT);
 		MsgSend(STDOUT_FILENO, CONSOLE_TX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }
 
 static void consolerx_notifier() {
 	while(1) {
-		AwaitEvent(EVENT_CONSOLE_RECEIVE);
+		waitevent(EVENT_CONSOLE_RECEIVE);
 		MsgSend(STDIN_FILENO, CONSOLE_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }

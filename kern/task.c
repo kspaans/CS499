@@ -179,10 +179,10 @@ static struct task __attribute__((malloc)) *task_alloc() {
 
 static void __attribute__((noreturn)) task_run(void (*code)()) {
 	code();
-	Exit();
+	sys_exit();
 }
 
-static int do_Create(struct task *task, int priority, void (*code)(), int daemon) {
+static int do_create(struct task *task, int priority, void (*code)(), int daemon) {
 	if(priority < 0 || priority >= TASK_NPRIO)
 		return EINVAL;
 
@@ -235,31 +235,24 @@ static int do_Create(struct task *task, int priority, void (*code)(), int daemon
 	return newtask->tid;
 }
 
-int KernCreateTask(int priority, void (*code)(), int daemon) {
-	return do_Create(NULL, priority, code, daemon);
+int syscall_create(struct task *task, int priority, void (*code)(), int flags) {
+	int type = (flags & CREATE_DAEMON) ? TASK_DAEMON : TASK_NORMAL;
+	return do_create(task, priority, code, type);
 }
 
-int syscall_Create(struct task *task, int priority, void (*code)()) {
-	return do_Create(task, priority, code, TASK_NORMAL); // create non-daemon task
-}
-
-int syscall_CreateDaemon(struct task *task, int priority, void (*code)()) {
-	return do_Create(task, priority, code, TASK_DAEMON); // create daemon task
-}
-
-int syscall_MyTid(struct task *task) {
+int syscall_gettid(struct task *task) {
 	return task->tid;
 }
 
-int syscall_MyParentTid(struct task *task) {
+int syscall_getptid(struct task *task) {
 	return get_ptid(task);
 }
 
-void syscall_Pass(struct task *task) {
+void syscall_yield(struct task *task) {
 	/* Do nothing. */
 }
 
-int syscall_Suspend(void) {
+int syscall_suspend(void) {
 	// TODO: this technically can finish without an interrupt occuring (if not implemented)
 	asm("wfi");
 	task_irq();
@@ -284,7 +277,7 @@ static int alloc_channel_desc(struct task *task) {
 	return no;
 }
 
-int syscall_ChannelOpen(struct task *task) {
+int syscall_channel(struct task *task) {
 	int no = alloc_channel_desc(task);
 	if (no < 0)
 		return EMFILE;
@@ -319,7 +312,7 @@ static void close_channel(struct task *task, int no) {
 	}
 }
 
-int syscall_ChannelClose(struct task *task, int no) {
+int syscall_close(struct task *task, int no) {
 	if(no < 0 || no >= MAX_TASK_CHANNELS)
 		return EBADF;
 
@@ -330,7 +323,7 @@ int syscall_ChannelClose(struct task *task, int no) {
 	return 0;
 }
 
-int syscall_ChannelDup(struct task *task, int oldfd, int newfd, int flags) {
+int syscall_dup(struct task *task, int oldfd, int newfd, int flags) {
 	if(oldfd < 0 || oldfd >= MAX_TASK_CHANNELS)
 		return EBADF;
 	if(task->channels[oldfd].channel == NULL)
@@ -350,7 +343,7 @@ int syscall_ChannelDup(struct task *task, int oldfd, int newfd, int flags) {
 	return 0;
 }
 
-void syscall_Exit(struct task *task) {
+void syscall_exit(struct task *task) {
 	if(!task->daemon)
 		--nondaemon_count;
 	--task_count;
@@ -360,12 +353,12 @@ void syscall_Exit(struct task *task) {
 			close_channel(task, i);
 		}
 	}
-	/* Task must have been running (not blocked or on the ready queue) to call Exit.
+	/* Task must have been running (not blocked or on the ready queue) to call sys_exit.
 	   So, it is safe to free the task. */
 	set_task_state(task, TASK_DEAD, &freequeue);
 }
 
-/* Destroy, if implemented, needs to do more work than Exit:
+/* Destroy, if implemented, needs to do more work than sys_exit:
  * - Destroy must remove tasks from the queue that they are on.
  *   - This requires a task to know which queue it is on.
  */
@@ -476,7 +469,7 @@ void event_unblock_one(int eventid, int return_value) {
 	}
 }
 
-int syscall_AwaitEvent(struct task *task, int eventid) {
+int syscall_waitevent(struct task *task, int eventid) {
 	if(eventid < 0 || eventid >= NEVENTS)
 		return EINVAL;
 
@@ -487,7 +480,7 @@ int syscall_AwaitEvent(struct task *task, int eventid) {
 	return EINTR;
 }
 
-int syscall_TaskStat(struct task *task, int tid, useraddr_t stat) {
+int syscall_taskstat(struct task *task, int tid, useraddr_t stat) {
 	struct task_stat st;
 	if(tid == 0) {
 		if(!stat)
@@ -517,23 +510,20 @@ void task_syscall(int code, struct task *task) {
 	int ret;
 	switch (code) {
 	case SYS_CREATE:
-		ret = syscall_Create(task, task->regs.r0, (void *)task->regs.r1);
+		ret = syscall_create(task, task->regs.r0, (void *)task->regs.r1, (int)task->regs.r2);
 		break;
-	case SYS_CREATEDAEMON:
-		ret = syscall_CreateDaemon(task, task->regs.r0, (void *)task->regs.r1);
+	case SYS_GETTID:
+		ret = syscall_gettid(task);
 		break;
-	case SYS_MYTID:
-		ret = syscall_MyTid(task);
+	case SYS_GETPTID:
+		ret = syscall_getptid(task);
 		break;
-	case SYS_MYPTID:
-		ret = syscall_MyParentTid(task);
-		break;
-	case SYS_PASS:
-		syscall_Pass(task);
+	case SYS_YIELD:
+		syscall_yield(task);
 		ret = 0;
 		break;
 	case SYS_EXIT:
-		syscall_Exit(task);
+		syscall_exit(task);
 		ret = 0;
 		break;
 	case SYS_SEND:
@@ -552,23 +542,23 @@ void task_syscall(int code, struct task *task) {
 			(int *)/* rch */task->regs.r3,
 			(int)/* flags */STACK_ARG(task, 4));
 		break;
-	case SYS_AWAITEVENT:
-		ret = syscall_AwaitEvent(task, task->regs.r0);
+	case SYS_WAITEVENT:
+		ret = syscall_waitevent(task, task->regs.r0);
 		break;
 	case SYS_TASKSTAT:
-		ret = syscall_TaskStat(task, task->regs.r0, (useraddr_t)task->regs.r1);
+		ret = syscall_taskstat(task, task->regs.r0, (useraddr_t)task->regs.r1);
 		break;
 	case SYS_SUSPEND:
-		ret = syscall_Suspend();
+		ret = syscall_suspend();
 		break;
-	case SYS_CHANNELOPEN:
-		ret = syscall_ChannelOpen(task);
+	case SYS_CHANNEL:
+		ret = syscall_channel(task);
 		break;
-	case SYS_CHANNELCLOSE:
-		ret = syscall_ChannelClose(task, task->regs.r0);
+	case SYS_CLOSE:
+		ret = syscall_close(task, task->regs.r0);
 		break;
-	case SYS_CHANNELDUP:
-		ret = syscall_ChannelDup(task, task->regs.r0, task->regs.r1, task->regs.r2);
+	case SYS_DUP:
+		ret = syscall_dup(task, task->regs.r0, task->regs.r1, task->regs.r2);
 		break;
 	default:
 		ret = ENOSYS;
@@ -580,7 +570,7 @@ void task_syscall(int code, struct task *task) {
 void print_task(struct task *task) {
 	if(task == NULL)
 		return;
-	printk("task %p tid:%08x ptid:%08x prio:%d, state:%d\n", task, task->tid, task->ptid, task->priority, task->state);
+	printk("task %p tid:%08x ptid:%08x prio:%d, state:%d, daemon:%d\n", task, task->tid, task->ptid, task->priority, task->state, task->daemon);
 	PRINT_REG(r0);
 	PRINT_REG(r1);
 	PRINT_REG(r2);

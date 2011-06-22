@@ -2,18 +2,17 @@
 #define KERN_SYSCALLNO_H
 
 #define SYS_CREATE        1
-#define SYS_MYTID         2
-#define SYS_MYPTID        3
-#define SYS_PASS          4
+#define SYS_GETTID         2
+#define SYS_GETPTID        3
+#define SYS_YIELD          4
 #define SYS_EXIT          5
 #define SYS_SEND          6
 #define SYS_RECV          7
-#define SYS_CREATEDAEMON  10
-#define SYS_AWAITEVENT    11
+#define SYS_WAITEVENT    11
 #define SYS_TASKSTAT      12
 #define SYS_SUSPEND       13
-#define SYS_CHANNELOPEN   14
-#define SYS_CHANNELCLOSE  15
-#define SYS_CHANNELDUP    16
+#define SYS_CHANNEL   14
+#define SYS_CLOSE  15
+#define SYS_DUP    16
 
 #endif /* KERN_SYSCALLNO_H */

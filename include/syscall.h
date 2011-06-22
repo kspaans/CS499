@@ -5,25 +5,38 @@
 #include <types.h>
 #include <msg.h>
 
-/* Create a new task with specified priority and entry point. */
-int Create(int priority, void (*code)());
-/* Identical to Create, but it makes a daemon task.
- * The kernel exits when no non-daemon tasks are running. */
-int CreateDaemon(int priority, void (*code)());
-int MyTid();
-int MyParentTid();
-void Pass();
-void Suspend();
-void Exit() __attribute__((noreturn));
+#define CREATE_DAEMON 1
 
-ssize_t sys_send(int chan, const struct iovec *ivo, int iovlen, int  sch, int flags);
+int sys_create(int priority, void (*code)(), int flags);
+int sys_gettid();
+int sys_getptid();
+void sys_yield();
+void sys_suspend();
+void sys_exit() __attribute__((noreturn));
+
+int sys_channel(int flags);
+int sys_close(int chan);
+int sys_dup(int oldchan, int newchan, int flags);
+
+ssize_t sys_send(int chan, const struct iovec *iov, int iovlen, int  sch, int flags);
 ssize_t sys_recv(int chan, const struct iovec *iov, int iovlen, int *rch, int flags);
 
-int AwaitEvent(int eventid);
-int TaskStat(int tid, struct task_stat *stat);
+int sys_waitevent(int eventid);
+int sys_taskstat(int tid, struct task_stat *stat);
 
-int ChannelOpen(void);
-int ChannelClose(int no);
-int ChannelDup(int oldfd, int newfd, int flags);
+// "wrappers" for userspace
+#define create(priority, code, flags) sys_create(priority, code, flags)
+#define gettid() sys_gettid()
+#define getptid() sys_getptid()
+#define yield() sys_yield()
+#define suspend() sys_suspend()
+#define exit() sys_exit()
+#define channel(flags) sys_channel(flags)
+#define close(chan) sys_close(chan)
+#define dup(oldchan, newchan, flags) sys_dup(oldchan, newchan, flags)
+#define send(chan, iov, iovlen, sch, flags) sys_send(chan, iov, iovlen, sch, flags)
+#define recv(chan, iov, iovlen, rch, flags) sys_recv(chan, iov, iovlen, rch, flags)
+#define waitevent(eventid) sys_waitevent(eventid)
+#define taskstat(eventid) sys_taskstat(eventid)
 
 #endif /* SYSCALL_H */

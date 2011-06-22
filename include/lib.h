@@ -13,7 +13,7 @@
 #define ASSERT(x) { \
 	if(!(x)) { \
 		printf("\033[1;41mAssert \"" #x "\" failed at " __FILE__ ":" STRINGIFY2(__LINE__) ": "); \
-		Exit(); \
+		exit(); \
 	} \
 }
 #define ASSERTNOERR(ret) { \
@@ -21,7 +21,7 @@
 	if(rval < 0) { \
 		printf("\033[1;41mAssert \"" #ret " >= 0\" failed at " __FILE__ ":" STRINGIFY2(__LINE__) ": "); \
 		printf("Return value %d\033[m\n", rval); \
-		Exit(); \
+		exit(); \
 	} \
 }
 

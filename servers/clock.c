@@ -78,7 +78,7 @@ void clockserver_task() {
 
 	clock_fd = mkopenchan("/services/clock");
 
-	CreateDaemon(0, clockserver_notifier);
+	create(0, clockserver_notifier, CREATE_DAEMON);
 
 	int num_delays = 0;
 	while(1) {
@@ -126,7 +126,7 @@ void clockserver_task() {
 
 static void clockserver_notifier() {
 	while(1) {
-		AwaitEvent(EVENT_CLOCK_TICK);
+		waitevent(EVENT_CLOCK_TICK);
 		MsgSend(clock_fd, CLOCK_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }

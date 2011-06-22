@@ -14,7 +14,6 @@ int rmchan(int dirfd, const char *pathname);
 // convenience functions
 int sendpath(const char *pathname, int msgcode, const void *msg, int msglen, void *reply, int replylen);
 int mkopenchan(const char *pathname);
-int close(int dirfd);
 
 // debug functions
 void dump_files(void);

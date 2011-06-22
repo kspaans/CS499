@@ -117,14 +117,15 @@ void print_task(struct task *task);
 /// debug
 
 /* System calls */
-int syscall_Create(struct task *task, int priority, void (*code)());
-int syscall_CreateDaemon(struct task *task, int priority, void (*code)());
-int syscall_MyTid(struct task *task);
-int syscall_MyParentTid(struct task *task);
-void syscall_Pass(struct task *task);
-void syscall_Exit(struct task *task);
-int syscall_AwaitEvent(struct task* task, int eventid);
-int syscall_TaskStat(struct task* task, int tid, useraddr_t stat);
+int syscall_create(struct task *task, int priority, void (*code)(), int flags);
+/*
+int syscall_gettid(struct task *task);
+int syscall_getptid(struct task *task);
+void syscall_yield(struct task *task);
+void syscall_exit(struct task *task);
+int syscall_waitevent(struct task* task, int eventid);
+int syscall_taskstat(struct task* task, int tid, useraddr_t stat);
+*/
 
 void event_unblock_all(int eventid, int return_value);
 void event_unblock_one(int eventid, int return_value);

@@ -285,7 +285,7 @@ void ethrx_task() {
 
 	int ethrx_fd = mkopenchan("/services/ethrx");
 
-	CreateDaemon(0, ethrx_notifier);
+	create(0, ethrx_notifier, CREATE_DAEMON);
 
 	while(1) {
 		rcvlen = MsgReceive(ethrx_fd, &tid, &msgcode, NULL, 0);
@@ -309,7 +309,7 @@ void ethrx_task() {
 void ethrx_notifier() {
 	int ethrx_fd = open(ROOT_DIRFD, "/services/ethrx");
 	while(1) {
-		AwaitEvent(EVENT_ETH_RECEIVE);
+		waitevent(EVENT_ETH_RECEIVE);
 		MsgSend(ethrx_fd, ETH_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }
@@ -612,7 +612,7 @@ void udpconrx_task() {
 
 	int udpconrx_fd = mkopenchan("/services/udpconrx");
 
-	CreateDaemon(0, udpconrx_notifier);
+	create(0, udpconrx_notifier, CREATE_DAEMON);
 
 	char buf[FRAME_MAX];
 
@@ -671,7 +671,7 @@ static struct hostdata *get_host_data(struct mac_addr *mac) {
 		if (!memcmp(mac, &hosts[i].mac, sizeof(*mac)))
 			return &hosts[i];
 	printf("no IP address for this host");
-	Exit();
+	exit();
 }
 
 void net_init(void) {

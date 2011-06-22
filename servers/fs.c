@@ -32,16 +32,12 @@ static int file_req(int type, int dirfd, const char *pathname, bool expectfd) {
 	return expectfd ? fd : 0;
 fail:
 	if (fd != -1)
-		ChannelClose(fd);
+		close(fd);
 	return ret;
 }
 
 int open(int dirfd, const char *pathname) {
 	return file_req(FILE_OPEN, dirfd, pathname, true);
-}
-
-int close(int dirfd) {
-	return ChannelClose(dirfd);
 }
 
 int mkdir(int dirfd, const char *pathname) {
@@ -60,12 +56,12 @@ int mkopenchan(const char *pathname) {
 	int ret = mkchan(ROOT_DIRFD, pathname);
 	if (ret) {
 		printf("mkopenchan: failed to make %s (%d)\n", pathname, ret);
-		Exit();
+		exit();
 	}
 	int fd = open(ROOT_DIRFD, pathname);
 	if (fd < 0) {
 		printf("mkopenchan: failed to open %s (%d)\n", pathname, fd);
-		Exit();
+		exit();
 	}
 	return fd;
 }
@@ -74,7 +70,7 @@ int sendpath(const char *pathname, int msgcode, const void *msg, int msglen, voi
 	int fd = open(ROOT_DIRFD, pathname);
 	if (fd < 0) {
 		printf("sendpath: failed to open %s (%d)\n", pathname, fd);
-		Exit();
+		exit();
 	}
 	int ret = MsgSend(fd, msgcode, msg, msglen, reply, replylen, NULL);
 	close(fd);
@@ -167,7 +163,7 @@ static void do_mkchan(int dirfd, int tid, const char *path, size_t pathlen) {
 		MsgReplyStatus(tid, EEXIST);
 		return;
 	}
-	int chan = ChannelOpen();
+	int chan = channel(0);
 	if(chan < 0) {
 		MsgReplyStatus(tid, ENOSPC);
 		return;
@@ -188,7 +184,7 @@ static void do_rmchan(int dirfd, int tid, const char *path, size_t pathlen) {
 		MsgReplyStatus(tid, ENOENT);
 		return;
 	}
-	ChannelClose(fs.files[i].chan);
+	close(fs.files[i].chan);
 	MsgReplyStatus(tid, 0);
 }
 

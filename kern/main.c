@@ -18,7 +18,7 @@
 
 void idle() {
 	for (;;)
-		Suspend();
+		sys_suspend();
 }
 
 /* userprog.c */
@@ -53,17 +53,14 @@ int main() {
 	init_tasks();
 
 	/* Initialize idle task */
-	int idle_tid = syscall_CreateDaemon(NULL, 7, idle);
-
-	 // execute idle task in system mode, so that it can sleep the processor
-	get_task(idle_tid)->regs.psr |= 0x1f;
+	syscall_create(NULL, 7, idle, CREATE_DAEMON);
 
 	cpu_info();
 
 	printk("userspace init\n");
 
 	/* Initialize first user program */
-	syscall_Create(NULL, 6, userprog_init);
+	syscall_create(NULL, 6, userprog_init, 0);
 
 	while (nondaemon_count > 0) {
 		next = schedule();

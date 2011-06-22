@@ -72,7 +72,7 @@ __attribute__((unused)) static void console_loop() {
 			if(c == 'q')
 				return;
 		}
-		Pass();
+		yield();
 	}
 }
 
@@ -81,7 +81,7 @@ __attribute__((unused)) static void console_loop() {
 #include <timer.h>
 #include <kern/kmalloc.h>
 __attribute__((unused)) static void memcpy_bench() {
-	int tid = MyTid();
+	int tid = gettid();
 	printf("memcpy_bench[%d]: benchmarking memcpy\n", tid);
 	/* Run some benchmarks! */
 	char *buf =  kmalloc(1<<25);
@@ -122,16 +122,16 @@ static void srrbench_child() {
 	printf("%d ns/loop\n", (int)(elapsed*1000000/TICKS_PER_MSEC/SRR_RUNS)); \
 }
 __attribute__((unused)) static void srrbench_task() {
-	int tid = MyTid();
+	int tid = gettid();
 	printf("srrbench_task[%d]: benchmarking SRR transaction\n", tid);
-	//int child = Create(0, srrbench_child);
+	//int child = create(0, srrbench_child, 0);
 	char buf[512];
 	int i;
 	unsigned long long start, elapsed;
 
-	srrbench_chan = ChannelOpen();
+	srrbench_chan = channel(0);
 
-	BENCH("Pass", Pass())
+	BENCH("yield", yield())
 	BENCH("4-bytes", MsgSend(srrbench_chan, 0, buf, 4, buf, 4, NULL))
 	BENCH("64-bytes", MsgSend(srrbench_chan, 0, buf, 64, buf, 64, NULL))
 
@@ -142,17 +142,17 @@ static void nulltask() {
 }
 static void task_reclamation_2() {
 	for(int i=0; i<1000; ++i) {
-		printk("%05x ", Create(5, nulltask));
-		printk("%05x\n", Create(5, nulltask));
+		printk("%05x ", create(5, nulltask, 0));
+		printk("%05x\n", create(5, nulltask, 0));
 	}
 }
 __attribute__((unused)) static void task_reclamation_test() {
 	for(int i=0; i<1000; ++i) {
-		printk("%05x ", Create(1, nulltask));
-		printk("%05x ", Create(1, nulltask));
-		printk("%05x\n", Create(3, nulltask));
+		printk("%05x ", create(1, nulltask, 0));
+		printk("%05x ", create(1, nulltask, 0));
+		printk("%05x\n", create(3, nulltask, 0));
 	}
-	Create(4, task_reclamation_2);
+	create(4, task_reclamation_2, 0);
 }
 
 static uint32_t dumbhash(int x) { return 0; }
@@ -205,37 +205,37 @@ __attribute__((unused)) static void fstest_task() {
 
 /* The first user program */
 void userprog_init() {
-	ChannelOpen(); /* stdin */
-	ChannelOpen(); /* stdout */
-	ChannelOpen(); /* fs */
+	channel(0); /* stdin */
+	channel(0); /* stdout */
+	channel(0); /* fs */
 
 	printk("console init\n");
 
-	CreateDaemon(1, consoletx_task);
-	CreateDaemon(1, consolerx_task);
+	create(1, consoletx_task, CREATE_DAEMON);
+	create(1, consolerx_task, CREATE_DAEMON);
 
 	net_init();
 
-	CreateDaemon(1, clockserver_task);
-	CreateDaemon(1, ethrx_task);
-	CreateDaemon(1, icmpserver_task);
-	CreateDaemon(1, arpserver_task);
-	CreateDaemon(1, udprx_task);
-	CreateDaemon(2, udpconrx_task);
-	CreateDaemon(2, fileserver_task);
+	create(1, clockserver_task, CREATE_DAEMON);
+	create(1, ethrx_task, CREATE_DAEMON);
+	create(1, icmpserver_task, CREATE_DAEMON);
+	create(1, arpserver_task, CREATE_DAEMON);
+	create(1, udprx_task, CREATE_DAEMON);
+	create(2, udpconrx_task, CREATE_DAEMON);
+	create(2, fileserver_task, CREATE_DAEMON);
 
 	dump_files();
 
-	//ASSERTNOERR(Create(0, hashtable_test));
-	ASSERTNOERR(Create(1, memcpy_bench));
-	ASSERTNOERR(Create(2, fstest_task));
-	//ASSERTNOERR(Create(2, task_reclamation_test));
-	//ASSERTNOERR(Create(2, srr_task));
-	//ASSERTNOERR(Create(3, srrbench_task));
+	//ASSERTNOERR(create(0, hashtable_test, 0));
+	ASSERTNOERR(create(1, memcpy_bench, 0));
+	ASSERTNOERR(create(2, fstest_task, 0));
+	//ASSERTNOERR(create(2, task_reclamation_test, 0));
+	//ASSERTNOERR(create(2, srr_task, 0));
+	//ASSERTNOERR(create(3, srrbench_task, 0));
 
-	ASSERTNOERR(CreateDaemon(4, flash_leds));
-	//ASSERTNOERR(Create(4, console_loop));
-	ASSERTNOERR(Create(4, udp_tx_loop));
-	ASSERTNOERR(CreateDaemon(4, udp_rx_loop));
-//	ASSERTNOERR(Create(6, gameoflife));
+	ASSERTNOERR(create(4, flash_leds, CREATE_DAEMON));
+	//ASSERTNOERR(create(4, console_loop, 0));
+	ASSERTNOERR(create(4, udp_tx_loop, 0));
+	ASSERTNOERR(create(4, udp_rx_loop, CREATE_DAEMON));
+//	ASSERTNOERR(create(6, gameoflife, 0));
 }

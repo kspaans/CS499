@@ -16,7 +16,7 @@ enum taskstate {
 	TASK_RUNNING,		/* Active or ready to run */
 	TASK_SEND_BLOCKED,	/* blocked in sys_send */
 	TASK_RECV_BLOCKED,	/* blocked in sys_recv */
-	TASK_DEAD,			/* Called Exit() */
+	TASK_DEAD,			/* Called sys_exit() */
 	TASK_EVENT_BLOCKED,
 };
 
@@ -28,7 +28,5 @@ struct task_stat {
 	enum taskstate state;
 	int srrtid;
 };
-
-int KernCreateTask(int priority, void (*code)(), int daemon);
 
 #endif /* TASK_H */
