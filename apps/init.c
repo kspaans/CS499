@@ -241,6 +241,8 @@ void init_task(void) {
 
 	ASSERTNOERR(spawn(4, flash_leds, SPAWN_DAEMON));
 	//ASSERTNOERR(spawn(4, console_loop, 0));
+	void genesis_task(void);
+	ASSERTNOERR(spawn(3, genesis_task, SPAWN_DAEMON));
 	ASSERTNOERR(spawn(4, udp_tx_loop, 0));
 	ASSERTNOERR(spawn(4, udp_rx_loop, SPAWN_DAEMON));
 //	ASSERTNOERR(spawn(6, gameoflife, 0));
