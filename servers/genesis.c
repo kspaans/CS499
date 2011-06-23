@@ -36,7 +36,7 @@ void genesis_task(void) {
 		struct creation_request data;
 	} __attribute__((__packed__)) reply;
 
-	printf("Listening for creation requests %p\n", genesis_test);
+	printf("Listening for creation requests\n");
 	udp_bind(GENESIS_PORT);
 
 	while(1) {
@@ -47,8 +47,9 @@ void genesis_task(void) {
 					reply.data.smagic, reply.data.emagic, reply.rec.data_len, sizeof(struct creation_request));
 			continue;
 		}
-		printf("Launching process\n smagic: %x\n priority: %d\n flags: %d\n code pointer: %p \n emagic: %x",
-				reply.data.smagic, reply.data.priority, reply.data.flags, reply.data.code, reply.data.emagic
+
+		printf("Launching process with priority: %d, flags: %d from %p\n",
+				reply.data.priority, reply.data.flags, reply.data.code
 				);
 
 		/* Todo: Use file server to translate a string into a code pointer */
