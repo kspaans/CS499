@@ -8,11 +8,11 @@
 #define SPAWN_DAEMON 1
 
 int sys_spawn(int priority, void (*code)(), int *chan, int chanlen, int flags);
-int sys_gettid();
-int sys_getptid();
-void sys_yield();
-void sys_suspend();
-void sys_exit() __attribute__((noreturn));
+int sys_gettid(void);
+int sys_getptid(void);
+void sys_yield(void);
+void sys_suspend(void);
+void sys_exit(void) __attribute__((noreturn));
 
 int sys_channel(int flags);
 int sys_close(int chan);
