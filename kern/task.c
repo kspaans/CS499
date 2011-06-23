@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <event.h>
 #include <syscall.h>
+#include <panic.h>
 #include <kern/task.h>
 #include <kern/syscallno.h>
 #include <kern/kmalloc.h>

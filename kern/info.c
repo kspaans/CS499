@@ -1,5 +1,6 @@
 #include <kern/printk.h>
 #include <kern/task.h>
+#include <panic.h>
 #include <types.h>
 #include <string.h>
 #include <arm.h>

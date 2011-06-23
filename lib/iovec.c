@@ -1,5 +1,5 @@
 #include <types.h>
-#include <kern/printk.h>
+#include <panic.h>
 #include <string.h>
 #include <lib.h>
 

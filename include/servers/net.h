@@ -1,6 +1,7 @@
 #ifndef SERVER_NET_H
 #define SERVER_NET_H
 
+#include <stdarg.h>
 #include <types.h>
 #include <ip.h>
 

@@ -1,5 +1,5 @@
 #include <kern/ksyms.h>
-#include <kern/printk.h>
+#include <panic.h>
 #include <types.h>
 
 struct ksym *ksym_for_address(uint32_t code) {

@@ -3,6 +3,7 @@
 #include <lib.h>
 #include <kern/task.h>
 #include <kern/printk.h>
+#include <panic.h>
 
 __attribute__((noreturn))
 void prm_reset(void);

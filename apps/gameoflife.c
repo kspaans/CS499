@@ -3,7 +3,6 @@
  * use the standard 3/23 rule
  */
 #include <types.h>
-#include <kern/printk.h>
 #include <ip.h>
 #include <servers/net.h>
 #include <string.h>
@@ -24,9 +23,9 @@ static void display(uint8_t **field, size_t x, size_t y)
 {
 	for (size_t i = 0; i < x; i += 1) {
 		for (size_t j = 0; j < y; j += 1) {
-			printk("%d ", field[i][j]);
+			printf("%d ", field[i][j]);
 		}
-		printk("\n");
+		printf("\n");
 	}
 }
 
@@ -126,26 +125,26 @@ void gameoflife(void)
 	field[1][2] = 1;
 	field[2][0] = field[2][1] = field[2][2] = 1;
 
-	printk("Cyleway's Game of Life\n");
+	printf("Cyleway's Game of Life\n");
 
 	display(field, X_SIZE, Y_SIZE);
 	age(field, X_SIZE, Y_SIZE);
-	printk("-- -- -- --\n");
-
-	display(field, X_SIZE, Y_SIZE);
-	display_json(field, X_SIZE, Y_SIZE);
-	age(field, X_SIZE, Y_SIZE);
-	printk("-- -- -- --\n");
+	printf("-- -- -- --\n");
 
 	display(field, X_SIZE, Y_SIZE);
 	display_json(field, X_SIZE, Y_SIZE);
 	age(field, X_SIZE, Y_SIZE);
-	printk("-- -- -- --\n");
+	printf("-- -- -- --\n");
 
 	display(field, X_SIZE, Y_SIZE);
 	display_json(field, X_SIZE, Y_SIZE);
 	age(field, X_SIZE, Y_SIZE);
-	printk("-- -- -- --\n");
+	printf("-- -- -- --\n");
+
+	display(field, X_SIZE, Y_SIZE);
+	display_json(field, X_SIZE, Y_SIZE);
+	age(field, X_SIZE, Y_SIZE);
+	printf("-- -- -- --\n");
 
 	display(field, X_SIZE, Y_SIZE);
 	display_json(field, X_SIZE, Y_SIZE);

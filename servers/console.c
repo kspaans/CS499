@@ -6,7 +6,7 @@
 #include <servers/console.h>
 #include <drivers/uart.h>
 #include <mem.h>
-#include <kern/printk.h>
+#include <panic.h>
 
 static void consoletx_notifier(void);
 static void consolerx_notifier(void);

@@ -3,7 +3,7 @@
 #include <drivers/uart.h>
 #include <types.h>
 #include <mem.h>
-#include <kern/printk.h>
+#include <panic.h>
 #include <kern/task.h>
 
 static void uart_mode_A(void) {

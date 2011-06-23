@@ -10,7 +10,7 @@
 #include <machine.h>
 #include <drivers/eth.h>
 #include <mem.h>
-#include <kern/printk.h>
+#include <panic.h>
 
 #include <servers/console.h>
 #include <servers/clock.h>
