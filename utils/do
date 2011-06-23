@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # A minimal alternative to djb redo that doesn't support incremental builds.
 # For the full version, visit http://github.com/apenwarr/redo
