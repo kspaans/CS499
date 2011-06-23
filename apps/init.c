@@ -24,6 +24,7 @@ __attribute__((unused)) static void udp_tx_loop(void) {
 			return;
 		if(c == '\r')
 			c = '\n';
+		printf("%c", c);
 		udp_printf("%c", c);
 	}
 }
@@ -34,6 +35,7 @@ __attribute__((unused)) static void udp_rx_loop(void) {
 	for(;;) {
 		char c = udp_getchar();
 		printf("%c", c);
+		udp_printf("%c", c);
 	}
 }
 

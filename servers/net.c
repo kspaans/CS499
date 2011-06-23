@@ -257,9 +257,7 @@ static void ethrx_dispatch(uint32_t sts) {
 			struct ip ip;
 		} __attribute__((packed)) pkt;
 		char raw[FRAME_MAX];
-	}
-	__attribute__((aligned(4)))
-	frame;
+	} __attribute__((aligned(4))) frame;
 	uint32_t len = ((sts >> 16) & 0x3fff)+RXPAD;
 	eth_rx(ETH1_BASE, (uint32_t *)&frame, len);
 	len -= 4; // remove crc at end
