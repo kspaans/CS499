@@ -1,6 +1,7 @@
 #include <lib.h>
 #include <string.h>
 #include <syscall.h>
+#include <types.h>
 
 #include <servers/net.h>
 /*
@@ -11,22 +12,48 @@
  */
 
 #define GENESIS_PORT 400
+#define SMAGIC 0xBABEB00B
+#define EMAGIC 0xFACEDADA
 
+__attribute__((unused)) static void genesis_test(void) {
+	printf("MY GOD, THEY'VE CREATED LIFE");
+}
+
+
+struct creation_request {
+		unsigned smagic;
+		int priority;
+		int flags;
+		//char path[31]; // Todo: What's the real max length?
+		void (*code)(void);
+		unsigned emagic;
+} __attribute__((__packed__));
+
+void genesis_task(void);
 void genesis_task(void) {
-	printf("IN THE BEGINNING\n");
-	udp_bind(GENESIS_PORT);
-	printf("WE HAD LIGHT\n");
-	union {
+	struct {
 		struct packet_rec rec;
-		char frame[64]; // todo actually make this something
-	} reply;
+		struct creation_request data;
+	} __attribute__((__packed__)) reply;
+
+	printf("Listening for creation requests %p\n", genesis_test);
+	udp_bind(GENESIS_PORT);
+
 	while(1) {
-		reply.rec.data[0] = 's';
-		reply.rec.data[1] = 'a';
-		reply.rec.data[2] = 'd';
-		reply.rec.data[2] = '\0';
 		ASSERTNOERR(udp_wait(GENESIS_PORT, &reply.rec, sizeof(reply)));
-		printf("Got a message: starts with %s\n", reply.rec.data);
+		// Check contents:
+		if(reply.data.smagic != SMAGIC || reply.data.emagic != EMAGIC || reply.rec.data_len != sizeof(struct creation_request)) {
+			printf("Genesis: got some satan packet\n Magics: %x %x\n Length: %d (Expected %d)\n",
+					reply.data.smagic, reply.data.emagic, reply.rec.data_len, sizeof(struct creation_request));
+			continue;
+		}
+		printf("Launching process\n smagic: %x\n priority: %d\n flags: %d\n code pointer: %p \n emagic: %x",
+				reply.data.smagic, reply.data.priority, reply.data.flags, reply.data.code, reply.data.emagic
+				);
+
+		/* Todo: Use file server to translate a string into a code pointer */
+		// Instead, we just pass the code* right now
+		ASSERTNOERR(spawn(reply.data.priority, reply.data.code, reply.data.flags));
 	}
 	udp_release(GENESIS_PORT);
 }
