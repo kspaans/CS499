@@ -1,0 +1,132 @@
+\documentclass[letterpaper]{article}
+
+\title{Unnamed Operating System\\API}
+
+\begin{document}
+\maketitle
+\section{System Calls}
+\begin{itemize}
+\item \begin{verbatim}
+int sys_spawn(int priority, void (*code)(void), int *chan,
+              int chanlen, int flags);\end{verbatim}
+
+Spawn a new process. The new process begins execution starting at the function pointer \emph{code} at priority level
+\emph{priority}. The creator may specify an array of channels for the new process to inherit. The channel
+\emph{chan[i]} will be copied to channel \emph{i} in the new task, for \emph{i} from 0 to \emph{chanlen}-1. The
+return value is the task identifier of the new process.
+This call accepts the following flags:
+\begin{description}
+\item[SPAWN\_DAEMON] The new process will be created as a daemon process. The kernel exits when only
+		     daemon processes remain.
+\end{description}
+\item \begin{verbatim}int sys_exit(void);\end{verbatim}
+Terminate the current process.
+\item \begin{verbatim}int sys_gettid(void);\end{verbatim}
+Return the task identifier of the current process.
+\item \begin{verbatim}int sys_getptid(void);\end{verbatim}
+Return the task identifier of the parent process.
+\item \begin{verbatim}int sys_yield(void);\end{verbatim}
+Yield the CPU to the next runnable task at the current task's priority level.
+\item \begin{verbatim}int sys_suspend(void);\end{verbatim}
+Stop all processing until an interrupt occurs.
+\item \begin{verbatim}int sys_channel(int flags);\end{verbatim}
+Create a new IPC channel. The return value is a channel descriptor number, which
+is local to the current task. There are currently no flags.
+\item \begin{verbatim}int sys_close(int chan);\end{verbatim}
+Close a channel descriptor. If this is the last channel descriptor for
+this channel, the channel is destroy.
+\item \begin{verbatim}int sys_dup(int oldchan, int newchan, int flags);\end{verbatim}
+Duplicate an channel descriptor. The existing channel descriptor at \emph{newchan} is closed (if open) and replaced with a channel
+descriptor that corresponds to the same channel as \emph{oldchan}. If \emph{newchan} is -1, an unused
+descriptor is allocated. The return value is the new channel descriptor number. There are currently no flags.
+\item \begin{verbatim}int sys_waitevent(int eventid);\end{verbatim}
+Suspend the current task until the event corresponding \emph{eventid} occurs. The returned value
+is dependent on the event. The currently supported events are:
+\begin{description}
+\item[EVENT\_CLOCK\_TICK] The timer interrupt occurred. Nothing is returned.
+\item[EVENT\_CONSOLE\_TRANSMIT] The UART transmit interrupt occurred. Nothing is returned.
+\item[EVENT\_CONSOLE\_RECEIVE] The UART receive interrupt occurred. Nothing is returned.
+\item[EVENT\_ETH\_RECEIVE] The ethernet receive interrupt occurred. Nothing is returned.
+\end{description}
+
+\item \begin{verbatim}
+ssize_t sys_send(int chan, const struct iovec *iov, int iovlen,
+                 int sch, int flags);\end{verbatim}
+	Send a message on a channel. This blocks the current task until a receiver calls \emph{sys\_receive} on the
+	same channel. Once a receiver is available, the message to be sent is gathered from the buffers in the array
+	\emph{iov} of length \emph{iovlen} and copied into the receiver's buffers.
+
+	\begin{verbatim}
+           struct iovec {
+               void  *iov_base;
+               size_t iov_len;
+           };
+	\end{verbatim}
+
+	Additionally, if \emph{sch} is not -1, then the channel descriptor \emph{sch}
+	is copied to an unused channel descriptor in the receiving task. There are currently no flags.
+
+\item \begin{verbatim}
+ssize_t sys_recv(int chan, const struct iovec *iov, int iovlen,
+                 int *rch, int flags);\end{verbatim}
+	Receive a message from a channel. This blocks the current task until a sender calls \emph{sys\_send} on the
+	same channel. Once a sender is available, the message to be sent is scattered into the buffers in the array
+	\emph{iov} of length \emph{iovlen}. Additionally, if \emph{rch} is not NULL and the sender sends a channel,
+        then a new channel descriptor is allocated corresponding to the sent channel and stored into \emph{*rch}.
+	There are currently no flags.
+
+
+\end{itemize}
+\section{Core Services}
+\subsection{Console Servers}
+The console server channels are created in the initial task and inherited
+by its descendants. In every task, channel 0 is standard input and
+channel 1 is standard output.
+\begin{itemize}
+\item \begin{verbatim}void putchar(char c);\end{verbatim}
+Write a single character \emph{c} to the console.
+\item \begin{verbatim}int getchar(void);\end{verbatim}
+Read a single character from the console and return it.
+The task is blocked until input is available.
+\item \begin{verbatim}int printf(const char *fmt, ...);\end{verbatim}
+Write formatted output to the console.
+\end{itemize}
+\subsection{File Server}
+The file server channel is created in the initial task and inherited
+by its descendants. In every task, channel 2 is a connection to the
+file server.
+\begin{itemize}
+\item \begin{verbatim}int open(int dirfd, const char *pathname);\end{verbatim}
+	Return a copy of the channel located at \emph{pathname}.
+	The \emph{dirfd} parameter is currently unused.
+\item \begin{verbatim}int mkdir(int dirfd, const char *pathname);\end{verbatim}
+	Create a directory at \emph{pathname}.
+	The\emph{dirfd} parameter is currently unused.
+\item \begin{verbatim}int mkchan(int dirfd, const char *pathname);\end{verbatim}
+	Create a new channel at \emph{pathname}. Note that this does not open
+	the created channel in the current task; for that, use \emph{open}.
+	The \emph{dirfd} parameter is currently unused.
+\item \begin{verbatim}int rmchan(int dirfd, const char *pathname);\end{verbatim}
+	Remove the channel at \emph{pathname}. Note that any tasks with the
+	channel open will continue to have it open as the channel itself
+	is not destroyed.
+	The \emph{dirfd} parameter is currently unused.
+\end{itemize}
+\subsection{Clock Server}
+The clock server channel is located at \emph{/services/clockserver}.
+\begin{itemize}
+\item \begin{verbatim}void msleep(int msec);\end{verbatim}
+Suspend the current task for the specified number of milliseconds.
+\item \begin{verbatim}int time(void);\end{verbatim}
+Return the number of ticks since boot.
+\end{itemize}
+\subsection{Network Servers}
+There are multiple network servers at \emph{/services/ethrx},
+\emph{/services/udprx}, \emph{/services/arpserver}, \emph{/services/icmpserver}.
+\begin{itemize}
+\item \begin{verbatim}
+int send_udp(uint16_t srcport, uint32_t dstaddr, uint16_t dstport,
+             const void *data, int16_t len);\end{verbatim}
+\item TODO
+\end{itemize}
+\end{document}
