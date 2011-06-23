@@ -36,7 +36,7 @@ is local to the current task. There are currently no flags.
 Close a channel descriptor. If this is the last channel descriptor for
 this channel, the channel is destroy.
 \item \begin{verbatim}int sys_dup(int oldchan, int newchan, int flags);\end{verbatim}
-Duplicate an channel descriptor. The existing channel descriptor at \emph{newchan} is closed (if open) and replaced with a channel
+Duplicate a channel descriptor. The existing channel descriptor at \emph{newchan} is closed (if open) and replaced with a channel
 descriptor that corresponds to the same channel as \emph{oldchan}. If \emph{newchan} is -1, an unused
 descriptor is allocated. The return value is the new channel descriptor number. There are currently no flags.
 \item \begin{verbatim}int sys_waitevent(int eventid);\end{verbatim}
