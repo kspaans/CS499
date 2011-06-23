@@ -8,6 +8,7 @@
 #include <servers/net.h>
 #include <string.h>
 #include <lib.h>
+#include <apps.h>
 
 #define X_SIZE 10
 #define Y_SIZE 10
@@ -19,7 +20,7 @@
 /*
  * Put (0,0) cell in the upper-left
  */
-void display(uint8_t **field, size_t x, size_t y)
+static void display(uint8_t **field, size_t x, size_t y)
 {
 	for (size_t i = 0; i < x; i += 1) {
 		for (size_t j = 0; j < y; j += 1) {
@@ -29,7 +30,7 @@ void display(uint8_t **field, size_t x, size_t y)
 	}
 }
 
-void display_json(uint8_t **field, size_t x, size_t y)
+static void display_json(uint8_t **field, size_t x, size_t y)
 {
 	char buf[X_SIZE * Y_SIZE * 4] = {}; /* should be enough for the JSON */
 	size_t idx = 0;
@@ -62,7 +63,7 @@ void display_json(uint8_t **field, size_t x, size_t y)
 /*
  * Use wrap-around semantics for the edges of the field
  */
-uint8_t surround(uint8_t **field, size_t curx, size_t cury, size_t x, size_t y)
+static uint8_t surround(uint8_t **field, size_t curx, size_t cury, size_t x, size_t y)
 {
 //	uint8_t count = 0;
 	int8_t  leftmost = curx - 1;
@@ -85,7 +86,7 @@ uint8_t surround(uint8_t **field, size_t curx, size_t cury, size_t x, size_t y)
 		field[(leftmost + 2) % x][(topmost + 2) % y]);
 }
 
-void age(uint8_t **field, size_t x, size_t y)
+static void age(uint8_t **field, size_t x, size_t y)
 {
 	uint8_t copy[x][y];
 	uint8_t *cptrs[x];

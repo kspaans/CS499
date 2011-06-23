@@ -1,6 +1,7 @@
 #include <types.h>
 #include <kern/printk.h>
 #include <kern/ksyms.h>
+#include <kern/backtrace.h>
 
 #define MAXDEPTH 20
 

@@ -28,13 +28,13 @@
 #define PRIO_HIGHEST 0x00
 #define PRIO_LOWEST 0x3f
 
-void intc_init();
-void intc_reset();
+void intc_init(void);
+void intc_reset(void);
 
 void intc_register(int slot, isr_func handler, int prio);
 void intc_set_fiq(int slot, int fiq);
 void intc_intenable(int slot);
 void intc_intdisable(int slot);
-void intc_dispatch();
+void intc_dispatch(void);
 
 #endif /* INTC_DRIVER_H */

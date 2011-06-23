@@ -7,6 +7,8 @@ AR="${XPREFIX}ar"
 # Standard options
 CFLAGS="-pipe -Wall -Wextra -Wno-unused-parameter -I include -std=gnu99 -O2"
 
+CFLAGS+=' -Wmissing-prototypes -Wmissing-declarations -Wold-style-definition -Wstrict-prototypes -Winit-self -Wstrict-overflow -Wfloat-equal -Wshadow -Wunsafe-loop-optimizations -Wpointer-arith -Wcast-align -Wwrite-strings -Wlogical-op -Wmissing-format-attribute -Wredundant-decls -Wnested-externs -Winline -Wvolatile-register-var -Wdisabled-optimization'
+
 # Debug options
 CFLAGS+=" -Werror -Wno-unused-function"
 

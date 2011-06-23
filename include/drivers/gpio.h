@@ -33,7 +33,7 @@
 #define GPIOIRQ_RISINGDETECT 0x04
 #define GPIOIRQ_FALLINGDETECT 0x08
 
-void gpio_init();
+void gpio_init(void);
 
 void gpio_register(int pin, isr_func handler, int flags);
 void gpio_intenable(int pin);
@@ -41,5 +41,6 @@ void gpio_intdisable(int pin);
 
 void gpio_set(int pin, int value);
 int gpio_get(int pin);
+void gpio_irq(int irq);
 
 #endif /* _GPIO_DRIVER_H */

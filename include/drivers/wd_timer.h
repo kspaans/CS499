@@ -22,7 +22,7 @@
 #define WD_TICKS_PER_SEC 32768
 
 void wdt_go(int value);
-void wdt_stop();
-void wdt_reload();
+void wdt_stop(void);
+void wdt_reload(void);
 
 #endif

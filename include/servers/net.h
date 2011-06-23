@@ -21,16 +21,23 @@ int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data
 int udp_vprintf(const char *fmt, va_list va);
 int udp_printf(const char *fmt, ...)
 	__attribute__ ((format (printf, 1, 2)));
-int udp_getchar();
+int udp_getchar(void);
 
 int udp_bind(uint16_t port);
 int udp_release(uint16_t port);
 int udp_wait(uint16_t port, struct packet_rec *rec, int rec_size);
 
-void net_start_tasks();
+void net_start_tasks(void);
 
 extern struct hostdata *this_host;
 
-void net_init();
+void net_init(void);
+
+void ethrx_task(void);
+void icmpserver_task(void);
+void arpserver_task(void);
+void udprx_task(void);
+void udpconrx_task(void);
+
 
 #endif /* SERVER_NET_H */

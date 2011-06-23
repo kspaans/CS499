@@ -1,6 +1,8 @@
 /* General I/O and system functions */
 #include <drivers/uart.h>
 #include <lib.h>
+#include <kern/task.h>
+#include <kern/printk.h>
 
 __attribute__((noreturn))
 void prm_reset(void);

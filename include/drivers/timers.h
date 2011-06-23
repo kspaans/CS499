@@ -38,7 +38,7 @@
 #define TOCR 0x054 // timer overflow counter (timers 1, 2 and 10 only)
 #define GP_TICKS_PER_SEC 26000000
 
-void timers_init();
+void timers_init(void);
 /* simple one-shot timer initialization: starts timer in autoreload mode */
 void timer_go(int base, int value, int irq);
 void timer_stop(int base);

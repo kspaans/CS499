@@ -3,8 +3,8 @@
 
 void msleep(int msec);
 
-int Time();
+int time(void);
 
-void clock_start_tasks();
+void clockserver_task(void);
 
 #endif /* SERVER_CLOCK_H */

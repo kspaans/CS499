@@ -91,14 +91,14 @@ struct task {
 };
 
 /* Initialize task system */
-void init_tasks();
+void init_tasks(void);
 /* Get the initial PSR for user functions */
-int get_user_psr(); /* asm function */
+int get_user_psr(void); /* asm function */
 /* Activate the specified task, allowing it to run */
 void task_activate(struct task *task); /* asm function */
 /* SWI and IRQ handlers */
 void task_syscall(int code, struct task *task); /* in task.c */
-void task_irq(); /* in interrupt.c */
+void task_irq(void); /* in interrupt.c */
 /* Check for stack overflow */
 void check_stack(struct task* task);
 
@@ -109,11 +109,13 @@ void print_task(struct task *task);
 /// debug
 
 /* System calls */
-int syscall_spawn(struct task *task, int priority, void (*code)(), int *chan, int chanlen, int flags);
+int syscall_spawn(struct task *task, int priority, void (*code)(void), int *chan, int chanlen, int flags);
 
 void event_unblock_all(int eventid, int return_value);
 void event_unblock_one(int eventid, int return_value);
 
 void cpu_info(void);
+
+void sysrq(void);
 
 #endif /* KERN_TASK_H */

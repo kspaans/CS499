@@ -6,7 +6,7 @@
 #include <servers/clock.h>
 #include <servers/fs.h>
 
-static void clockserver_notifier();
+static void clockserver_notifier(void);
 
 enum clockmsg {
 	CLOCK_NOTIFY_MSG,
@@ -71,7 +71,7 @@ void clockserver_task(void) {
 	int rcvlen;
 	int rcvdata;
 	int msgcode;
-	int time = 0;
+	int now = 0;
 	delayinfo delays[DELAYS];
 
 	int clock_fd = mkopenchan("/services/clock");
@@ -88,8 +88,8 @@ void clockserver_task(void) {
 		switch(msgcode) {
 		case CLOCK_NOTIFY_MSG:
 			MsgReplyStatus(tid, 0);
-			time++;
-			while(num_delays > 0 && delays[0].time <= time) {
+			now++;
+			while(num_delays > 0 && delays[0].time <= now) {
 				delayinfo current_info = delayinfoheap_pop(delays, &num_delays);
 				MsgReplyStatus(current_info.tid, 0);
 			}
@@ -100,8 +100,8 @@ void clockserver_task(void) {
 				MsgReplyStatus(tid, EINVAL);
 				break;
 			}
-			rcvdata += time;
-			if(rcvdata <= time) {
+			rcvdata += now;
+			if(rcvdata <= now) {
 				MsgReplyStatus(tid, 0);
 			} else if (num_delays == DELAYS) {
 				MsgReplyStatus(tid, ENOMEM);
@@ -113,7 +113,7 @@ void clockserver_task(void) {
 			}
 			break;
 		case CLOCK_TIME_MSG:
-			MsgReplyStatus(tid, time);
+			MsgReplyStatus(tid, now);
 			break;
 		default:
 			MsgReplyStatus(tid, ENOFUNC);

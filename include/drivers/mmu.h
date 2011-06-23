@@ -33,6 +33,6 @@
 #define FLD_FLAGS_DEVICEMEM FLD_TYPE_SECTION | FLD_TYPE_SUPERSEC | FLD_NONSECURE | \
         FLD_NOTGLOBAL | FLD_MEMREGATTR_STRONGLYORDERED | FLD_ACCESS_RW
 
-void prep_pagetable();
+void prep_pagetable(void);
 
 #endif /* MMU_DRIVER_H */

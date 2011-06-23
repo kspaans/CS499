@@ -177,7 +177,7 @@ static struct task __attribute__((malloc)) *task_alloc(void) {
 	return ret;
 }
 
-static void __attribute__((noreturn)) task_run(void (*code)()) {
+static void __attribute__((noreturn)) task_run(void (*code)(void)) {
 	code();
 	sys_exit();
 }
@@ -186,7 +186,7 @@ static bool valid_channel(struct task *task, int chan) {
 	return chan >= 0 && chan < MAX_TASK_CHANNELS && task->channels[chan].channel;
 }
 
-int syscall_spawn(struct task *task, int priority, void (*code)(), int *chan, int chanlen, int flags) {
+int syscall_spawn(struct task *task, int priority, void (*code)(void), int *chan, int chanlen, int flags) {
 	int daemon = !!(flags & SPAWN_DAEMON);
 
 	if (flags & ~(SPAWN_DAEMON))

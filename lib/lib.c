@@ -4,6 +4,7 @@
 #include <types.h>
 
 /* GCC hacks */
+void raise(void);
 void raise(void) {}
 // this is a silly hack to prevent a ton of GCC unwind garbage from being linked in
 // (unwind functionality is loaded by long long division)

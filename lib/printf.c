@@ -123,7 +123,7 @@ static int _p_ull2ab(unsigned long long num, char *end, char **start, int upperc
 static int _p_fmtint(struct pf *pf, long long num) {
 	unsigned long long unum;
 	char sign = 0;
-	char *hex = NULL;
+	const char *hex = NULL;
 
 	if(pf->flags & F_UNSIGNED) {
 		unum = num;

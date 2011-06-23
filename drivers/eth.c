@@ -18,14 +18,14 @@ static void eth_mac_wait(int base) {
 		;
 }
 
-static uint32_t eth_mac_read(int base, int index) {
+static uint32_t eth_mac_read(int base, uint32_t index) {
 	eth_mac_wait(base);
 	eth_write(base, ETH_MAC_CSR_CMD_OFFSET, ETH_MAC_CSR_BUSY | ETH_MAC_CSR_READ | index);
 	eth_mac_wait(base);
 	return eth_read(base, ETH_MAC_CSR_DATA_OFFSET);
 }
 
-static void eth_mac_write(int base, int index, uint32_t value) {
+static void eth_mac_write(int base, uint32_t index, uint32_t value) {
 	eth_mac_wait(base);
 	eth_write(base, ETH_MAC_CSR_DATA_OFFSET, value);
 	eth_write(base, ETH_MAC_CSR_CMD_OFFSET, ETH_MAC_CSR_BUSY | index);
@@ -37,14 +37,14 @@ static void eth_phy_wait(int base) {
 		;
 }
 
-static uint16_t eth_phy_read(int base, int index) {
+static uint16_t eth_phy_read(int base, uint32_t index) {
 	eth_phy_wait(base);
 	eth_mac_write(base, ETH_MAC_MII_ACC, ETH_MII_ACC_PHY | (index << 6) | ETH_MII_ACC_BUSY);
 	eth_phy_wait(base);
-	return eth_mac_read(base, ETH_MAC_MII_DATA);
+	return (uint16_t)eth_mac_read(base, ETH_MAC_MII_DATA);
 }
 
-static void eth_phy_write(int base, int index, uint16_t value) {
+static void eth_phy_write(int base, uint32_t index, uint16_t value) {
 	eth_phy_wait(base);
 	eth_mac_write(base, ETH_MAC_MII_DATA, value);
 	eth_mac_write(base, ETH_MAC_MII_ACC, ETH_MII_ACC_PHY | (index << 6) | ETH_MII_ACC_BUSY | ETH_MII_ACC_WRITE);
@@ -213,14 +213,14 @@ void eth_deinit(void) {
 	eth_dev_cfg_deinit(ETH1_BASE);
 }
 
-void eth_set_rxlevel(int level) {
-	int reg = read32(ETH1_BASE + ETH_FIFO_INT_OFFSET);
+void eth_set_rxlevel(uint32_t level) {
+	uint32_t reg = read32(ETH1_BASE + ETH_FIFO_INT_OFFSET);
 	reg = (reg & 0xFFFFFF00) | level;
 	write32(ETH1_BASE + ETH_FIFO_INT_OFFSET, reg);
 }
 
-void eth_set_txlevel(int level) {
-	int reg = read32(ETH1_BASE + ETH_FIFO_INT_OFFSET);
+void eth_set_txlevel(uint32_t level) {
+	uint32_t reg = read32(ETH1_BASE + ETH_FIFO_INT_OFFSET);
 	reg = (reg & 0xFF00FFFF) | (level << 16);
 	write32(ETH1_BASE + ETH_FIFO_INT_OFFSET, reg);
 }
@@ -229,16 +229,16 @@ int eth_intstatus(void) {
 	return read32(ETH1_BASE + ETH_INT_STS_OFFSET);
 }
 
-void eth_intenable(int interrupt) {
+void eth_intenable(uint32_t interrupt) {
 	mem32(ETH1_BASE + ETH_IRQ_CFG_OFFSET) |= ETH_IRQ_EN;
 	mem32(ETH1_BASE + ETH_INT_EN_OFFSET) |= interrupt;
 }
 
-void eth_intreset(int interrupt) {
+void eth_intreset(uint32_t interrupt) {
 	mem32(ETH1_BASE + ETH_INT_STS_OFFSET) = interrupt;
 }
 
-void eth_intdisable(int interrupt) {
+void eth_intdisable(uint32_t interrupt) {
 	mem32(ETH1_BASE + ETH_INT_EN_OFFSET) &= ~interrupt;
 }
 
@@ -261,16 +261,16 @@ void eth_tx_coe(int base, uint32_t start_offset, uint32_t checksum_offset, uint3
 	eth_write(base, ETH_TX_FIFO_OFFSET, (checksum_offset << 16) | start_offset);
 }
 
-static void eth_tx_aligned(int base, const uint32_t *buf, uint16_t offset, uint16_t nbytes, int first, int last, uint32_t btag) {
-	int ndw = (nbytes+offset+3)>>2;
+static void eth_tx_aligned(int base, const uint32_t *buf, unsigned short offset, unsigned short nbytes, uint32_t first, uint32_t last, uint32_t btag) {
+	uint32_t ndw = (nbytes+offset+3)>>2;
 
 	eth_tx_wait_ready(base, 2);
-	eth_write(base, ETH_TX_FIFO_OFFSET, (offset << 16) | (first << 13) | (last << 12) | nbytes);
+	eth_write(base, ETH_TX_FIFO_OFFSET, (uint32_t)(offset << 16) | (first << 13) | (last << 12) | nbytes);
 	eth_write(base, ETH_TX_FIFO_OFFSET, btag);
 
 	while(ndw > 8) {
 		eth_tx_wait_ready(base, 8);
-		*(struct fifobuf *)(base + ETH_TX_FIFO_OFFSET) = *(struct fifobuf *)(buf);
+		*(struct fifobuf *)(base + ETH_TX_FIFO_OFFSET) = *(const struct fifobuf *)(buf);
 		buf+=8; ndw-=8;
 	}
 	eth_tx_wait_ready(base, ndw);
@@ -278,8 +278,8 @@ static void eth_tx_aligned(int base, const uint32_t *buf, uint16_t offset, uint1
 		eth_write(base, ETH_TX_FIFO_OFFSET, *buf++);
 }
 
-void eth_tx(int base, const void *buf, uint16_t nbytes, int first, int last, uint32_t btag) {
-	eth_tx_aligned(base, (uint32_t *)((uint32_t)buf & ~3), (uint32_t)buf & 3, nbytes, first, last, btag);
+void eth_tx(int base, const void *buf, uint16_t nbytes, uint32_t first, uint32_t last, uint32_t btag) {
+	eth_tx_aligned(base, (uint32_t *)((uint32_t)buf & ~3U), (uint32_t)buf & 3, nbytes, first, last, btag);
 }
 
 void eth_rx(int base, uint32_t *buf, uint16_t nbytes) {

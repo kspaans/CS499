@@ -15,13 +15,12 @@
 #include <servers/clock.h>
 #include <servers/console.h>
 #include <servers/net.h>
+#include <apps.h>
 
 static void idle_task(void) {
 	for (;;)
 		sys_suspend();
 }
-
-void init_task();
 
 int main(void) {
 	struct task *next;
