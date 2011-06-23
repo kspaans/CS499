@@ -5,12 +5,10 @@ LD="${XPREFIX}ld"
 AR="${XPREFIX}ar"
 
 # Standard options
-CFLAGS="-pipe -Wall -Wextra -Wno-unused-parameter -I include -std=gnu99 -O2"
-
-CFLAGS+=' -Wmissing-prototypes -Wmissing-declarations -Wold-style-definition -Wstrict-prototypes -Winit-self -Wstrict-overflow -Wfloat-equal -Wshadow -Wunsafe-loop-optimizations -Wpointer-arith -Wcast-align -Wwrite-strings -Wlogical-op -Wmissing-format-attribute -Wredundant-decls -Wnested-externs -Winline -Wvolatile-register-var -Wdisabled-optimization'
+CFLAGS="-pipe -Wall -Wextra -I include -std=gnu99 -O2"
 
 # Debug options
-CFLAGS+=" -Werror -Wno-unused-function"
+CFLAGS+=" -Werror"
 
 # ARMv7 instruction set, Cortex-A8 tuning
 CFLAGS+=" -march=armv7-a -mtune=cortex-a8"
@@ -24,8 +22,10 @@ CFLAGS+=" -fverbose-asm"
 # No C library
 CFLAGS+=" -ffreestanding"
 
-if [ "${DEBUG}" != "" ] ; then
-    CFLAGS+= -g -DDEBUG -Wno-unused-function
+if test -n "$DEBUG"; then
+	CFLAGS+=' -g -DDEBUG -Wno-unused-function -Wno-unused-parameter'
+else
+	CFLAGS+=' -Wno-unused-parameter -Wmissing-prototypes -Wmissing-declarations -Wold-style-definition -Wstrict-prototypes -Winit-self -Wstrict-overflow -Wfloat-equal -Wshadow -Wunsafe-loop-optimizations -Wpointer-arith -Wcast-align -Wwrite-strings -Wlogical-op -Wmissing-format-attribute -Wredundant-decls -Wnested-externs -Winline -Wvolatile-register-var -Wdisabled-optimization'
 fi
 
 # Do not link in glibc
