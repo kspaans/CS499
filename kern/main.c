@@ -15,13 +15,12 @@
 #include <servers/clock.h>
 #include <servers/console.h>
 #include <servers/net.h>
+#include <apps.h>
 
 static void idle_task(void) {
 	for (;;)
 		sys_suspend();
 }
-
-void init_task();
 
 int main(void) {
 	struct task *next;
@@ -52,14 +51,14 @@ int main(void) {
 	init_tasks();
 
 	/* Initialize idle task */
-	syscall_spawn(NULL, 7, idle_task, SPAWN_DAEMON);
+	syscall_spawn(NULL, 7, idle_task, NULL, 0, SPAWN_DAEMON);
 
 	cpu_info();
 
 	printk("userspace init\n");
 
 	/* Initialize first user program */
-	syscall_spawn(NULL, 6, init_task, 0);
+	syscall_spawn(NULL, 6, init_task, NULL, 0, 0);
 
 	while (nondaemon_count > 0) {
 		next = schedule();

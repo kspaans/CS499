@@ -1,6 +1,9 @@
 /* General I/O and system functions */
 #include <drivers/uart.h>
 #include <lib.h>
+#include <kern/task.h>
+#include <kern/printk.h>
+#include <panic.h>
 
 __attribute__((noreturn))
 void prm_reset(void);
@@ -37,10 +40,28 @@ void panic(const char *fmt, ...) {
 
 	printk("\n");
 
+	sysrq();
+
 	/* hacks */
-	for (volatile int i = 0; i < 1000000; ++i);
+	for (volatile int i = 0; i < 10000000; ++i);
 
 	prm_reset();
+}
+
+void panic_pabt(void) {
+	panic("Prefetch Abort");
+}
+
+void panic_dabt(void) {
+	panic("Data Abort");
+}
+
+void panic_undef(void) {
+	panic("Undefined Instruction");
+}
+
+void panic_unused(void) {
+	panic("Unused exception vector");
 }
 
 int vprintk(const char *fmt, va_list va) {

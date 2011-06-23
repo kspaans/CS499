@@ -6,6 +6,7 @@
 #include <servers/console.h>
 #include <drivers/uart.h>
 #include <mem.h>
+#include <panic.h>
 
 static void consoletx_notifier(void);
 static void consolerx_notifier(void);
@@ -23,7 +24,9 @@ enum consolemsg {
 #define RX_TIDS_MAX 64
 
 static void console_printfunc(void *unused, const char *buf, size_t len) {
-	(void)unused;
+	if (len > MAX_PRINT)
+		panic("printing way too much shit");
+
 	for(size_t i=0; i<len; i+=CHUNK_SIZE) {
 		int chunk = (i+CHUNK_SIZE < len) ? CHUNK_SIZE : len-i;
 		MsgSend(STDOUT_FILENO, CONSOLE_TX_DATA_MSG, buf+i, chunk, NULL, 0, NULL);

@@ -7,8 +7,5 @@
 int vprintk(const char *fmt, va_list va);
 int printk(const char *fmt, ...)
 	__attribute__ ((format (printf, 1, 2)));
-int panic(const char *fmt, ...)
-	__attribute__ ((format (printf, 1, 2)))
-	__attribute__((noreturn));
 
 #endif

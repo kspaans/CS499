@@ -6,9 +6,7 @@
 #include <servers/clock.h>
 #include <servers/fs.h>
 
-static void clockserver_notifier();
-
-static int clock_fd;
+static void clockserver_notifier(void);
 
 enum clockmsg {
 	CLOCK_NOTIFY_MSG,
@@ -73,10 +71,10 @@ void clockserver_task(void) {
 	int rcvlen;
 	int rcvdata;
 	int msgcode;
-	int time = 0;
+	int now = 0;
 	delayinfo delays[DELAYS];
 
-	clock_fd = mkopenchan("/services/clock");
+	int clock_fd = mkopenchan("/services/clock");
 
 	spawn(0, clockserver_notifier, SPAWN_DAEMON);
 
@@ -90,8 +88,8 @@ void clockserver_task(void) {
 		switch(msgcode) {
 		case CLOCK_NOTIFY_MSG:
 			MsgReplyStatus(tid, 0);
-			time++;
-			while(num_delays > 0 && delays[0].time <= time) {
+			now++;
+			while(num_delays > 0 && delays[0].time <= now) {
 				delayinfo current_info = delayinfoheap_pop(delays, &num_delays);
 				MsgReplyStatus(current_info.tid, 0);
 			}
@@ -102,8 +100,8 @@ void clockserver_task(void) {
 				MsgReplyStatus(tid, EINVAL);
 				break;
 			}
-			rcvdata += time;
-			if(rcvdata <= time) {
+			rcvdata += now;
+			if(rcvdata <= now) {
 				MsgReplyStatus(tid, 0);
 			} else if (num_delays == DELAYS) {
 				MsgReplyStatus(tid, ENOMEM);
@@ -115,7 +113,7 @@ void clockserver_task(void) {
 			}
 			break;
 		case CLOCK_TIME_MSG:
-			MsgReplyStatus(tid, time);
+			MsgReplyStatus(tid, now);
 			break;
 		default:
 			MsgReplyStatus(tid, ENOFUNC);
@@ -125,6 +123,8 @@ void clockserver_task(void) {
 }
 
 static void clockserver_notifier(void) {
+	int clock_fd = xopen(ROOT_DIRFD, "/services/clock");
+
 	while(1) {
 		waitevent(EVENT_CLOCK_TICK);
 		MsgSend(clock_fd, CLOCK_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);

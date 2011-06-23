@@ -1,6 +1,7 @@
 #include <types.h>
-#include <kern///printk.h>
+#include <panic.h>
 #include <string.h>
+#include <lib.h>
 
 size_t iov_length(const struct iovec *iov, int iovlen) {
 	size_t ret = 0;

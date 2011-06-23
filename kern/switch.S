@@ -154,15 +154,15 @@ vec_fiq:
 	ldr pc, vec_fiq_addr
 
 vec_undefined_addr:
-	.word prm_reset
+	.word panic_undef
 vec_swi_addr:
 	.word swi_enter
 vec_prefetch_abort_addr:
-	.word prm_reset
+	.word panic_pabt
 vec_data_abort_addr:
-	.word prm_reset
+	.word panic_dabt
 vec_unused_addr:
-	.word prm_reset
+	.word panic_unused
 vec_irq_addr:
 	.word irq_enter
 vec_fiq_addr:

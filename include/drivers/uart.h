@@ -57,17 +57,16 @@
 #define UART_SYSS_OFFSET 0x58 // R/O, mode A/B/op
 # define UART_SYSS_RESETDONE 0x01
 
-void uart_init();
-int uart_intstatus();
+void uart_init(void);
+int uart_intstatus(void);
 void uart_intenable(int interrupt);
 void uart_intdisable(int interrupt);
-int uart_txfull();
-int uart_rxempty();
+int uart_txfull(void);
+int uart_rxempty(void);
 void uart_tx(int c);
-int uart_rx();
-int uart_getc();
+int uart_rx(void);
+int uart_getc(void);
 void uart_putc(char c);
 void uart_rx_sts_err(void);
-void sysrq(void);
 
 #endif /* _UART_DRIVER_H */

@@ -4,6 +4,7 @@
 #include <lib.h>
 #include <syscall.h>
 #include <kern/printk.h>
+#include <panic.h>
 
 int MsgSend(int channel, int msgcode, const void *msg, int msglen, void *reply, int replylen, int *replychan) {
 	int replych = channel(0);

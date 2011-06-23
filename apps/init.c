@@ -7,18 +7,9 @@
 #include <lib.h>
 #include <kern/printk.h>
 #include <servers/fs.h>
+#include <servers/console.h>
 #include <apps.h>
 #include <id.h>
-
-void consoletx_task(void);
-void consolerx_task(void);
-void clockserver_task(void);
-void ethrx_task(void);
-void icmpserver_task(void);
-void arpserver_task(void);
-void udprx_task(void);
-void udpconrx_task(void);
-void fileserver_task(void);
 
 #include <eth.h>
 #include <servers/net.h>

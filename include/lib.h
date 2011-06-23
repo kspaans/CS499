@@ -81,7 +81,7 @@ int sprintf(char *buf, const char *fmt, ...)
 	__attribute__ ((format (printf, 2, 3)));
 
 // *blocking* getchar.
-int getchar();
+int getchar(void);
 // putchar, equivalent to printf("%c", c);
 void putchar(char c);
 
@@ -94,7 +94,7 @@ unsigned long strtoul(const char *start, const char **end, int base);
 // Destructively parse args from a buffer. argv will refer to positions within buf.
 int parse_args(char *buf, char **argv, int argv_len);
 
-int iov_length(const struct iovec *iov, int iovlen);
+size_t iov_length(const struct iovec *iov, int iovlen);
 void iov_copy(const struct iovec *srciov, int srclen, const struct iovec *dstiov, int dstlen);
 
 #endif /* LIB_H */

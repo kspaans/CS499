@@ -3,7 +3,8 @@
 #include <drivers/uart.h>
 #include <types.h>
 #include <mem.h>
-#include <kern/printk.h>
+#include <panic.h>
+#include <kern/task.h>
 
 static void uart_mode_A(void) {
 	mem32(UART3_PHYS_BASE + UART_LCR_OFFSET) |= UART_DIV_EN;

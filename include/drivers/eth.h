@@ -89,16 +89,16 @@
 #define MAKE_BTAG(tag,len) (((tag) << 16) | ((len) & 0x7ff))
 #define MAKE_COE_BTAG(tag,len) (((tag) << 16) | BTAG_CKEN | (((len)+4) & 0x7ff))
 
-int eth_init();
-void eth_deinit();
-void eth_set_rxlevel(int level);
-void eth_set_txlevel(int level);
-int eth_intstatus();
-void eth_intreset(int interrupt);
-void eth_intenable(int interrupt);
-void eth_intdisable(int interrupt);
+int eth_init(void);
+void eth_deinit(void);
+void eth_set_rxlevel(uint32_t level);
+void eth_set_txlevel(uint32_t level);
+int eth_intstatus(void);
+void eth_intreset(uint32_t interrupt);
+void eth_intenable(uint32_t interrupt);
+void eth_intdisable(uint32_t interrupt);
 void eth_tx_coe(int base, uint32_t start_offset, uint32_t checksum_offset, uint32_t btag);
-void eth_tx(int base, const void *buf, uint16_t nbytes, int first, int last, uint32_t btag);
+void eth_tx(int base, const void *buf, uint16_t nbytes, uint32_t first, uint32_t last, uint32_t btag);
 void eth_rx(int base, uint32_t *buf, uint16_t nbytes);
 uint32_t eth_rx_wait_sts(int base);
 uint32_t eth_tx_wait_sts(int base);

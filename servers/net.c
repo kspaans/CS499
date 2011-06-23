@@ -10,7 +10,9 @@
 #include <machine.h>
 #include <drivers/eth.h>
 #include <mem.h>
+#include <panic.h>
 
+#include <servers/console.h>
 #include <servers/clock.h>
 #include <servers/net.h>
 #include <servers/fs.h>
@@ -210,6 +212,9 @@ int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data
 }
 
 static void udp_printfunc(void *data, const char *buf, size_t len) {
+	if (len > MAX_PRINT)
+		panic("too much printing");
+
 	for(size_t i=0; i<len; i+=UDPMTU) {
 		int chunk = (i+UDPMTU < len) ? UDPMTU : len-i;
 		send_udp(UDPCON_CLIENT_PORT, UDPCON_SERVER_IP, UDPCON_SERVER_PORT, buf+i, chunk);
@@ -252,7 +257,9 @@ static void ethrx_dispatch(uint32_t sts) {
 			struct ip ip;
 		} __attribute__((packed)) pkt;
 		char raw[FRAME_MAX];
-	} frame;
+	}
+	__attribute__((aligned(4)))
+	frame;
 	uint32_t len = ((sts >> 16) & 0x3fff)+RXPAD;
 	eth_rx(ETH1_BASE, (uint32_t *)&frame, len);
 	len -= 4; // remove crc at end
@@ -307,7 +314,7 @@ void ethrx_task(void) {
 }
 
 static void ethrx_notifier(void) {
-	int ethrx_fd = open(ROOT_DIRFD, "/services/ethrx");
+	int ethrx_fd = xopen(ROOT_DIRFD, "/services/ethrx");
 	while(1) {
 		waitevent(EVENT_ETH_RECEIVE);
 		MsgSend(ethrx_fd, ETH_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
@@ -437,7 +444,10 @@ void arpserver_task(void) {
 #define UDP_BUF_MAX 65536
 
 struct packet_rec_buf {
-	char buf[UDP_BUF_MAX];
+	union {
+		char buf[UDP_BUF_MAX];
+		uint32_t bufu[UDP_BUF_MAX / 4]; // alignment
+	};
 	size_t head, tail, top;
 	struct packet_rec_buf *next_free;
 	int tid;
@@ -455,7 +465,7 @@ static struct packet_rec *pop_pkt(struct packet_rec_buf *buf) {
 		return NULL;
 	}
 
-	struct packet_rec *pkt = (struct packet_rec *)(buf->buf + buf->head);
+	struct packet_rec *pkt = (struct packet_rec *)(buf->bufu + (buf->head / 4));
 	buf->head += calc_rec_size(pkt->data_len);
 	if(buf->head == buf->top) {
 		/* wraparound */
@@ -481,7 +491,7 @@ static struct packet_rec *alloc_pkt(struct packet_rec_buf *buf, size_t rec_size)
 	while(buf->tail < buf->head && buf->tail + rec_size >= buf->head)
 		pop_pkt(buf);
 
-	struct packet_rec *pkt = (struct packet_rec *)(buf->buf + buf->tail);
+	struct packet_rec *pkt = (struct packet_rec *)(buf->bufu + (buf->tail / 4));
 	buf->tail += rec_size;
 	return pkt;
 }
@@ -523,7 +533,7 @@ void udprx_task(void) {
 				break;
 			}
 			size_t datalen = ntohs(msg.pkt.udp.uh_ulen) - sizeof(struct udphdr);
-			struct packet_rec *pkt = alloc_pkt(buf, calc_rec_size(datalen));
+			pkt = alloc_pkt(buf, calc_rec_size(datalen));
 			if(pkt != NULL) {
 				pkt->src_ip = ntohl(msg.pkt.ip.ip_src.s_addr);
 				pkt->dst_ip = ntohl(msg.pkt.ip.ip_dst.s_addr);

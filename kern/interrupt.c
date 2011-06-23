@@ -2,7 +2,7 @@
 #include <drivers/intc.h>
 #include <drivers/gpio.h>
 #include <kern/interrupt.h>
-#include <kern/printk.h>
+#include <panic.h>
 #include <machine.h>
 #include <mem.h>
 #include <event.h>
