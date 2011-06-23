@@ -35,5 +35,8 @@ LDFLAGS+=" -T ../omap3.ld"
 # Disable demand-pageable
 LDFLAGS+=" -n"
 
+# Build id
+LDFLAGS+=" --build-id=sha1"
+
 # Link libgcc for compiler-generated function calls
 LDLIBS+=" -lgcc"

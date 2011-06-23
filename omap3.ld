@@ -21,6 +21,8 @@ SECTIONS
     *(.rodata.*)
     *(.glue_7)
     *(.glue_7t)
+    build_note = .;
+    build_sha1 = . + 0x10;
     *(.note.gnu.build-id)
     *(.ksymtab) /* must be last */
   }

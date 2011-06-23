@@ -8,6 +8,7 @@
 #include <kern/printk.h>
 #include <servers/fs.h>
 #include <apps.h>
+#include <id.h>
 
 void consoletx_task(void);
 void consolerx_task(void);
@@ -205,6 +206,11 @@ __attribute__((unused)) static void fstest_task(void) {
 
 /* The first user program */
 void init_task(void) {
+	printk("build id ");
+	for (int i = 0; i < 20; ++i)
+		printk("%02x", build_sha1[i]);
+	printk("\n");
+
 	channel(0); /* stdin */
 	channel(0); /* stdout */
 	channel(0); /* fs */
