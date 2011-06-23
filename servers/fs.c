@@ -40,6 +40,15 @@ int open(int dirfd, const char *pathname) {
 	return file_req(FILE_OPEN, dirfd, pathname, true);
 }
 
+int xopen(int dirfd, const char *pathname) {
+	int ret = file_req(FILE_OPEN, dirfd, pathname, true);
+	if (ret < 0) {
+		printf("xopen: failed to open %s (%d)\n", pathname, ret);
+		exit();
+	}
+	return ret;
+}
+
 int mkdir(int dirfd, const char *pathname) {
 	return file_req(FILE_MKDIR, dirfd, pathname, false);
 }

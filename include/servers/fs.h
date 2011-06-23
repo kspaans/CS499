@@ -12,6 +12,7 @@ int mkchan(int dirfd, const char *pathname);
 int rmchan(int dirfd, const char *pathname);
 
 // convenience functions
+int xopen(int dirfd, const char *pathname);
 int sendpath(const char *pathname, int msgcode, const void *msg, int msglen, void *reply, int replylen);
 int mkopenchan(const char *pathname);
 

@@ -8,8 +8,6 @@
 
 static void clockserver_notifier();
 
-static int clock_fd;
-
 enum clockmsg {
 	CLOCK_NOTIFY_MSG,
 	CLOCK_DELAY_MSG,
@@ -76,7 +74,7 @@ void clockserver_task(void) {
 	int time = 0;
 	delayinfo delays[DELAYS];
 
-	clock_fd = mkopenchan("/services/clock");
+	int clock_fd = mkopenchan("/services/clock");
 
 	spawn(0, clockserver_notifier, SPAWN_DAEMON);
 
@@ -125,6 +123,8 @@ void clockserver_task(void) {
 }
 
 static void clockserver_notifier(void) {
+	int clock_fd = xopen(ROOT_DIRFD, "/services/clock");
+
 	while(1) {
 		waitevent(EVENT_CLOCK_TICK);
 		MsgSend(clock_fd, CLOCK_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);

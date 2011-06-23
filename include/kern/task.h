@@ -109,7 +109,7 @@ void print_task(struct task *task);
 /// debug
 
 /* System calls */
-int syscall_spawn(struct task *task, int priority, void (*code)(), int flags);
+int syscall_spawn(struct task *task, int priority, void (*code)(), int *chan, int chanlen, int flags);
 
 void event_unblock_all(int eventid, int return_value);
 void event_unblock_one(int eventid, int return_value);

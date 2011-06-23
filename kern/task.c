@@ -182,13 +182,22 @@ static void __attribute__((noreturn)) task_run(void (*code)()) {
 	sys_exit();
 }
 
-int syscall_spawn(struct task *task, int priority, void (*code)(), int flags) {
+static bool valid_channel(struct task *task, int chan) {
+	return chan >= 0 && chan < MAX_TASK_CHANNELS && task->channels[chan].channel;
+}
+
+int syscall_spawn(struct task *task, int priority, void (*code)(), int *chan, int chanlen, int flags) {
 	int daemon = !!(flags & SPAWN_DAEMON);
 
 	if (flags & ~(SPAWN_DAEMON))
 		return EINVAL;
-	if(priority < 0 || priority >= TASK_NPRIO)
+	if (priority < 0 || priority >= TASK_NPRIO)
 		return EINVAL;
+	if (chanlen < 0 || chanlen > MAX_TASK_CHANNELS)
+		return EINVAL;
+	for (int i = 0; i < chanlen; ++i)
+		if (!valid_channel(task, chan[i]))
+			return EBADF;
 
 	struct task *newtask = task_alloc();
 
@@ -207,6 +216,8 @@ int syscall_spawn(struct task *task, int priority, void (*code)(), int flags) {
 	newtask->daemon = daemon;
 	newtask->state = TASK_RUNNING;
 
+	memset(newtask->channels, 0, sizeof(newtask->channels));
+
 	/* Set up registers. */
 	newtask->regs.pc = (int)task_run;
 	newtask->regs.psr = get_user_psr();
@@ -218,18 +229,16 @@ int syscall_spawn(struct task *task, int priority, void (*code)(), int flags) {
 
 	/* duplicate open channels */
 	if(task) {
-		newtask->free_cd_head = task->free_cd_head;
-		newtask->next_free_cd = task->next_free_cd;
-		for(int i=0; i<MAX_TASK_CHANNELS; ++i) {
-			newtask->channels[i] = task->channels[i];
-			if(task->channels[i].channel != NULL) {
-				task->channels[i].channel->refcount++;
-			}
+		newtask->free_cd_head = -1;
+		newtask->next_free_cd = chanlen;
+
+		for (int i = 0; i < chanlen; ++i) {
+			newtask->channels[i] = task->channels[chan[i]];
+			newtask->channels[i].channel->refcount++;
 		}
 	} else {
 		newtask->free_cd_head = -1;
 		newtask->next_free_cd = 0;
-		memset(newtask->channels, 0, sizeof(newtask->channels));
 	}
 
 	set_task_running(newtask);
@@ -413,10 +422,6 @@ static void handle_receive(struct channel *chan) {
 	sender->regs.r0 = 0;
 }
 
-static bool valid_channel(struct task *task, int chan) {
-	return chan >= 0 && chan < MAX_TASK_CHANNELS && task->channels[chan].channel;
-}
-
 /* Message passing */
 static int syscall_send(struct task *task, int chan, const struct iovec *iov, int iovlen, int sch, int flags) {
 	if (!valid_channel(task, chan))
@@ -509,7 +514,12 @@ void task_syscall(int code, struct task *task) {
 	int ret;
 	switch (code) {
 	case SYS_SPAWN:
-		ret = syscall_spawn(task, task->regs.r0, (void *)task->regs.r1, (int)task->regs.r2);
+		ret = syscall_spawn(task,
+				(int)/* priority */task->regs.r0,
+				(void *)/* code */task->regs.r1,
+				(int *)/* chan */task->regs.r2,
+				(int)/* chanlen */task->regs.r3,
+				(int)/* flags */STACK_ARG(task, 4));
 		break;
 	case SYS_GETTID:
 		ret = syscall_gettid(task);
