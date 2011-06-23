@@ -38,7 +38,7 @@ __attribute__((unused)) static void send_createreq(uint32_t host, int priority, 
 	req.priority = priority;
 	req.flags = flags;
 	req.code = code;
-	send_udp(GENESIS_SRCPORT, host, GENESIS_PORT, req, sizeof(req));
+	send_udp(GENESIS_SRCPORT, host, GENESIS_PORT, (char *)&req, sizeof(req));
 }
 
 
@@ -55,7 +55,7 @@ void genesis_task(void) {
 		ASSERTNOERR(udp_wait(GENESIS_PORT, &reply.rec, sizeof(reply)));
 		// Check contents:
 		if(reply.data.smagic != SMAGIC || reply.data.emagic != EMAGIC ||
-			reply.rec.src_ip != || reply.rec.data_len != sizeof(struct creation_request)) {
+			reply.rec.data_len != sizeof(struct creation_request)) {
 			printf("Genesis: got some satan packet\n Magics: %x %x\n Length: %d (Expected %d)\n",
 					reply.data.smagic, reply.data.emagic, reply.rec.data_len, sizeof(struct creation_request));
 			continue;
