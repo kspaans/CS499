@@ -1,3 +1,5 @@
+#include <arm.h>
+
 .global task_syscall
 .global task_irq
 
@@ -26,14 +28,22 @@ irq_stack_ptr:
 init_cpumodes:
 	mrs   r0, cpsr
 	bic   r0, r0, #0x40	@ 0x40=FIQ disable
-	bic   r1, r0, #0x1f
+	bic   r1, r0, #ARM_MODE_MASK
 	ldr   r3, irq_stack_ptr
 	@ FIQ mode
-	orr   r2, r1, #0x11
+	orr   r2, r1, #ARM_MODE_FIQ
 	msr   cpsr_c, r2
 	mov   sp, r3
 	@ IRQ mode
-	orr   r2, r1, #0x12
+	orr   r2, r1, #ARM_MODE_IRQ
+	msr   cpsr_c, r2
+	mov   sp, r3
+	@ ABT mode
+	orr   r2, r1, #ARM_MODE_ABT
+	msr   cpsr_c, r2
+	mov   sp, r3
+	@ UND mode
+	orr   r2, r1, #ARM_MODE_UND
 	msr   cpsr_c, r2
 	mov   sp, r3
 	@ Return to supervisor mode

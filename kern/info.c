@@ -44,25 +44,25 @@ static void describe_simple(const struct regbits *bits, uint32_t val) {
 static void describe_cpsr_mode(const struct regbits *bits, uint32_t val) {
 	const char *modename;
 	switch (val) {
-		case ARM_MODE_USER:
+		case ARM_MODE_USR:
 			modename = "usr";
 			break;
 		case ARM_MODE_FIQ:
 			modename = "fiq";
 			break;
 		case ARM_MODE_IRQ:
-			modename = "fiq";
+			modename = "irq";
 			break;
-		case ARM_MODE_ABORT:
+		case ARM_MODE_ABT:
 			modename = "abt";
 			break;
-		case ARM_MODE_UNDEF:
+		case ARM_MODE_UND:
 			modename = "und";
 			break;
 		case ARM_MODE_SVC:
 			modename = "svc";
 			break;
-		case ARM_MODE_SYSTEM:
+		case ARM_MODE_SYS:
 			modename = "sys";
 			break;
 		default:
