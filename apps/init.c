@@ -206,13 +206,18 @@ __attribute__((unused)) static void fstest_task(void) {
 void genesis_task(void);
 
 #include <string.h>
+
 __attribute__((unused)) static void shell(void) {
 	char input[128];
 	char *argv[10];
 	size_t pos;
 
 	while(1) {
-		printf("root@%s:/# ", this_host->hostname);
+		printf(
+#ifdef BUILDUSER
+	STRINGIFY2(BUILDUSER) "@"
+#endif
+				"%s:/# ", this_host->hostname);
 		pos = 0;
 		bool done = false;
 		while(!done) {

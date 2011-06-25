@@ -28,6 +28,8 @@ else
 	CFLAGS+=' -Wno-unused-parameter -Wmissing-prototypes -Wmissing-declarations -Wold-style-definition -Wstrict-prototypes -Winit-self -Wstrict-overflow -Wfloat-equal -Wshadow -Wunsafe-loop-optimizations -Wpointer-arith -Wcast-align -Wwrite-strings -Wlogical-op -Wmissing-format-attribute -Wredundant-decls -Wnested-externs -Winline -Wvolatile-register-var -Wdisabled-optimization'
 fi
 
+CFLAGS+=" -DBUILDUSER=$USER"
+
 # Do not link in glibc
 LDFLAGS="-nostdlib"
 
