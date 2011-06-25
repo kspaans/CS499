@@ -1,26 +1,29 @@
 #include <kern/syscallno.h>
 @ Preprocessor workaround: # stringizes the argument, so it must be avoided.
-#define SYSCALL(funcname, callno) \
-	.global funcname; \
-	.global kern_##funcname; \
-	.type funcname, %function; \
-funcname: \
-	swi	callno; \
-	bx	lr;
+
+.macro syscall funcname callno
+	.global \funcname
+	.global kern_\funcname
+	.type \funcname, %function
+\funcname:
+	mov     ip, $ \callno
+	swi	0
+	bx	lr
+.endm
 
 .text
 .align	2
 
-SYSCALL(sys_spawn, SYS_SPAWN)
-SYSCALL(sys_gettid, SYS_GETTID)
-SYSCALL(sys_getptid, SYS_GETPTID)
-SYSCALL(sys_yield, SYS_YIELD)
-SYSCALL(sys_exit, SYS_EXIT)
-SYSCALL(sys_send, SYS_SEND)
-SYSCALL(sys_recv, SYS_RECV)
-SYSCALL(sys_waitevent, SYS_WAITEVENT)
-SYSCALL(sys_taskstat, SYS_TASKSTAT)
-SYSCALL(sys_suspend, SYS_SUSPEND)
-SYSCALL(sys_channel, SYS_CHANNEL)
-SYSCALL(sys_close, SYS_CLOSE)
-SYSCALL(sys_dup, SYS_DUP)
+syscall sys_spawn SYS_SPAWN
+syscall sys_gettid SYS_GETTID
+syscall sys_getptid SYS_GETPTID
+syscall sys_yield SYS_YIELD
+syscall sys_exit SYS_EXIT
+syscall sys_send SYS_SEND
+syscall sys_recv SYS_RECV
+syscall sys_waitevent SYS_WAITEVENT
+syscall sys_taskstat SYS_TASKSTAT
+syscall sys_suspend SYS_SUSPEND
+syscall sys_channel SYS_CHANNEL
+syscall sys_close SYS_CLOSE
+syscall sys_dup SYS_DUP

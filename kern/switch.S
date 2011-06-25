@@ -3,7 +3,7 @@
 
 .global get_user_psr
 .type get_user_psr, %function
-@ int get_user_psr()
+@ int get_user_psr(void)
 get_user_psr:
 	mrs   r0, cpsr
 	@ Set psr to user mode
@@ -16,16 +16,13 @@ get_user_psr:
 	bx    lr
 
 irq_stack:
-	.word 0
-	.word 0
-	.word 0
-	.word 0
+	.space 16
 irq_stack_ptr:
 	.word irq_stack
 
 .global init_cpumodes
 .type init_cpumodes, %function
-@ void init_cpumodes()
+@ void init_cpumodes(void)
 init_cpumodes:
 	mrs   r0, cpsr
 	bic   r0, r0, #0x40	@ 0x40=FIQ disable
@@ -78,14 +75,8 @@ swi_enter:
 	mrs   r1, spsr
 	str   r1, [r0, #64]
 
-	@ Set up args for syscall
-	mov   r1, r0			@ task struct
-	mov   r0, lr
-	ldr   r0, [r0, #-4]		@ instruction contains swi
-	bic   r0, r0, #0xff000000	@ decode swi value
-
 	@ handle syscall
-	@ void task_syscall(int code, struct task *task)
+	@ void task_syscall(struct task *task)
 	bl    task_syscall
 
 	@ Restore our registers
@@ -120,7 +111,7 @@ irq_enter:
 	add   sp, sp, #4
 
 	@ handle irq
-	@ void long task_irq()
+	@ void task_irq(void)
 	bl    task_irq
 
 	@ Restore our registers

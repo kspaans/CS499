@@ -97,7 +97,7 @@ int get_user_psr(void); /* asm function */
 /* Activate the specified task, allowing it to run */
 void task_activate(struct task *task); /* asm function */
 /* SWI and IRQ handlers */
-void task_syscall(int code, struct task *task); /* in task.c */
+void task_syscall(struct task *task); /* in task.c */
 void task_irq(void); /* in interrupt.c */
 /* Check for stack overflow */
 void check_stack(struct task* task);

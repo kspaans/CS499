@@ -511,8 +511,9 @@ static int syscall_taskstat(struct task *task, int tid, useraddr_t stat) {
 	return 0;
 }
 
-void task_syscall(int code, struct task *task) {
+void task_syscall(struct task *task) {
 	int ret;
+	int code = task->regs.ip;
 	switch (code) {
 	case SYS_SPAWN:
 		ret = syscall_spawn(task,
