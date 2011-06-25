@@ -9,7 +9,7 @@ __attribute__((noreturn))
 void prm_reset(void);
 
 /* Busy-wait I/O */
-static void bw_printfunc(void *unused, const char *str, size_t len) {
+static int bw_printfunc(void *unused, const char *str, size_t len) {
 	(void)unused;
 	while(len--) {
 		/* busy wait */
@@ -20,6 +20,7 @@ static void bw_printfunc(void *unused, const char *str, size_t len) {
 			uart_putc(*str++);
 		}
 	}
+	return 0;
 }
 
 int printk(const char *fmt, ...) {

@@ -9,7 +9,7 @@
 static void clockserver_notifier(void);
 
 enum clockmsg {
-	CLOCK_NOTIFY_MSG,
+	CLOCK_NOTIFY_MSG = PRIVATE_MSG_START,
 	CLOCK_DELAY_MSG,
 	CLOCK_TIME_MSG
 };

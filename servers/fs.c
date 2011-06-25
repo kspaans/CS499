@@ -9,7 +9,7 @@
 #include <kern/printk.h>
 
 enum filemsg {
-	FILE_OPEN,
+	FILE_OPEN = PRIVATE_MSG_START,
 	FILE_MKDIR,
 	FILE_MKCHAN,
 	FILE_RMCHAN,
@@ -220,8 +220,8 @@ void fileserver_task(void) {
 		fs.files[i].valid = false;
 	}
 
-	add_chan(ROOT_DIRFD, "/dev/stdin", STDIN_FILENO);
-	add_chan(ROOT_DIRFD, "/dev/stdout", STDOUT_FILENO);
+	add_chan(ROOT_DIRFD, "/dev/conin", STDIN_FILENO);
+	add_chan(ROOT_DIRFD, "/dev/conout", STDOUT_FILENO);
 	add_chan(ROOT_DIRFD, "/", ROOT_DIRFD);
 
 	for (;;) {

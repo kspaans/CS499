@@ -64,8 +64,8 @@ int hashtable_put(hashtable *ht, int key, void *value);
 int hashtable_del(hashtable *ht, int key);
 
 /* Generic printing functions */
-// Function to send formatted strings to
-typedef void(*printfunc_t)(void *data, const char *str, size_t len);
+// Function to send formatted strings to; returns >= 0 on success and <0 on failure
+typedef int(*printfunc_t)(void *data, const char *str, size_t len);
 
 int func_vprintf(printfunc_t printfunc, void *data, const char *fmt, va_list va);
 int func_printf(printfunc_t printfunc, void *data, const char *fmt, ...)
@@ -76,14 +76,21 @@ int vprintf(const char *fmt, va_list va);
 int printf(const char *fmt, ...)
 	__attribute__ ((format (printf, 1, 2)));
 
+/* fprintf defined in server/console.c */
+int vfprintf(int channel, const char *fmt, va_list va);
+int fprintf(int channel, const char *fmt, ...)
+	__attribute__ ((format (printf, 2, 3)));
+
 int vsprintf(char *buf, const char *fmt, va_list va);
 int sprintf(char *buf, const char *fmt, ...)
 	__attribute__ ((format (printf, 2, 3)));
 
 // *blocking* getchar.
 int getchar(void);
+int fgetc(int channel);
 // putchar, equivalent to printf("%c", c);
 void putchar(char c);
+int fputc(char c, int channel);
 
 /* stdlib functions */
 int atoi(const char *str);

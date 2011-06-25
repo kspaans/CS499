@@ -1,6 +1,13 @@
 #ifndef MSG_H
 #define MSG_H
 
+/* Globally recognized message types */
+enum msgcodes {
+	STDOUT_WRITE_MSG,
+	STDIN_GETCHAR_MSG,
+	PRIVATE_MSG_START, /* start of private codes */
+};
+
 /* Send a message to "channel" of type "msgcode" and payload "msg"
  * Returns the status from Reply, or negative values on failure */
 int MsgSend(int channel, int msgcode, const void *msg, int msglen, void *reply, int replylen, int *replychan);

@@ -4,6 +4,7 @@
 #include <event.h>
 #include <syscall.h>
 #include <task.h>
+#include <msg.h>
 
 #include <eth.h>
 #include <ip.h>
@@ -63,7 +64,7 @@ static struct hostdata hosts[] = {
 struct hostdata *this_host;
 
 enum netmsg {
-	ETH_RX_NOTIFY_MSG,
+	ETH_RX_NOTIFY_MSG = PRIVATE_MSG_START,
 
 	ICMP_DISPATCH_MSG,
 
@@ -76,7 +77,6 @@ enum netmsg {
 	UDP_RX_RELEASE_MSG,
 
 	UDPCON_RX_NOTIFY_MSG,
-	UDPCON_RX_REQ_MSG,
 };
 
 static uint16_t ip_checksum(const uint8_t *data, uint16_t len) {
@@ -209,32 +209,6 @@ int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data
 	eth_tx(ETH1_BASE, data, len, 0, 1, btag);
 
 	return tx_wait_sts(btag);
-}
-
-static void udp_printfunc(void *data, const char *buf, size_t len) {
-	if (len > MAX_PRINT)
-		panic("too much printing");
-
-	for(size_t i=0; i<len; i+=UDPMTU) {
-		int chunk = (i+UDPMTU < len) ? UDPMTU : len-i;
-		send_udp(UDPCON_CLIENT_PORT, UDPCON_SERVER_IP, UDPCON_SERVER_PORT, buf+i, chunk);
-	}
-}
-
-int udp_vprintf(const char *fmt, va_list va) {
-	return func_vprintf(udp_printfunc, NULL, fmt, va);
-}
-
-int udp_printf(const char *fmt, ...) {
-	va_list va;
-	va_start(va, fmt);
-	int ret = func_vprintf(udp_printfunc, NULL, fmt, va);
-	va_end(va);
-	return ret;
-}
-
-int udp_getchar(void) {
-	return sendpath("/services/udpconrx", UDPCON_RX_REQ_MSG, NULL, 0, NULL, 0);
 }
 
 int udp_bind(uint16_t port) {
@@ -612,13 +586,34 @@ void udprx_task(void) {
 	}
 }
 
+void udpcontx_task(void) {
+	int tid, rcvlen, msgcode;
+	char rcvbuf[PRINT_CHUNK];
+
+	int udpcontx_fd = mkopenchan("/dev/netconout");
+
+	while(1) {
+		rcvlen = MsgReceive(udpcontx_fd, &tid, &msgcode, rcvbuf, sizeof(rcvbuf));
+		if(rcvlen < 0)
+			continue;
+		switch(msgcode) {
+		case STDOUT_WRITE_MSG:
+			MsgReplyStatus(tid, send_udp(UDPCON_CLIENT_PORT, UDPCON_SERVER_IP, UDPCON_SERVER_PORT, rcvbuf, rcvlen));
+			break;
+		default:
+			MsgReplyStatus(tid, ENOFUNC);
+			continue;
+		}
+	}
+}
+
 #define RX_BUF_MAX 16384
 #define RX_TIDS_MAX 64
 
 void udpconrx_task(void) {
 	int tid, rcvlen, msgcode;
 
-	int udpconrx_fd = mkopenchan("/services/udpconrx");
+	int udpconrx_fd = mkopenchan("/dev/netconin");
 
 	spawn(0, udpconrx_notifier, SPAWN_DAEMON);
 
@@ -645,7 +640,7 @@ void udpconrx_task(void) {
 				charqueue_push(&chq, buf[i]);
 			}
 			break;
-		case UDPCON_RX_REQ_MSG:
+		case STDIN_GETCHAR_MSG:
 			if(intqueue_full(&tidq)) {
 				MsgReplyStatus(tid, ENOMEM);
 				continue;
@@ -667,10 +662,12 @@ static void udpconrx_notifier(void) {
 		char pkt[FRAME_MAX];
 	} reply;
 
+	int netconin = open(ROOT_DIRFD, "/dev/netconin");
+
 	ASSERTNOERR(udp_bind(UDPCON_CLIENT_PORT));
 	while(1) {
 		ASSERTNOERR(udp_wait(UDPCON_CLIENT_PORT, &reply.rec, sizeof(reply)));
-		ASSERTNOERR(sendpath("/services/udpconrx", UDPCON_RX_NOTIFY_MSG, &reply.rec.data, reply.rec.data_len, NULL, 0));
+		ASSERTNOERR(MsgSend(netconin, UDPCON_RX_NOTIFY_MSG, &reply.rec.data, reply.rec.data_len, NULL, 0, NULL));
 	}
 }
 

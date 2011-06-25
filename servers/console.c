@@ -3,6 +3,7 @@
 #include <event.h>
 #include <syscall.h>
 #include <task.h>
+#include <msg.h>
 #include <servers/console.h>
 #include <drivers/uart.h>
 #include <mem.h>
@@ -12,50 +13,74 @@ static void consoletx_notifier(void);
 static void consolerx_notifier(void);
 
 enum consolemsg {
-	CONSOLE_TX_NOTIFY_MSG,
+	CONSOLE_TX_NOTIFY_MSG = PRIVATE_MSG_START,
 	CONSOLE_RX_NOTIFY_MSG,
-	CONSOLE_TX_DATA_MSG,
-	CONSOLE_RX_REQ_MSG,
 };
 
-#define CHUNK_SIZE 256
 #define TX_BUF_MAX 32768
 #define RX_BUF_MAX 16384
 #define RX_TIDS_MAX 64
 
-static void console_printfunc(void *unused, const char *buf, size_t len) {
+static int console_printfunc(void *pch, const char *buf, size_t len) {
 	if (len > MAX_PRINT)
-		panic("printing way too much shit");
+		return EINVAL;
 
-	for(size_t i=0; i<len; i+=CHUNK_SIZE) {
-		int chunk = (i+CHUNK_SIZE < len) ? CHUNK_SIZE : len-i;
-		MsgSend(STDOUT_FILENO, CONSOLE_TX_DATA_MSG, buf+i, chunk, NULL, 0, NULL);
+	int channel = *(int *)pch;
+
+	for(size_t i=0; i<len; i+=PRINT_CHUNK) {
+		int chunk = (i+PRINT_CHUNK < len) ? PRINT_CHUNK : len-i;
+		int res = MsgSend(channel, STDOUT_WRITE_MSG, buf+i, chunk, NULL, 0, NULL);
+		if(res < 0)
+			return res;
 	}
+	return 0;
+}
+
+int fprintf(int channel, const char *fmt, ...) {
+	va_list va;
+	va_start(va, fmt);
+	int ret = func_vprintf(console_printfunc, &channel, fmt, va);
+	va_end(va);
+	return ret;
+}
+
+int vfprintf(int channel, const char *fmt, va_list va) {
+	return func_vprintf(console_printfunc, &channel, fmt, va);
 }
 
 int printf(const char *fmt, ...) {
+	int channel = STDOUT_FILENO;
 	va_list va;
 	va_start(va, fmt);
-	int ret = func_vprintf(console_printfunc, NULL, fmt, va);
+	int ret = func_vprintf(console_printfunc, &channel, fmt, va);
 	va_end(va);
 	return ret;
 }
 
 int vprintf(const char *fmt, va_list va) {
-	return func_vprintf(console_printfunc, NULL, fmt, va);
+	int channel = STDOUT_FILENO;
+	return func_vprintf(console_printfunc, &channel, fmt, va);
+}
+
+int fgetc(int channel) {
+	return MsgSend(channel, STDIN_GETCHAR_MSG, NULL, 0, NULL, 0, NULL);
 }
 
 int getchar(void) {
-	return MsgSend(STDIN_FILENO, CONSOLE_RX_REQ_MSG, NULL, 0, NULL, 0, NULL);
+	return fgetc(STDIN_FILENO);
+}
+
+int fputc(char c, int channel) {
+	return MsgSend(channel, STDOUT_WRITE_MSG, &c, 1, NULL, 0, NULL);
 }
 
 void putchar(char c) {
-	MsgSend(STDOUT_FILENO, CONSOLE_TX_DATA_MSG, &c, 1, NULL, 0, NULL);
+	MsgSend(STDOUT_FILENO, STDOUT_WRITE_MSG, &c, 1, NULL, 0, NULL);
 }
 
 void consoletx_task(void) {
 	int tid, rcvlen, msgcode;
-	char rcvbuf[CHUNK_SIZE];
+	char rcvbuf[PRINT_CHUNK];
 	char *cur;
 	int newline_seen;
 
@@ -66,7 +91,7 @@ void consoletx_task(void) {
 	charqueue_init(&chq, chq_arr, TX_BUF_MAX);
 
 	while(1) {
-		rcvlen = MsgReceive(STDOUT_FILENO, &tid, &msgcode, rcvbuf, CHUNK_SIZE);
+		rcvlen = MsgReceive(STDOUT_FILENO, &tid, &msgcode, rcvbuf, sizeof(rcvbuf));
 		if(rcvlen < 0)
 			continue;
 		switch(msgcode) {
@@ -77,7 +102,7 @@ void consoletx_task(void) {
 			if(!charqueue_empty(&chq))
 				uart_intenable(UART_THR_IT);
 			break;
-		case CONSOLE_TX_DATA_MSG:
+		case STDOUT_WRITE_MSG:
 			// Transmit current buffer
 			while(!charqueue_empty(&chq) && !uart_txfull())
 				uart_tx(charqueue_pop(&chq));
@@ -150,7 +175,7 @@ void consolerx_task(void) {
 				charqueue_push(&chq, uart_rx());
 			}
 			break;
-		case CONSOLE_RX_REQ_MSG:
+		case STDIN_GETCHAR_MSG:
 			if(intqueue_full(&tidq)) {
 				MsgReplyStatus(tid, ENOMEM);
 				continue;

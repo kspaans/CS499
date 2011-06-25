@@ -20,12 +20,19 @@
 struct pf {
 	printfunc_t printfunc;
 	void *data;
+	int err;
 	int flags; /* F_ constants */
 	int base; /* integer base or power-of-two base */
 	int width; /* width spec */
 	int precision; /* precision spec */
 	int longness; /* long format */
 };
+
+static inline void _p_printfunc(struct pf *pf, const char *buf, int len) {
+	if(pf->err < 0)
+		return;
+	pf->err = pf->printfunc(pf->data, buf, len);
+}
 
 #define PADCHUNK 8
 #define PADSPACE "        "
@@ -34,11 +41,11 @@ struct pf {
 static inline int _p_pad(struct pf *pf, const char *padstr, int padlen) {
 	int ret = padlen;
 	while(padlen >= PADCHUNK) {
-		pf->printfunc(pf->data, padstr, PADCHUNK);
+		_p_printfunc(pf, padstr, PADCHUNK);
 		padlen -= PADCHUNK;
 	}
 	if(padlen > 0)
-		pf->printfunc(pf->data, padstr, padlen);
+		_p_printfunc(pf, padstr, padlen);
 	return ret;
 }
 
@@ -46,20 +53,22 @@ static int _p_fmtstr(struct pf *pf, const char *str) {
 	if(str == NULL)
 		str = "(null)";
 	int len = 0;
-	if(pf->precision < 0) len = strlen(str);
-	else {
+	if(pf->precision < 0) {
+		len = strlen(str);
+	} else {
 		const char *cur = str;
 		while(*cur++ && len < pf->precision) len++;
 	}
 	int padlen = pf->width - len;
-	if(padlen < 0) padlen = 0;
+	if(padlen < 0)
+		padlen = 0;
 
 	if(pf->flags & F_MINUS) {
-		pf->printfunc(pf->data, str, len);
+		_p_printfunc(pf, str, len);
 		_p_pad(pf, PADSPACE, padlen);
 	} else {
 		_p_pad(pf, PADSPACE, padlen);
-		pf->printfunc(pf->data, str, len);
+		_p_printfunc(pf, str, len);
 	}
 	return len+padlen;
 }
@@ -179,11 +188,11 @@ static int _p_fmtint(struct pf *pf, long long num) {
 	if(!(pf->flags & F_MINUS))
 		_p_pad(pf, PADSPACE, spadlen);
 	if(sign)
-		pf->printfunc(pf->data, &sign, 1);
+		_p_printfunc(pf, &sign, 1);
 	if(hex)
-		pf->printfunc(pf->data, hex, 2);
+		_p_printfunc(pf, hex, 2);
 	_p_pad(pf, PADZERO, zpadlen);
-	pf->printfunc(pf->data, start, len);
+	_p_printfunc(pf, start, len);
 	if(pf->flags & F_MINUS)
 		_p_pad(pf, PADSPACE, spadlen);
 	return spadlen + zpadlen + len + (sign != 0) + 2*(hex != 0);
@@ -193,6 +202,7 @@ int func_vprintf(printfunc_t printfunc, void *data, const char *fmt, va_list va)
 	struct pf pf;
 	pf.printfunc = printfunc;
 	pf.data = data;
+	pf.err = 0;
 	char c;
 	int len = 0;
 	const char *runstart = NULL;
@@ -205,7 +215,7 @@ int func_vprintf(printfunc_t printfunc, void *data, const char *fmt, va_list va)
 			continue;
 		}
 		if(runstart) {
-			printfunc(data, runstart, fmt-runstart-1);
+			_p_printfunc(&pf, runstart, fmt-runstart-1);
 			runstart = NULL;
 		}
 		if(c == 0)
@@ -345,13 +355,15 @@ int func_vprintf(printfunc_t printfunc, void *data, const char *fmt, va_list va)
 				/* fall through */
 			default:
 				len++;
-				printfunc(data, &c, 1);
+				_p_printfunc(&pf, &c, 1);
 				break;
 			}
 			break;
 		} while(1);
 	}
 end:
+	if(pf.err < 0)
+		return pf.err;
 	return len;
 }
 
@@ -363,13 +375,14 @@ int func_printf(printfunc_t printfunc, void *data, const char *fmt, ...) {
 	return ret;
 }
 
-static void printfunc_sprintf(void *data, const char *buf, size_t len) {
+static int printfunc_sprintf(void *data, const char *buf, size_t len) {
 	char *ptr = *(char **)data;
 	while(len--) {
 		*ptr++ = *buf++;
 	}
 	*ptr = '\0';
 	*(char **)data = ptr;
+	return 0;
 }
 
 int vsprintf(char *buf, const char *fmt, va_list va) {

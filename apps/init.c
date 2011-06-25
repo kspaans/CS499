@@ -16,7 +16,9 @@
 __attribute__((unused)) static void udp_tx_loop(void) {
 	printf("Type characters to send to the remote host; Ctrl+D to quit\n");
 
-	udp_printf("Hello from %s\n", this_host->hostname);
+	int netconout = open(ROOT_DIRFD, "/dev/netconout");
+
+	fprintf(netconout, "Hello from %s\n", this_host->hostname);
 
 	for(;;) {
 		char c = getchar();
@@ -24,18 +26,21 @@ __attribute__((unused)) static void udp_tx_loop(void) {
 			return;
 		if(c == '\r')
 			c = '\n';
-		printf("%c", c);
-		udp_printf("%c", c);
+		fputc(c, STDOUT_FILENO);
+		fputc(c, netconout);
 	}
 }
 
 #include <eth.h>
 #include <servers/net.h>
 __attribute__((unused)) static void udp_rx_loop(void) {
+	int netconin = open(ROOT_DIRFD, "/dev/netconin");
+	int netconout = open(ROOT_DIRFD, "/dev/netconout");
+
 	for(;;) {
-		char c = udp_getchar();
-		printf("%c", c);
-		udp_printf("%c", c);
+		char c = fgetc(netconin);
+		fputc(c, STDOUT_FILENO);
+		fputc(c, netconout);
 	}
 }
 
@@ -223,6 +228,7 @@ void init_task(void) {
 	spawn(1, arpserver_task, SPAWN_DAEMON);
 	spawn(1, udprx_task, SPAWN_DAEMON);
 	spawn(2, udpconrx_task, SPAWN_DAEMON);
+	spawn(2, udpcontx_task, SPAWN_DAEMON);
 	spawn(2, fileserver_task, SPAWN_DAEMON);
 
 	dump_files();
