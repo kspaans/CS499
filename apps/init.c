@@ -97,43 +97,62 @@ __attribute__((unused)) static void memcpy_bench(void) {
 }
 
 #define SRR_RUNS 16384
-int srrbench_chan;
 __attribute__((unused))
 static void srrbench_child(void) {
 	char buf[1024];
-	int tid;
 	int i;
-	for(i=0; i<SRR_RUNS; i++) {
-		MsgReceive(srrbench_chan, &tid, NULL, buf, 4);
-		MsgReply(tid, 4, buf, 4, -1);
-	}
-	for(i=0; i<SRR_RUNS; i++) {
-		MsgReceive(srrbench_chan, &tid, NULL, buf, 64);
-		MsgReply(tid, 64, buf, 64, -1);
-	}
+	struct iovec iov[] = { { buf, sizeof(buf) } };
+#define BENCHSRR(n) { iov[0].iov_len = n; for(i=0; i<SRR_RUNS; ++i) { sys_recv(3, iov, arraysize(iov), NULL, 0); sys_send(3, iov, arraysize(iov), -1, 0); } }
+	BENCHSRR(1)
+	BENCHSRR(2)
+	BENCHSRR(4)
+	BENCHSRR(8)
+	BENCHSRR(16)
+	BENCHSRR(32)
+	BENCHSRR(64)
+	BENCHSRR(128)
+	BENCHSRR(256)
+	BENCHSRR(512)
+#undef BENCHSRR
 }
 #include <drivers/timers.h>
-#define BENCH(name, code) { \
+#define BENCH(name, init, code) { \
 	printf("SRR Benchmarking: " name ": "); \
 	start = read_timer(); \
+	init; \
 	for(i=0; i<SRR_RUNS; i++) code; \
 	elapsed = read_timer()-start; \
-	printf("%d ms\n", (int)(elapsed/TICKS_PER_MSEC)); \
-	printf("%d ns/loop\n", (int)(elapsed*1000000/TICKS_PER_MSEC/SRR_RUNS)); \
+	printf("%d ms ", (int)(elapsed/TICKS_PER_MSEC)); \
+	printf("(%d ns/loop)\n", (int)(elapsed*1000000/TICKS_PER_MSEC/SRR_RUNS)); \
 }
 __attribute__((unused)) static void srrbench_task(void) {
 	int tid = gettid();
-	printf("srrbench_task[%d]: benchmarking SRR transaction\n", tid);
-	//int child = spawn(0, srrbench_child, 0);
+	printk("srrbench_task[%d]: benchmarking SRR transaction\n", tid);
+
+	int srrbench_chan = channel(0);
+
+	int chans[] = { 0, 1, 2, srrbench_chan };
+	printk("%d\n", sys_spawn(0, srrbench_child, chans, arraysize(chans), 0));
+
 	char buf[512];
 	int i;
 	unsigned long long start, elapsed;
 
-	srrbench_chan = channel(0);
+	struct iovec iov[] = { { buf, sizeof(buf) } };
 
-	BENCH("yield", yield())
-	BENCH("4-bytes", MsgSend(srrbench_chan, 0, buf, 4, buf, 4, NULL))
-	BENCH("64-bytes", MsgSend(srrbench_chan, 0, buf, 64, buf, 64, NULL))
+	BENCH("yield", (void)0,yield())
+#define BENCHSRR(n) BENCH(#n "-bytes", iov[0].iov_len = n, ({sys_send(srrbench_chan, iov, arraysize(iov), -1, 0); sys_recv(srrbench_chan, iov, arraysize(iov), NULL, 0); }))
+	BENCHSRR(1)
+	BENCHSRR(2)
+	BENCHSRR(4)
+	BENCHSRR(8)
+	BENCHSRR(16)
+	BENCHSRR(32)
+	BENCHSRR(64)
+	BENCHSRR(128)
+	BENCHSRR(256)
+	BENCHSRR(512)
+#undef BENCHSRR
 
 	printf("srrbench_task[%d]: benchmark finished.\n", tid);
 }
@@ -204,9 +223,7 @@ __attribute__((unused)) static void fstest_task(void) {
 }
 
 #include <servers/genesis.h>
-
 #include <string.h>
-
 __attribute__((unused)) static void shell(void) {
 	char input[128];
 	char *argv[10];
@@ -324,16 +341,17 @@ void init_task(void) {
 	spawn(1, consoletx_task, SPAWN_DAEMON);
 	spawn(1, consolerx_task, SPAWN_DAEMON);
 
+	spawn(2, fileserver_task, SPAWN_DAEMON);
+	spawn(1, clockserver_task, SPAWN_DAEMON);
+
 	net_init();
 
-	spawn(1, clockserver_task, SPAWN_DAEMON);
 	spawn(1, ethrx_task, SPAWN_DAEMON);
 	spawn(1, icmpserver_task, SPAWN_DAEMON);
 	spawn(1, arpserver_task, SPAWN_DAEMON);
 	spawn(1, udprx_task, SPAWN_DAEMON);
 	spawn(2, udpconrx_task, SPAWN_DAEMON);
 	spawn(2, udpcontx_task, SPAWN_DAEMON);
-	spawn(2, fileserver_task, SPAWN_DAEMON);
 
 	int netconin = open(ROOT_DIRFD, "/dev/netconin");
 	int netconout = open(ROOT_DIRFD, "/dev/netconout");
@@ -350,7 +368,7 @@ void init_task(void) {
 	//ASSERTNOERR(spawn(4, fstest_task, 0));
 	//ASSERTNOERR(spawn(2, task_reclamation_test, 0));
 	//ASSERTNOERR(spawn(2, srr_task, 0));
-	//ASSERTNOERR(spawn(3, srrbench_task, 0));
+	ASSERTNOERR(spawn(0, srrbench_task, 0));
 
 	ASSERTNOERR(spawn(4, flash_leds, SPAWN_DAEMON));
 	//ASSERTNOERR(spawn(4, console_loop, 0));
