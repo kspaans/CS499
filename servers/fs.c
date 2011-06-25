@@ -6,7 +6,6 @@
 #include <string.h>
 #include <servers/console.h>
 #include <servers/fs.h>
-#include <kern/printk.h>
 
 enum filemsg {
 	FILE_OPEN = PRIVATE_MSG_START,
@@ -251,9 +250,8 @@ void fileserver_task(void) {
 }
 
 void dump_files(void) {
-	printk("filesystem dump:\n");
 	for (int i = 0; i < HASH_MAX; ++i) {
 		if (fs.files[i].valid && !fs.files[i].deleted)
-			printk("[%d] %.*s\n", i, PATH_MAX, fs.files[i].path);
+			printf("[%d] %.*s\n", i, PATH_MAX, fs.files[i].path);
 	}
 }

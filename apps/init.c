@@ -12,66 +12,6 @@
 #include <apps.h>
 #include <id.h>
 
-__attribute__((unused)) static void shell(void) {
-	char input[128];
-	char *argv[10];
-	size_t pos;
-
-	while(1) {
-		printf("root@%s:/# ", this_host->hostname);
-		pos = 0;
-		bool done = false;
-		while(!done) {
-			char c = getchar();
-			switch(c) {
-				case '\b':
-				case 127:
-					if(pos > 0) {
-						printf("\b \b");
-						--pos;
-					}
-					continue;
-				case '\r':
-				case '\n':
-					putchar('\n');
-					input[pos++] = '\n';
-					input[pos++] = '\0';
-					done = true;
-					break;
-				case 3:
-					printf("^C\n");
-					pos = 0;
-					done = true;
-					break;
-				case 4: // ^D
-					if(pos == 0) {
-						printf("logout\n");
-						return;
-					}
-					break;
-				case '\t':
-					c = ' ';
-				default:
-					putchar(c);
-					input[pos++] = c;
-					if(pos >= sizeof(input)-3) {
-						--pos;
-						printf("\b");
-					}
-					break;
-			}
-		}
-		if(pos == 0)
-			continue;
-		int argc = parse_args(input, argv, arraysize(argv));
-		printf("argc=%d", argc);
-		for(int i=0; i<argc; ++i) {
-			printf(" argv[%d]=%s", i, argv[i]);
-		}
-		printf("\n");
-	}
-}
-
 #include <eth.h>
 #include <servers/net.h>
 __attribute__((unused)) static void udp_tx_loop(void) {
@@ -265,6 +205,78 @@ __attribute__((unused)) static void fstest_task(void) {
 
 void genesis_task(void);
 
+#include <string.h>
+__attribute__((unused)) static void shell(void) {
+	char input[128];
+	char *argv[10];
+	size_t pos;
+
+	while(1) {
+		printf("root@%s:/# ", this_host->hostname);
+		pos = 0;
+		bool done = false;
+		while(!done) {
+			char c = getchar();
+			switch(c) {
+				case '\b':
+				case 127:
+					if(pos > 0) {
+						printf("\b \b");
+						--pos;
+					}
+					continue;
+				case '\r':
+				case '\n':
+					putchar('\n');
+					input[pos++] = '\n';
+					input[pos++] = '\0';
+					done = true;
+					break;
+				case 3:
+					printf("^C\n");
+					pos = 0;
+					done = true;
+					break;
+				case 4: // ^D
+					if(pos == 0) {
+						printf("logout\n");
+						exit();
+					}
+					break;
+				case '\t':
+					c = ' ';
+				default:
+					putchar(c);
+					input[pos++] = c;
+					if(pos >= sizeof(input)-3) {
+						--pos;
+						printf("\b");
+					}
+					break;
+			}
+		}
+		if(pos == 0)
+			continue;
+		int argc = parse_args(input, argv, arraysize(argv));
+		if(argc == 0)
+			continue;
+		if(!strcmp(argv[0], "exit")) {
+			printf("Goodbye\n");
+			exit();
+		} else if(!strcmp(argv[0], "logout")) {
+			exit();
+		} else if(!strcmp(argv[0], "ls")) {
+			dump_files();
+		} else {
+			printf("argc=%d", argc);
+			for(int i=0; i<argc; ++i) {
+				printf(" argv[%d]=%s", i, argv[i]);
+			}
+			printf("\n");
+		}
+	}
+}
+
 /* The first user program */
 void init_task(void) {
 	printk("build id ");
@@ -302,8 +314,6 @@ void init_task(void) {
 		close(netconout);
 	}
 
-	dump_files();
-
 	//ASSERTNOERR(spawn(0, hashtable_test, 0));
 	//ASSERTNOERR(spawn(3, memcpy_bench, 0));
 	//ASSERTNOERR(spawn(4, fstest_task, 0));
@@ -315,5 +325,5 @@ void init_task(void) {
 	//ASSERTNOERR(spawn(4, console_loop, 0));
 	ASSERTNOERR(spawn(3, genesis_task, SPAWN_DAEMON));
 	ASSERTNOERR(spawn(5, shell, 0));
-//	ASSERTNOERR(spawn(6, gameoflife, 0));
+	//ASSERTNOERR(spawn(6, gameoflife, 0));
 }
