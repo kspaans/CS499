@@ -40,6 +40,10 @@ int MsgSend(int channel, int msgcode, const void *msg, int msglen, void *reply, 
 int MsgReceive(int channel, int *tid, int *msgcode, void *msg, int msglen) {
 	int replych;
 
+	int zero;
+	if (!msgcode)
+		msgcode = &zero;
+
 	struct iovec recv_iov[] = {
 		{ msgcode, sizeof(*msgcode) },
 		{ msg, msglen },
