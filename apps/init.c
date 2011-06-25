@@ -103,6 +103,7 @@ static void srrbench_child(void) {
 	int i;
 	struct iovec iov[] = { { buf, sizeof(buf) } };
 #define BENCHSRR(n) { iov[0].iov_len = n; for(i=0; i<SRR_RUNS; ++i) { sys_recv(3, iov, arraysize(iov), NULL, 0); sys_send(3, iov, arraysize(iov), -1, 0); } }
+	BENCHSRR(0)
 	BENCHSRR(1)
 	BENCHSRR(2)
 	BENCHSRR(4)
@@ -142,6 +143,7 @@ __attribute__((unused)) static void srrbench_task(void) {
 
 	BENCH("yield", (void)0,yield())
 #define BENCHSRR(n) BENCH(#n "-bytes", iov[0].iov_len = n, ({sys_send(srrbench_chan, iov, arraysize(iov), -1, 0); sys_recv(srrbench_chan, iov, arraysize(iov), NULL, 0); }))
+	BENCHSRR(0)
 	BENCHSRR(1)
 	BENCHSRR(2)
 	BENCHSRR(4)
