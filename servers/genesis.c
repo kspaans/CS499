@@ -17,7 +17,7 @@
 #define SMAGIC 0xBABEB00B
 #define EMAGIC 0xFACEDADA
 
-__attribute__((unused)) static void genesis_test(void) {
+void genesis_test(void) {
 	printf("MY GOD, THEY'VE CREATED LIFE");
 }
 
@@ -32,12 +32,18 @@ struct creation_request {
 		unsigned emagic;
 } __attribute__((__packed__));
 
+static void print_creation(struct creation_request *cr) {
+	printf("Code %p Magics: %x %x (%x %x), Flags %d, Pri %d", cr->code, cr->smagic, cr->emagic, SMAGIC, EMAGIC, cr->flags, cr->priority);
+}
 
-__attribute__((unused)) static void send_createreq(uint32_t host, int priority, void (*code)(void), int flags) {
+void send_createreq(uint32_t host, int priority, void (*code)(void), int flags) {
 	struct creation_request req;
+	req.smagic = SMAGIC;
+	req.emagic = EMAGIC;
 	req.priority = priority;
 	req.flags = flags;
 	req.code = code;
+	print_creation(&req);
 	send_udp(GENESIS_SRCPORT, host, GENESIS_PORT, (char *)&req, sizeof(req));
 }
 

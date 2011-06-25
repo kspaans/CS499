@@ -203,7 +203,7 @@ __attribute__((unused)) static void fstest_task(void) {
 	}
 }
 
-void genesis_task(void);
+#include <servers/genesis.h>
 
 #include <string.h>
 
@@ -295,6 +295,9 @@ __attribute__((unused)) static void shell(void) {
 			exit();
 		} else if(!strcmp(argv[0], "ls")) {
 			dump_files();
+		} else if(!strcmp(argv[0], "genesis")) {
+			send_createreq(IP(10, 0, 0, 10), 2, genesis_test, 0);
+			printf("OK\n");
 		} else {
 			printf("argc=%d", argc);
 			for(int i=0; i<argc; ++i) {
