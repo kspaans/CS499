@@ -243,6 +243,29 @@ __attribute__((unused)) static void shell(void) {
 						exit();
 					}
 					break;
+				case '\033':
+					c = getchar();
+					if(c == '[') {
+						c = getchar();
+						if(c == 'A') {
+							/* up arrow */
+							break;
+						} else if(c == 'B') {
+							/* down arrow */
+							break;
+						} else if(c == 'C') {
+							/* right arrow */
+							break;
+						} else if(c == 'D') {
+							/* left arrow */
+							break;
+						} else {
+							/* fall through */
+						}
+					} else {
+						printf("\a");
+						/* fall through */
+					}
 				case '\t':
 					c = ' ';
 				default:
