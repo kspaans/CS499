@@ -1,5 +1,4 @@
 #include <kern/syscallno.h>
-@ Preprocessor workaround: # stringizes the argument, so it must be avoided.
 
 .macro syscall funcname callno
 	.global \funcname
