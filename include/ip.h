@@ -77,7 +77,7 @@ struct udphdr {
 
 #define UDPMTU 1400 // maximum size of udp payload
 
-#define IP(a,b,c,d) (((a)<<24) | ((b)<<16) | ((c)<<8) | d)
+#define IP(a,b,c,d) (((a)<<24) | ((b)<<16) | ((c)<<8) | (d))
 #define MAC(a,b,c,d,e,f) { .addr = { (a), (b), (c), (d), (e), (f) }}
 
 #endif /* _IP_H */

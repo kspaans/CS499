@@ -296,7 +296,7 @@ __attribute__((unused)) static void shell(void) {
 		} else if(!strcmp(argv[0], "ls")) {
 			dump_files();
 		} else if(!strcmp(argv[0], "genesis")) {
-			send_createreq(IP(10, 0, 0, 10), 2, genesis_test, 0);
+			send_createreq(IP(10, 0, 0, 10 + *argv[1] - '0'), 2, genesis_test, 0);
 			printf("OK\n");
 		} else {
 			printf("argc=%d", argc);
