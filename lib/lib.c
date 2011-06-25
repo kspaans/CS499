@@ -2,6 +2,7 @@
 
 #include <lib.h>
 #include <types.h>
+#include <stdbool.h>
 
 /* GCC hacks */
 void raise(void);
@@ -108,17 +109,54 @@ int hashtable_del(hashtable *ht, int key) {
 /* Argument parsing */
 int parse_args(char *buf, char **argv, int argv_len) {
 	int argc = 0;
-	int in_arg = 0;
+	bool in_quote = false;
+	char *cur = buf;
+	char *argstart = buf;
+
 	while(*buf) {
-		if(*buf == ' ') {
-			*buf = '\0';
-			in_arg = 0;
-		} else if(!in_arg && argc < argv_len) {
-			in_arg = 1;
-			argv[argc] = buf;
-			argc++;
+		char c = *buf++;
+
+		if(in_quote) {
+			if(c == '\\') {
+				*cur++ = *buf++;
+				continue;
+			}
+			if(c == '"')
+				in_quote = 0;
+			else
+				*cur++ = c;
+			continue;
 		}
-		buf++;
+
+		switch(c) {
+			case ' ':
+			case '\t':
+			case '\n':
+				if(cur - argstart > 0 && argc < argv_len) {
+					*cur++ = '\0';
+					argv[argc++] = argstart;
+					argstart = cur;
+				}
+				if(c == '\n') {
+					goto end;
+				}
+				break;
+			case '"':
+				in_quote = 1;
+				continue;
+			case '\\':
+				c = *buf++;
+				if(c == '\n') {
+					break;
+				}
+				// otherwise, fall through and add c
+			default:
+				*cur++ = c;
+		}
+	}
+end:
+	if(argc < argv_len) {
+		argv[argc] = NULL;
 	}
 	return argc;
 }

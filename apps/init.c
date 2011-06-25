@@ -8,8 +8,69 @@
 #include <kern/printk.h>
 #include <servers/fs.h>
 #include <servers/console.h>
+#include <servers/net.h>
 #include <apps.h>
 #include <id.h>
+
+__attribute__((unused)) static void shell(void) {
+	char input[128];
+	char *argv[10];
+	size_t pos;
+
+	while(1) {
+		printf("root@%s:/# ", this_host->hostname);
+		pos = 0;
+		bool done = false;
+		while(!done) {
+			char c = getchar();
+			switch(c) {
+				case '\b':
+				case 127:
+					if(pos > 0) {
+						printf("\b \b");
+						--pos;
+					}
+					continue;
+				case '\r':
+				case '\n':
+					putchar('\n');
+					input[pos++] = '\n';
+					input[pos++] = '\0';
+					done = true;
+					break;
+				case 3:
+					printf("^C\n");
+					pos = 0;
+					done = true;
+					break;
+				case 4: // ^D
+					if(pos == 0) {
+						printf("logout\n");
+						return;
+					}
+					break;
+				case '\t':
+					c = ' ';
+				default:
+					putchar(c);
+					input[pos++] = c;
+					if(pos >= sizeof(input)-3) {
+						--pos;
+						printf("\b");
+					}
+					break;
+			}
+		}
+		if(pos == 0)
+			continue;
+		int argc = parse_args(input, argv, arraysize(argv));
+		printf("argc=%d", argc);
+		for(int i=0; i<argc; ++i) {
+			printf(" argv[%d]=%s", i, argv[i]);
+		}
+		printf("\n");
+	}
+}
 
 #include <eth.h>
 #include <servers/net.h>
@@ -231,11 +292,21 @@ void init_task(void) {
 	spawn(2, udpcontx_task, SPAWN_DAEMON);
 	spawn(2, fileserver_task, SPAWN_DAEMON);
 
+	int netconin = open(ROOT_DIRFD, "/dev/netconin");
+	int netconout = open(ROOT_DIRFD, "/dev/netconout");
+
+	if(!this_host->has_uart) {
+		dup(netconin, STDIN_FILENO, 0);
+		dup(netconout, STDOUT_FILENO, 0);
+		close(netconin);
+		close(netconout);
+	}
+
 	dump_files();
 
 	//ASSERTNOERR(spawn(0, hashtable_test, 0));
-	ASSERTNOERR(spawn(1, memcpy_bench, 0));
-	ASSERTNOERR(spawn(2, fstest_task, 0));
+	//ASSERTNOERR(spawn(3, memcpy_bench, 0));
+	//ASSERTNOERR(spawn(4, fstest_task, 0));
 	//ASSERTNOERR(spawn(2, task_reclamation_test, 0));
 	//ASSERTNOERR(spawn(2, srr_task, 0));
 	//ASSERTNOERR(spawn(3, srrbench_task, 0));
@@ -243,7 +314,6 @@ void init_task(void) {
 	ASSERTNOERR(spawn(4, flash_leds, SPAWN_DAEMON));
 	//ASSERTNOERR(spawn(4, console_loop, 0));
 	ASSERTNOERR(spawn(3, genesis_task, SPAWN_DAEMON));
-	ASSERTNOERR(spawn(4, udp_tx_loop, 0));
-	ASSERTNOERR(spawn(4, udp_rx_loop, SPAWN_DAEMON));
+	ASSERTNOERR(spawn(5, shell, 0));
 //	ASSERTNOERR(spawn(6, gameoflife, 0));
 }
