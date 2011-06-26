@@ -16,7 +16,11 @@ void unwind_stack(uint32_t *fp) {
 		if (depth++ > MAXDEPTH)
 			break;
 
+#ifdef __clang__
+		struct apcs_frame *frame = (void *)fp;
+#else
 		struct apcs_frame *frame = (void *)(fp - 1);
+#endif
 		if (!frame->lr)
 			break;
 		uint32_t addr = (uint32_t)frame->lr - 4;
