@@ -64,23 +64,9 @@ size_t strlcpy(char *d, const char *s, size_t n) {
 	return len;
 }
 
-size_t strlen(const char *s) {
-	size_t len = 0;
-	while(*s++)
-		len++;
-	return len;
-}
-
 size_t strnlen(const char *s, size_t maxlen) {
 	size_t len = 0;
 	while(maxlen > 0 && *s++)
 		len++, maxlen--;
 	return len;
-}
-
-void *memset(void *p, int b, size_t n) {
-	char *c = p;
-	while(n-->0)
-		*c++ = b;
-	return p;
 }
