@@ -55,7 +55,7 @@ init_cpumodes:
 @ task_activate(struct task *task)
 task_activate:
 	@ Store all of our non-temporary registers
-	stmfd sp!, {r4, r5, r6, r7, r8, r9, sl, fp, ip, lr}
+	push {r4 - r11, r14}
 	@ Load spsr
 	ldr   r1, [r0, #64]
 	msr   spsr_cxsf, r1
@@ -89,10 +89,8 @@ swi_enter:
 	@ void task_syscall(struct task *task)
 	bl    task_syscall
 
-	@ Restore our registers
-	ldmfd sp!, {r4, r5, r6, r7, r8, r9, sl, fp, ip, lr}
-	@ Return to main
-	bx    lr
+	@ Restore kernel context
+	pop {r4 - r11, pc}
 irq_enter:
 	@ Fixup user saved pc (irq handler sets lr = pc+4)
 	sub   lr, lr, #4
@@ -124,10 +122,8 @@ irq_enter:
 	@ void task_irq(void)
 	bl    task_irq
 
-	@ Restore our registers
-	ldmfd sp!, {r4, r5, r6, r7, r8, r9, sl, fp, ip, lr}
-	@ Return to main
-	bx    lr
+	@ Restore kernel context
+	pop {r4 - r11, pc}
 
 @ PRM reset.
 .global prm_reset
