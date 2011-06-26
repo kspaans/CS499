@@ -8,6 +8,10 @@ XGCC="${XPREFIX}gcc"
 # Standard options
 CFLAGS="-pipe -Wall -Wextra -I include -std=gnu99 -O2"
 
+if test -n "$CLANG"; then
+	XCC="$CLANG -ccc-host-triple armv7-linux-gnu -mfloat-abi=soft"
+fi
+
 # Debug options
 CFLAGS+=" -Werror"
 
