@@ -64,7 +64,7 @@ task_activate:
 	ldmia r1, {r2 - r14}^
 	@ No banked register access after this, so no nop required
 	@ Load pc and spsr
-	ldmia r0, {r0, r1, pc}^
+	ldmia r0, {r0 - r1, pc}^
 swi_enter:
 	@ Give ourselves some temporary room
 	stmdb sp, {r0, r1}
@@ -72,11 +72,11 @@ swi_enter:
 	ldr   r0, [sp]
 	@ Stash user registers
 	add   r1, r0, #12	@ skip r0, r1, pc
-	stmia r1, {r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr}^
+	stmia r1, {r2 - r14}^
 	nop	@ needed to access banked regs after stm ^
 	@ Stash user r0, r1 and return address
-	ldmdb sp, {r2, r3}
-	stmia r0, {r2, r3, lr}
+	ldmdb sp, {r2 - r3}
+	stmia r0, {r2 - r3, lr}
 	@ We've got r0, so adjust the stack past it
 	add   sp, sp, #4
 	@ Store spsr
@@ -94,7 +94,7 @@ irq_enter:
 	@ Fixup user saved pc (irq handler sets lr = pc+4)
 	sub   lr, lr, #4
 	@ Stash registers (r0, r1 for scratch, lr since its only available in this mode)
-	stmia sp, {r0, r1, lr}
+	stmia sp, {r0 - r1, lr}
 	@ Grab spsr
 	mrs   r1, spsr
 	@ Warp to supervisor mode
@@ -108,12 +108,12 @@ irq_enter:
 	str   r1, [r0, #64]
 	@ Stash user registers
 	add   r1, r0, #12	@ skip r0, r1, pc
-	stmia r1, {r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr}^
+	stmia r1, {r2 - r14}^
 	nop	@ needed to access banked regs after stm ^
 	@ Stash user r0, r1 and return address
 	ldr   r2, irq_stack_ptr
-	ldmia r2, {r3, r4, r5} @ user r0, r1 and pc (saved lr in irq mode)
-	stmia r0, {r3, r4, r5}
+	ldmia r2, {r3 - r5} @ user r0, r1 and pc (saved lr in irq mode)
+	stmia r0, {r3 - r5}
 	@ We've got r0, so adjust the stack past it
 	add   sp, sp, #4
 
