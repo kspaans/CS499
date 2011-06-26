@@ -54,31 +54,42 @@ init_cpumodes:
 .type task_activate, %function
 @ task_activate(struct task *task)
 task_activate:
+
 	@ Store all of our non-temporary registers, plus r0 (task)
 	push {r0, r4 - r11, r14}
+
 	@ Load spsr
 	ldr   r1, [r0, #64]
 	msr   spsr_cxsf, r1
+
 	@ Load user registers
 	add   r1, r0, #12
 	ldmia r1, {r2 - r14}^
+
 	@ No banked register access after this, so no nop required
 	@ Load pc and spsr
 	ldmia r0, {r0 - r1, pc}^
+
 swi_enter:
+
 	@ Give ourselves some temporary room
 	stmdb sp, {r0, r1}
+
 	@ Grab task struct from r0
 	ldr   r0, [sp]
+
 	@ Stash user registers
 	add   r1, r0, #12	@ skip r0, r1, pc
 	stmia r1, {r2 - r14}^
 	nop	@ needed to access banked regs after stm ^
+
 	@ Stash user r0, r1 and return address
 	ldmdb sp, {r2 - r3}
 	stmia r0, {r2 - r3, lr}
+
 	@ We've got r0, so adjust the stack past it
 	add   sp, sp, #4
+
 	@ Store spsr
 	mrs   r1, spsr
 	str   r1, [r0, #64]
@@ -91,29 +102,38 @@ swi_enter:
 	b    task_syscall
 
 irq_enter:
+
 	@ Fixup user saved pc (irq handler sets lr = pc+4)
 	sub   lr, lr, #4
+
 	@ Stash registers (r0, r1 for scratch, lr since its only available in this mode)
 	stmia sp, {r0 - r1, lr}
+
 	@ Grab spsr
 	mrs   r1, spsr
+
 	@ Warp to supervisor mode
 	mrs   r0, cpsr
 	@bic   r0, r0, #0x1f @ Unnecessary because we are in IRQ or FIQ mode (0x11 or 0x12).
 	orr   r0, r0, #0x13
 	msr   cpsr_c, r0
+
 	@ Grab task struct from r0
 	ldr   r0, [sp]
+
 	@ Store spsr
 	str   r1, [r0, #64]
+
 	@ Stash user registers
 	add   r1, r0, #12	@ skip r0, r1, pc
 	stmia r1, {r2 - r14}^
 	nop	@ needed to access banked regs after stm ^
+
 	@ Stash user r0, r1 and return address
 	ldr   r2, irq_stack_ptr
 	ldmia r2, {r3 - r5} @ user r0, r1 and pc (saved lr in irq mode)
 	stmia r0, {r3 - r5}
+
 	@ We've got r0, so adjust the stack past it
 	add   sp, sp, #4
 
@@ -123,7 +143,6 @@ irq_enter:
 	@ handle irq
 	@ void task_irq(void)
 	b    task_irq
-
 
 @ PRM reset.
 .global prm_reset
