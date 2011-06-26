@@ -5,7 +5,7 @@
 
 #define MAXDEPTH 20
 
-struct apcs_frame {
+struct call_frame {
 	void *fp;
 	void *lr;
 };
@@ -17,9 +17,9 @@ void unwind_stack(uint32_t *fp) {
 			break;
 
 #ifdef __clang__
-		struct apcs_frame *frame = (void *)fp;
+		struct call_frame *frame = (void *)fp;
 #else
-		struct apcs_frame *frame = (void *)(fp - 1);
+		struct call_frame *frame = (void *)(fp - 1);
 #endif
 		if (!frame->lr)
 			break;
