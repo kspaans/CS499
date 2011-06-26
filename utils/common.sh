@@ -1,4 +1,17 @@
-if test -n "$CLANG"; then
+top=$utils/..
+useclang=$top/bin/use-clang
+
+if test -e "$useclang"; then
+  if test -z "$CLANG"; then
+    echo >&2 "set \$CLANG to your clang"
+    exit 1
+  fi
+  redo-ifchange $useclang
+else
+  redo-ifcreate $useclang
+fi
+
+if test -e "$useclang"; then
   XPREFIX=arm-linux-gnueabi-
   XCC="$CLANG -ccc-host-triple armv7-linux-gnu -mfloat-abi=soft"
   XLD=${XPREFIX}gcc
