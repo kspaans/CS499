@@ -8,4 +8,4 @@ out=$1; shift
 
 redo-ifchange $utils/../omap3.ld
 
-${XGCC} ${CFLAGS} ${LDFLAGS} -T $utils/../omap3.ld -o $out $@
+${XLD} ${CFLAGS} ${LDFLAGS} -T $utils/../omap3.ld -o $out $@

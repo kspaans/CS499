@@ -6,4 +6,4 @@ utils=$(dirname $0)
 redo-ifchange $0 $utils/common.sh "$@"
 source $utils/common.sh
 
-${AR} crsT "$archive" "$@"
+${XAR} crs "$archive" "$@"

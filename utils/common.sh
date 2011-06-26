@@ -1,16 +1,19 @@
-XPREFIX="arm-linux-gnueabi-"
-XCC="${XPREFIX}gcc"
-AS="${XPREFIX}as"
-LD="${XPREFIX}ld"
-AR="${XPREFIX}ar"
-XGCC="${XPREFIX}gcc"
+if test -n "$CLANG"; then
+  XPREFIX=arm-linux-gnueabi-
+  XCC="$CLANG -ccc-host-triple armv7-linux-gnu -mfloat-abi=soft"
+  XLD=${XPREFIX}gcc
+  XAS=${XPREFIX}gcc
+  XAR=${XPREFIX}ar
+else
+  XPREFIX=arm-linux-gnueabi-
+  XCC=${XPREFIX}gcc
+  XLD=${XPREFIX}gcc
+  XAS=${XPREFIX}gcc
+  XAR=${XPREFIX}ar
+fi
 
 # Standard options
 CFLAGS="-pipe -Wall -Wextra -I include -std=gnu99 -O2"
-
-if test -n "$CLANG"; then
-	XCC="$CLANG -ccc-host-triple armv7-linux-gnu -mfloat-abi=soft"
-fi
 
 # Debug options
 CFLAGS+=" -Werror"

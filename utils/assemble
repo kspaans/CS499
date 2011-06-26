@@ -8,4 +8,4 @@ out=$1; in=$2
 
 redo-ifchange $in
 
-${XGCC} -c ${CFLAGS} -o $out $in
+${XAS} -c ${CFLAGS} -o $out $in
