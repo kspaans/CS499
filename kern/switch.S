@@ -54,16 +54,14 @@ init_cpumodes:
 .type task_activate, %function
 @ task_activate(struct task *task)
 task_activate:
-	@ Store all of our non-temporary registers
-	push {r4 - r11, r14}
+	@ Store all of our non-temporary registers, plus r0 (task)
+	push {r0, r4 - r11, r14}
 	@ Load spsr
 	ldr   r1, [r0, #64]
 	msr   spsr_cxsf, r1
-	@ Stash r0 (task) on our stack for exception entry
-	str   r0, [sp, #-4]!
 	@ Load user registers
 	add   r1, r0, #12
-	ldmia r1, {r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr}^
+	ldmia r1, {r2 - r14}^
 	@ No banked register access after this, so no nop required
 	@ Load pc and spsr
 	ldmia r0, {r0, r1, pc}^
