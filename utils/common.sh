@@ -38,9 +38,6 @@ CFLAGS+=" -DBUILDUSER=$USER"
 # Do not link in glibc
 LDFLAGS="-nostdlib"
 
-# Custom linker script
-LDFLAGS+=" -T ../omap3.ld"
-
 # Disable demand-pageable
 LDFLAGS+=" -n"
 

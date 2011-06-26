@@ -1,8 +1,11 @@
 #!/bin/bash -e
 
 utils=$(dirname $0)
-
-redo-ifchange $utils/common.sh
+redo-ifchange $0 $utils/common.sh
 source $utils/common.sh
 
-${XGCC} -c ${CFLAGS} "$@"
+out=$1; in=$2
+
+redo-ifchange $in
+
+${XGCC} -c ${CFLAGS} -o $out $in

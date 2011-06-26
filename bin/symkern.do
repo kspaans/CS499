@@ -1,12 +1,12 @@
 #!/bin/bash -e
 
-PREFIX="../kern/obj/"
-DEPS=(omap3.o nosyms.o)
-LIBS="kern.a apps.a servers.a drivers.a libs.a"
+cd ..
+
+DEPS="kern/obj/omap3.o kern/obj/nosyms.o
+      bin/kern.a bin/apps.a bin/servers.a bin/drivers.a bin/libs.a"
 LDLIBS="-lgcc"
 
-mkdir -p ${PREFIX}
-DEPS=${DEPS[@]/#/${PREFIX}/}
-redo-ifchange ../utils/link ${LIBS} ${DEPS} ../omap3.ld
+mkdir -p kern/obj
 
-../utils/link -o $3 ${DEPS} ${LIBS} ${LDLIBS}
+redo-ifchange ${DEPS}
+utils/link bin/$3 ${DEPS} ${LDLIBS}

@@ -1,8 +1,9 @@
 #!/bin/bash -e
 
+archive=$1; shift
 utils=$(dirname $0)
 
-redo-ifchange $utils/common.sh
+redo-ifchange $0 $utils/common.sh "$@"
 source $utils/common.sh
 
-${AR} crsT "$@"
+${AR} crsT "$archive" "$@"

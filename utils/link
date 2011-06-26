@@ -1,8 +1,11 @@
 #!/bin/bash -e
 
 utils=$(dirname $0)
-
-redo-ifchange $utils/common.sh
+redo-ifchange $0 $utils/common.sh
 source $utils/common.sh
 
-${XGCC} ${CFLAGS} ${LDFLAGS} "$@"
+out=$1; shift
+
+redo-ifchange $utils/../omap3.ld
+
+${XGCC} ${CFLAGS} ${LDFLAGS} -T $utils/../omap3.ld -o $out $@

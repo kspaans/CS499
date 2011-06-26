@@ -1,11 +1,8 @@
 #!/bin/bash -e
 
-Sfile=$(dirname $(dirname $1))/$(basename $1).S
-if [ -e $Sfile ] ; then
-    FILE=$Sfile
-else
-    FILE=$1.s
+FILE=${1/obj\//}.S
+if test ! -e "$FILE"; then
+  FILE="$1.s"
 fi
 
-redo-ifchange utils/assemble ${FILE}
-utils/assemble -o $3 ${FILE}
+utils/assemble $3 ${FILE}

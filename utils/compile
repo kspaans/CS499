@@ -1,8 +1,14 @@
 #!/bin/bash -e
 
 utils=$(dirname $0)
-
-redo-ifchange $utils/common.sh
+redo-ifchange $0 $utils/common.sh
 source $utils/common.sh
 
-${XCC} -S ${CFLAGS} "$@"
+out=$1; in=$2; deps=$out.deps.tmp
+
+redo-ifchange "$in"
+
+${XCC} -S ${CFLAGS} -MD -MF $deps -o $out $in
+
+DEPS=$(sed -e "s?^$out: ??" -e "N;" -e 's/\\//g' < $deps)
+redo-ifchange $DEPS
