@@ -1,6 +1,7 @@
 #include <kern/ksyms.h>
 #include <panic.h>
 #include <types.h>
+#include <string.h>
 
 struct ksym *ksym_for_address(uint32_t code) {
   struct ksym *ret = NULL;
@@ -29,4 +30,12 @@ const char *symbol_for_address_exact(uint32_t code) {
     return ks->name;
 
   return "(none)";
+}
+
+void *address_for_symbol(const char *name) {
+	for(struct ksym *ks = &ksyms_start; ks < &ksyms_end; ++ks) {
+		if(!strcmp(ks->name, name))
+			return (void *)ks->code;
+	}
+	return NULL;
 }

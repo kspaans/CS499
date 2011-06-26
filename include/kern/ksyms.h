@@ -14,6 +14,7 @@ extern struct ksym ksyms_end;
 struct ksym *ksym_for_address(uint32_t code);
 const char *symbol_for_address(uint32_t code);
 const char *symbol_for_address_exact(uint32_t code);
+void *address_for_symbol(const char *);
 
 #define SYMBOL(x) symbol_for_address((uint32_t)(x))
 #define SYMBOL_EXACT(x) symbol_for_address_exact((uint32_t)(x))

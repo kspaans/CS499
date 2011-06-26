@@ -316,8 +316,8 @@ __attribute__((unused)) static void shell(void) {
 		} else if(!strcmp(argv[0], "ls")) {
 			dump_files();
 		} else if(!strcmp(argv[0], "genesis")) {
-			send_createreq(IP(10, 0, 0, 10 + *argv[1] - '0'), 2, genesis_test, 0);
-			printf("OK\n");
+			if(argc != 3) { printf("genesis hostnumber command\n"); continue; }
+			send_createreq(IP(10, 0, 0, atoi(argv[1])), 2, argv[2], 0);
 		} else {
 			printf("argc=%d", argc);
 			for(int i=0; i<argc; ++i) {
