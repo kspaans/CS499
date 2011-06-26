@@ -8,6 +8,8 @@
 __attribute__((noreturn))
 void prm_reset(void);
 
+static int panic_recursion;
+
 /* Busy-wait I/O */
 static int bw_printfunc(void *unused, const char *str, size_t len) {
 	(void)unused;
@@ -41,7 +43,10 @@ void panic(const char *fmt, ...) {
 
 	printk("\n");
 
-	sysrq();
+	if (!panic_recursion) {
+		panic_recursion = 1;
+		sysrq();
+	}
 
 	/* hacks */
 	for (volatile int i = 0; i < 10000000; ++i);
