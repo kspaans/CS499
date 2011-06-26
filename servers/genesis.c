@@ -34,7 +34,7 @@ struct creation_request {
 } __attribute__((__packed__));
 
 static void print_creation(struct creation_request *cr) {
-	printf("Name %s Magics: %x %x (%x %x), Flags %d, Pri %d", cr->path, cr->smagic, cr->emagic, SMAGIC, EMAGIC, cr->flags, cr->priority);
+	printf("Name %s Magics: %x %x (%x %x), Flags %d, Pri %d\n", cr->path, cr->smagic, cr->emagic, SMAGIC, EMAGIC, cr->flags, cr->priority);
 }
 
 void send_createreq(uint32_t host, int priority, const char *name, int flags) {
@@ -47,7 +47,6 @@ void send_createreq(uint32_t host, int priority, const char *name, int flags) {
 	printf("Spawning %s on host %d\n", req.path, host);
 	send_udp(GENESIS_SRCPORT, host, GENESIS_PORT, (char *)&req, sizeof(req));
 }
-
 
 void genesis_task(void) {
 	struct {
@@ -63,20 +62,20 @@ void genesis_task(void) {
 		// Check contents:
 		if(reply.data.smagic != SMAGIC || reply.data.emagic != EMAGIC ||
 			reply.rec.data_len != sizeof(struct creation_request)) {
-			printf("Got a bad request");
+			printf("Got a bad request: ");
 			print_creation(&reply.data);
 			continue;
 		}
 
-		/* Todo: Use file server to translate a string into a code pointer */
 		void (*code)(void) = address_for_symbol(reply.data.path);
+		// This is some pointer to a symbol, which could quite possibly no
+		// be a function. Potential hurt there. So don't do that.
 		if(code) {
 			printf("Launching process %s with priority: %d, flags: %d\n",
 					reply.data.path, reply.data.priority, reply.data.flags);
 			ASSERTNOERR(spawn(reply.data.priority, code, reply.data.flags));
 		} else {
-			// This should be a reply:
-			printf("Unknown thing %s\n", reply.data.path);
+			printf("Failure: Unknown symbol %s\n", reply.data.path);
 		}
 	}
 	udp_release(GENESIS_PORT);

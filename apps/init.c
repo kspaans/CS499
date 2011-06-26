@@ -316,7 +316,12 @@ __attribute__((unused)) static void shell(void) {
 		} else if(!strcmp(argv[0], "ls")) {
 			dump_files();
 		} else if(!strcmp(argv[0], "genesis")) {
-			if(argc != 3) { printf("genesis hostnumber command\n"); continue; }
+			if(argc != 3) { 
+				printf("Usage: genesis hostnumber command\n"
+						"Hostnumber is X in 10.0.0.X,"
+						"and command is the name of a function\n"); 
+				continue; 
+			}
 			send_createreq(IP(10, 0, 0, atoi(argv[1])), 2, argv[2], 0);
 		} else {
 			printf("argc=%d", argc);
