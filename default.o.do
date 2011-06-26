@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 Sfile=$(dirname $(dirname $1))/$(basename $1).S
 if [ -e $Sfile ] ; then

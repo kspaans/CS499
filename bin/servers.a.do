@@ -1,3 +1,5 @@
+#!/bin/bash -e
+
 PREFIX="../servers/obj/"
 DEPS=(clock.o console.o net.o fs.o genesis.o)
 

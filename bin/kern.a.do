@@ -1,3 +1,5 @@
+#!/bin/bash -e
+
 PREFIX="../kern/obj/"
 DEPS=(backtrace.o interrupt.o kmalloc.o main.o printk.o switch.o syscall.o task.o ksyms.o info.o)
 

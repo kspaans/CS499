@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 FILE=$(dirname $(dirname $1))/$(basename $1).c
 redo-ifchange utils/compile ${FILE}

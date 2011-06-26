@@ -1,3 +1,5 @@
+#!/bin/bash -e
+
 PREFIX="../apps/obj/"
 DEPS=(gameoflife.o init.o)
 

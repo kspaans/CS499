@@ -1,3 +1,5 @@
+#!/bin/bash -e
+
 PREFIX="../kern/obj/"
 DEPS=(omap3.o nosyms.o)
 LIBS="kern.a apps.a servers.a drivers.a libs.a"

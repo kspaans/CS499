@@ -1,3 +1,5 @@
+#!/bin/bash -e
+
 PREFIX="../kern/obj/"
 DEPS=(omap3.o)
 LOCALDEPS=(ksyms.o)

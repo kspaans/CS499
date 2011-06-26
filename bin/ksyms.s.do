@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 redo-ifchange ../utils/gensyms kern.map
 
