@@ -41,6 +41,8 @@ void panic(const char *fmt, ...) {
 
 	printk("\n");
 
+	sysrq();
+
 	/* hacks */
 	for (volatile int i = 0; i < 10000000; ++i);
 
