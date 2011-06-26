@@ -27,6 +27,8 @@ void net_start_tasks(void);
 
 extern struct hostdata *this_host;
 
+struct hostdata *get_host_data_from_name(const char*);
+
 void net_init(void);
 
 void ethrx_task(void);

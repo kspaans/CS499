@@ -317,12 +317,15 @@ __attribute__((unused)) static void shell(void) {
 			dump_files();
 		} else if(!strcmp(argv[0], "genesis")) {
 			if(argc != 3) { 
-				printf("Usage: genesis hostnumber command\n"
-						"Hostnumber is X in 10.0.0.X,"
-						"and command is the name of a function\n"); 
+				printf("Usage: genesis hostname command\n");
 				continue; 
 			}
-			send_createreq(IP(10, 0, 0, atoi(argv[1])), 2, argv[2], 0);
+			const struct hostdata *dest = get_host_data_from_name(argv[1]);
+			if(dest) {
+				send_createreq(dest->ip, 2, argv[2], 0);
+			} else {
+				printf("unknown host\n");
+			}
 		} else {
 			printf("argc=%d", argc);
 			for(int i=0; i<argc; ++i) {

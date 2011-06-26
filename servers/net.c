@@ -679,6 +679,14 @@ static struct hostdata *get_host_data(struct mac_addr *mac) {
 	exit();
 }
 
+struct hostdata *get_host_data_from_name(const char *name) {
+	for (size_t i = 0; i < arraysize(hosts); ++i) {
+		if(!strcmp(hosts[i].hostname, name))
+			return &hosts[i];
+	}
+	return NULL;
+}
+
 void net_init(void) {
 	struct mac_addr mac = eth_mac_addr(ETH1_BASE);
 
