@@ -3,6 +3,7 @@ XCC="${XPREFIX}gcc"
 AS="${XPREFIX}as"
 LD="${XPREFIX}ld"
 AR="${XPREFIX}ar"
+XGCC="${XPREFIX}gcc"
 
 # Standard options
 CFLAGS="-pipe -Wall -Wextra -I include -std=gnu99 -O2"
