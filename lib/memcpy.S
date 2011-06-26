@@ -1,7 +1,9 @@
 	.align	2
 	.global	memcpy
+	.global	__aeabi_memcpy
 	.type	memcpy, %function
 @ void *memcpy(void *d, const void *s, size_t size)
+__aeabi_memcpy:
 memcpy:
 	@ if len is zero, don't copy anything
 	cmp	r2, #0

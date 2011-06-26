@@ -28,9 +28,9 @@
 #define __iormb()	dmb()
 #define __iowmb()	dmb()
 
-#define writeb(v,c)	({ uint8_t  __v = v; __iowmb(); __arch_putb(__v,c); __v; })
-#define writew(v,c)	({ uint16_t __v = v; __iowmb(); __arch_putw(__v,c); __v; })
-#define writel(v,c)	({ uint32_t __v = v; __iowmb(); __arch_putl(__v,c); __v; })
+#define writeb(v,c)	({ uint8_t  __v = v; __iowmb(); __arch_putb(__v,c);  })
+#define writew(v,c)	({ uint16_t __v = v; __iowmb(); __arch_putw(__v,c);  })
+#define writel(v,c)	({ uint32_t __v = v; __iowmb(); __arch_putl(__v,c);  })
 
 #define readb(c)	({ uint8_t  __v = __arch_getb(c); __iormb(); __v; })
 #define readw(c)	({ uint16_t __v = __arch_getw(c); __iormb(); __v; })
@@ -188,7 +188,7 @@ static void flush_fifo(void)
 	while(1){
 		stat = readw(&i2c_base->stat);
 		if(stat == I2C_STAT_RRDY){
-			readb(&i2c_base->data);
+			(void)readb(&i2c_base->data);
 			writew(I2C_STAT_RRDY,&i2c_base->stat);
 			udelay(1000);
 		}else

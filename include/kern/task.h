@@ -118,4 +118,6 @@ void cpu_info(void);
 
 void sysrq(void);
 
+int main(void);
+
 #endif /* KERN_TASK_H */

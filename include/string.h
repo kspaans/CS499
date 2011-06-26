@@ -3,6 +3,7 @@
 
 #include <types.h>
 
+#ifndef __clang__
 #define memcpy(dst, src, n) __builtin_memcpy(dst, src, n)
 #define memcmp(s1, s2, n) __builtin_memcmp(s1, s2, n)
 #define memchr(s, c, n) __builtin_memchr(s, c, n)
@@ -16,6 +17,7 @@
 #define strncat(dst, src, n) __builtin_strcat(dst, src, n)
 #define strcpy(dst, src) __builtin_strcpy(dst, src)
 #define strncpy(dst, src, n) __builtin_strncpy(dst, src, n)
+#endif
 
 const char *strchr(const char *s, int c);
 int strcmp(const char *s1, const char *s2);
