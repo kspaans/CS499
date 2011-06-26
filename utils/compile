@@ -1,0 +1,8 @@
+#!/bin/bash
+
+utils=$(dirname $0)
+
+redo-ifchange $utils/common.sh
+source $utils/common.sh
+
+${XCC} -S ${CFLAGS} "$@"

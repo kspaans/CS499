@@ -12,5 +12,4 @@ rm -f .do_built
 rm -rf .do_build.dir
 
 # Aux files
-rm -f utils/{compile,assemble,link,archive}
 rm -f cscope.out
