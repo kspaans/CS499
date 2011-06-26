@@ -9,8 +9,8 @@
 #include <lib.h>
 #include <apps.h>
 
-#define X_SIZE 10
-#define Y_SIZE 10
+#define X_SIZE 10//0
+#define Y_SIZE 10//0
 
 #define UDP_SRCPORT 8889
 #define UDP_DSTPORT UDP_SRCPORT
@@ -125,8 +125,32 @@ void gameoflife(void)
 	field[1][2] = 1;
 	field[2][0] = field[2][1] = field[2][2] = 1;
 
+	/*
+	// the 5x5 infinite pattern
+	field[47][47] = 1;
+	field[47][48] = 1;
+	field[47][49] = 1;
+	field[47][51] = 1;
+	field[48][47] = 1;
+	field[49][50] = 1;
+	field[49][51] = 1;
+	field[50][48] = 1;
+	field[50][49] = 1;
+	field[50][51] = 1;
+	field[51][47] = 1;
+	field[51][49] = 1;
+	field[51][51] = 1;
+	*/
+
 	printf("Cyleway's Game of Life\n");
 
+	for (int i = 0; i < 50; i += 1) {
+		printf("Generation %d\n", i);
+		display_json(field, X_SIZE, Y_SIZE);
+		//display(field, X_SIZE, Y_SIZE);
+		age(field, X_SIZE, Y_SIZE);
+	}
+	return;
 	display(field, X_SIZE, Y_SIZE);
 	age(field, X_SIZE, Y_SIZE);
 	printf("-- -- -- --\n");

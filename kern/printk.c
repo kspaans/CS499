@@ -59,6 +59,9 @@ void panic_pabt(void) {
 }
 
 void panic_dabt(void) {
+	//uint32_t dfar;
+	//asm ("mrc p15, 0, %0, c6, c0, 0" : "=r" (dfar));
+	//printk("You poked the wrong address: %08x\n", dfar);
 	panic("Data Abort");
 }
 

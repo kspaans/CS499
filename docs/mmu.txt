@@ -60,3 +60,11 @@ and must map to 0x8000 0000
 0x2C...... # ETH1_BASE
 0x8FFFFFFF # kernel stack (earth)
 0xA0000000 # kernel stack (tide)
+
+Fault Registers
+/*
+DFSR on B3-121 CP15 c5, read: MRC p15,0,<Rt>,c5,c0,0
+IFSR on B3-122
+DFAR on B3-124 -- updatd with MRC p15,0,<Rt>,c6,c0,0
+IFAR on B3-125 (for prefetch?)
+*/
