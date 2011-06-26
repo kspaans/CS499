@@ -178,7 +178,7 @@ static struct task __attribute__((malloc)) *task_alloc(void) {
 	return ret;
 }
 
-static void __attribute__((noreturn)) task_run(void (*code)(void)) {
+static void task_run(void (*code)(void)) {
 	code();
 	sys_exit();
 }

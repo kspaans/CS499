@@ -19,7 +19,7 @@ CFLAGS+=" -Werror"
 CFLAGS+=" -march=armv7-a -mtune=cortex-a8"
 
 # Keep frame pointers
-CFLAGS+=" -fno-omit-frame-pointer -mapcs-frame -marm"
+CFLAGS+=" -fno-omit-frame-pointer -marm"
 
 # Make assembly output more readable
 CFLAGS+=" -fverbose-asm"

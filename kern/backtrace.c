@@ -7,9 +7,7 @@
 
 struct apcs_frame {
 	void *fp;
-	void *sp;
 	void *lr;
-	void *pc;
 };
 
 void unwind_stack(uint32_t *fp) {
@@ -18,7 +16,7 @@ void unwind_stack(uint32_t *fp) {
 		if (depth++ > MAXDEPTH)
 			break;
 
-		struct apcs_frame *frame = (void *)(fp - 3);
+		struct apcs_frame *frame = (void *)(fp - 1);
 		if (!frame->lr)
 			break;
 		uint32_t addr = (uint32_t)frame->lr - 4;
