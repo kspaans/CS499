@@ -83,12 +83,13 @@ swi_enter:
 	mrs   r1, spsr
 	str   r1, [r0, #64]
 
-	@ handle syscall
-	@ void task_syscall(struct task *task)
-	bl    task_syscall
+	@ Restore kernel registers
+	pop {r4 - r11, lr}
 
-	@ Restore kernel context
-	pop {r4 - r11, pc}
+	@ handle syscall (tail call)
+	@ void task_syscall(struct task *task)
+	b    task_syscall
+
 irq_enter:
 	@ Fixup user saved pc (irq handler sets lr = pc+4)
 	sub   lr, lr, #4
@@ -116,12 +117,13 @@ irq_enter:
 	@ We've got r0, so adjust the stack past it
 	add   sp, sp, #4
 
+	@ Restore kernel registers
+	pop {r4 - r11, lr}
+
 	@ handle irq
 	@ void task_irq(void)
-	bl    task_irq
+	b    task_irq
 
-	@ Restore kernel context
-	pop {r4 - r11, pc}
 
 @ PRM reset.
 .global prm_reset
