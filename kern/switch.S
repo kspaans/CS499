@@ -29,33 +29,26 @@ irq_stack:
 init_cpumodes:
 
 	@ setup
-	mrs   r0, cpsr
-	bic   r0, r0, #0x40	@ 0x40=FIQ disable
-	bic   r1, r0, #ARM_MODE_MASK
-	ldr   r3, =irq_stack
+	ldr   r0, =irq_stack
 
 	@ FIQ mode
-	orr   r2, r1, #ARM_MODE_FIQ
-	msr   cpsr_c, r2
-	mov   sp, r3
+	cps   #ARM_MODE_FIQ
+	mov   sp, r0
 
 	@ IRQ mode
-	orr   r2, r1, #ARM_MODE_IRQ
-	msr   cpsr_c, r2
-	mov   sp, r3
+	cps   #ARM_MODE_IRQ
+	mov   sp, r0
 
 	@ ABT mode
-	orr   r2, r1, #ARM_MODE_ABT
-	msr   cpsr_c, r2
-	mov   sp, r3
+	cps   #ARM_MODE_ABT
+	mov   sp, r0
 
 	@ UND mode
-	orr   r2, r1, #ARM_MODE_UND
-	msr   cpsr_c, r2
-	mov   sp, r3
+	cps   #ARM_MODE_UND
+	mov   sp, r0
 
 	@ Return to supervisor mode
-	msr   cpsr_c, r0
+	cps   #ARM_MODE_SVC
 	bx    lr
 
 .global task_activate
