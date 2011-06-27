@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
-PREFIX="../kern/obj/"; mkdir -p $PREFIX
-DEPS=(backtrace.o interrupt.o kmalloc.o main.o printk.o switch.o syscall.o task.o ksyms.o info.o)
-DEPS=${DEPS[@]/#/${PREFIX}/}
+DEPS=(kern/backtrace.c kern/interrupt.c kern/kmalloc.c
+      kern/main.c kern/printk.c kern/switch.S kern/syscall.S
+      kern/task.c kern/ksyms.c kern/info.c)
 
-../utils/archive $3 ${DEPS}
+../utils/archive $3 ${DEPS[@]/#/../}

@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
-PREFIX="../lib/obj/"; mkdir -p $PREFIX
-DEPS=(lib.o memcpy.o strlen.o memset.o printf.o string.o msg.o iovec.o)
-DEPS=${DEPS[@]/#/${PREFIX}/}
+DEPS=(lib/lib.c lib/memcpy.S lib/strlen.S
+      lib/memset.S lib/printf.c lib/string.c
+      lib/msg.c lib/iovec.c)
 
-../utils/archive $3 ${DEPS}
+../utils/archive $3 ${DEPS[@]/#/../}

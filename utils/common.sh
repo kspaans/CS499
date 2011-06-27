@@ -13,10 +13,11 @@ fi
 
 if test -e "$useclang"; then
   XPREFIX=arm-linux-gnueabi-
-  XCC="$CLANG -ccc-host-triple armv7-linux-gnu -mfloat-abi=soft"
-  XLD=${XPREFIX}gcc
+  XCC="$CLANG -ccc-host-triple armv7-linux-gnu -mfloat-abi=soft -integrated-as"
+  XLD="arm-eabi-gcc -Wl,--plugin,/export/scratch/mspang/cross/lib/LLVMgold.so"
   XAS=${XPREFIX}gcc
-  XAR=${XPREFIX}ar
+  XAR="${XPREFIX}ar --plugin /export/scratch/mspang/cross/lib/LLVMgold.so"
+  LLVM_AS=$(dirname $CLANG)/llvm-as
 else
   XPREFIX=arm-linux-gnueabi-
   XCC=${XPREFIX}gcc

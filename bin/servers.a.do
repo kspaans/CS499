@@ -1,8 +1,6 @@
 #!/bin/bash -e
 
-PREFIX="../servers/obj/"; mkdir -p $PREFIX
-DEPS=(clock.o console.o net.o fs.o genesis.o)
-DEPS=${DEPS[@]/#/${PREFIX}/}
+DEPS=(servers/clock.c servers/console.c servers/net.c
+      servers/fs.c servers/genesis.c)
 
-../utils/archive $3 ${DEPS}
-
+../utils/archive $3 ${DEPS[@]/#/../}

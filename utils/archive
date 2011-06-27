@@ -1,9 +1,22 @@
 #!/bin/bash -e
 
-archive=$1; shift
 utils=$(dirname $0)
-
-redo-ifchange $0 $utils/common.sh "$@"
+redo-ifchange $0 $utils/common.sh
 source $utils/common.sh
 
-${XAR} crs "$archive" "$@"
+archive=$1; shift
+
+for arg; do
+  DEPS=(${DEPS[@]} $(dirname $arg)/obj/$(basename $arg))
+done
+
+DEPS=(${DEPS[@]/.c/.o})
+DEPS=(${DEPS[@]/.S/.o})
+
+for dep in ${DEPS[@]}; do
+  mkdir -p $(dirname $dep)
+done
+
+redo-ifchange ${DEPS[@]}
+
+${XAR} crs $archive ${DEPS[@]}

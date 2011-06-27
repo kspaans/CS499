@@ -1,7 +1,6 @@
 #!/bin/bash -e
 
-PREFIX="../apps/obj/"; mkdir -p $PREFIX
-DEPS=(gameoflife.o init.o)
-DEPS=${DEPS[@]/#/${PREFIX}/}
+DEPS=(apps/gameoflife.c
+      apps/init.c)
 
-../utils/archive $3 ${DEPS}
+../utils/archive $3 ${DEPS[@]/#/../}

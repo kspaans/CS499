@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
-PREFIX="../drivers/obj/"; mkdir -p $PREFIX
-DEPS=(eth.o intc.o leds.o timers.o uart.o wd_timer.o gpio.o cpu.o mmu.o)
-DEPS=${DEPS[@]/#/${PREFIX}/}
+DEPS=(drivers/eth.c drivers/intc.c drivers/leds.c
+      drivers/timers.c drivers/uart.c drivers/wd_timer.c
+      drivers/gpio.c drivers/cpu.S drivers/mmu.c)
 
-../utils/archive $3 ${DEPS}
+../utils/archive $3 ${DEPS[@]/#/../}

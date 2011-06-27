@@ -1,12 +1,10 @@
 #!/bin/bash -e
 
-cd ..
+DEPS=(kern/obj/omap3.o bin/ksyms.o
+      bin/kern.a bin/apps.a
+      bin/servers.a bin/drivers.a
+      bin/libs.a)
 
-DEPS="kern/obj/omap3.o bin/ksyms.o
-      bin/kern.a bin/apps.a bin/servers.a bin/drivers.a bin/libs.a"
-LDLIBS="-lgcc"
+mkdir -p ../kern/obj
 
-mkdir -p kern/obj
-
-redo-ifchange ${DEPS}
-utils/link bin/$3 ${DEPS} ${LDLIBS}
+../utils/link $3 ${DEPS[@]/#/../}

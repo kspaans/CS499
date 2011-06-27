@@ -6,6 +6,6 @@ source $utils/common.sh
 
 out=$1; shift
 
-redo-ifchange $utils/../omap3.ld
+redo-ifchange $@ $utils/../omap3.ld
 
-${XLD} ${CFLAGS} ${LDFLAGS} -T $utils/../omap3.ld -o $out $@
+${XLD} ${CFLAGS} ${LDFLAGS} -T $utils/../omap3.ld -o $out $@ $LDLIBS
