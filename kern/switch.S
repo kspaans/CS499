@@ -8,11 +8,14 @@
 @ int get_user_psr(void)
 get_user_psr:
 	mrs   r0, cpsr
+
 	@ Set psr to user mode
 	bic   r0, r0, #0x1f
 	orr   r0, r0, #0x10
+
 	@ Enable IRQs, enable FIQs
 	bic   r0, r0, #0xc0	@ 0x80=IRQ disable, 0x40=FIQ disable
+
 	@ Clear condition codes
 	bic   r0, r0, #0xf0000000
 	bx    lr
@@ -24,26 +27,33 @@ irq_stack:
 .type init_cpumodes, %function
 @ void init_cpumodes(void)
 init_cpumodes:
+
+	@ setup
 	mrs   r0, cpsr
 	bic   r0, r0, #0x40	@ 0x40=FIQ disable
 	bic   r1, r0, #ARM_MODE_MASK
 	ldr   r3, =irq_stack
+
 	@ FIQ mode
 	orr   r2, r1, #ARM_MODE_FIQ
 	msr   cpsr_c, r2
 	mov   sp, r3
+
 	@ IRQ mode
 	orr   r2, r1, #ARM_MODE_IRQ
 	msr   cpsr_c, r2
 	mov   sp, r3
+
 	@ ABT mode
 	orr   r2, r1, #ARM_MODE_ABT
 	msr   cpsr_c, r2
 	mov   sp, r3
+
 	@ UND mode
 	orr   r2, r1, #ARM_MODE_UND
 	msr   cpsr_c, r2
 	mov   sp, r3
+
 	@ Return to supervisor mode
 	msr   cpsr_c, r0
 	bx    lr
@@ -54,52 +64,52 @@ init_cpumodes:
 task_activate:
 
 	@ Store all of our non-temporary registers, plus r0 (task)
-	push {r0, r4 - r11, r14}
+	push  {r0, r4 - r11, r14}
 
-	@ Load spsr
+	@ Load user psr
 	ldr   r1, [r0, #64]
 	msr   spsr_cxsf, r1
 
-	@ Load usr pc
-	ldr lr, [r0, #60]
+	@ Load user pc
+	ldr   lr, [r0, #60]
 
 	@ Load user registers
 	ldmia r0, {r0 - r14}^
 
 	@ Exception return
-	movs pc, lr
+	movs  pc, lr
 
 swi_enter:
-	@ Stack usr_pc, load task pointer
+	@ Stack user pc, load task pointer
 	str   lr, [sp, #-4]!
 	ldr   lr, [sp, #4]
 
 	@ Stash user registers
 	stmia lr, {r0 - r14}^
 
-	@ Store usr psr
+	@ Store user psr
 	mrs   r0, spsr
 	str   r0, [lr, #64]
 
-	@ Store usr pc
+	@ Store user pc
 	ldr   r0, [sp], #4
 	str   r0, [lr, #60]
 
 	@ Restore kernel registers
-	pop {r0, r4 - r11, lr}
+	pop   {r0, r4 - r11, lr}
 
 	@ handle syscall (tail call)
 	@ void task_syscall(struct task *task)
-	b    task_syscall
+	b     task_syscall
 
 irq_enter:
-	@ Fixup user saved pc (irq handler sets lr = pc+4)
+	@ Fixup user saved pc (irq handler sets lr = pc + 4)
 	sub   lr, lr, #4
 
 	@ Stack registers (r0 - r1 for scratch, lr since its only available in this mode)
 	stmia sp, {r0 - r1, lr}
 
-	@ Grab irq stack, usr psr
+	@ Copy irq stack, user psr to shared registers
 	mov   r0, sp
 	mrs   r1, spsr
 
@@ -111,10 +121,10 @@ irq_enter:
 	@ Grab task struct from r0
 	ldr   lr, [sp], #4
 
-	@ Store usr psr
+	@ Store user psr
 	str   r1, [lr, #64]
 
-	@ Store usr pc
+	@ Store user pc
 	ldr   r1, [r0, #8]
 	str   r1, [lr, #60]
 
@@ -125,11 +135,11 @@ irq_enter:
 	stmia lr, {r0 - r14}^
 
 	@ Restore kernel registers
-	pop {r4 - r11, lr}
+	pop   {r4 - r11, lr}
 
 	@ handle irq
 	@ void task_irq(void)
-	b    task_irq
+	b     task_irq
 
 @ PRM reset.
 .global prm_reset
