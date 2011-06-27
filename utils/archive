@@ -19,4 +19,4 @@ done
 
 redo-ifchange ${DEPS[@]}
 
-${XAR} crs $archive ${DEPS[@]}
+${XAR} -crs $archive ${DEPS[@]}

@@ -2,29 +2,32 @@ top=$utils/..
 useclang=$top/bin/use-clang
 
 if test -e "$useclang"; then
-  if test -z "$CLANG"; then
-    echo >&2 "set \$CLANG to your clang"
-    exit 1
-  fi
   redo-ifchange $useclang
 else
   redo-ifcreate $useclang
 fi
 
+XPREFIX=arm-linux-gnueabi-
+XCC=${XPREFIX}gcc
+XLD=${XPREFIX}gcc
+XAS=${XPREFIX}gcc
+XAR=${XPREFIX}ar
+
 if test -e "$useclang"; then
-  XPREFIX=arm-linux-gnueabi-
-  XCC="$CLANG -ccc-host-triple armv7-linux-gnu -mfloat-abi=soft -integrated-as"
-  #XCC+=" -emit-llvm"
-  XLD="arm-eabi-gcc -Wl,--plugin,/export/scratch/mspang/cross/lib/LLVMgold.so"
-  XAS=${XPREFIX}gcc
-  XAR="${XPREFIX}ar --plugin /export/scratch/mspang/cross/lib/LLVMgold.so"
-  LLVM_AS=$(dirname $CLANG)/llvm-as
-else
-  XPREFIX=arm-linux-gnueabi-
-  XCC=${XPREFIX}gcc
-  XLD=${XPREFIX}gcc
-  XAS=${XPREFIX}gcc
-  XAR=${XPREFIX}ar
+  # comment for old-style compile
+  emit_llvm=-emit-llvm
+
+  LLPREFIX=/export/scratch/mspang/cross
+  LLPLUGIN=$LLPREFIX/lib/LLVMgold.so
+  XCC="$LLPREFIX/bin/clang
+	-ccc-host-triple armv7-linux-gnu
+	-mfloat-abi=soft
+	$emit_llvm"
+  XLD="$LLPREFIX/bin/arm-eabi-gcc
+	-Wl,--plugin,$LLPLUGIN"
+  XAR="$LLPREFIX/bin/arm-eabi-ar
+	--plugin $LLPLUGIN"
+  LAS="$LLPREFIX/bin/llvm-as"
 fi
 
 # Standard options

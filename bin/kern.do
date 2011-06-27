@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-DEPS=(kern/obj/omap3.o bin/ksyms.o
+DEPS=(kern/obj/omap3.o kern/obj/compat.o bin/ksyms.o
       bin/kern.a bin/apps.a
       bin/servers.a bin/drivers.a
       bin/libs.a)

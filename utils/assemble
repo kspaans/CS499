@@ -8,9 +8,8 @@ out=$1; in=$2; deps=$out.deps.tmp
 
 asm=${in/obj\//}.S
 if test ! -e "$asm"; then
-  if test -e "$useclang" -a ! -e "$in.s.do"; then
-    #asm=$in.ll
-    asm=$in.s
+  if test -e "$useclang" -a ! -e "$in.s.do" -a -n "$emit_llvm"; then
+    asm=$in.ll
   else
     asm=$in.s
   fi
@@ -20,7 +19,7 @@ redo-ifchange $asm
 
 case $asm in
   *.ll)
-    ${LLVM_AS} -o $out $asm
+    ${LAS} -o $out $asm
     ;;
   *.s)
     ${XAS} -c -o $out $asm
