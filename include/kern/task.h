@@ -28,10 +28,9 @@ extern int nondaemon_count;
 
 /* NOTE: Changes to the regs stucture MUST be reflected in switch.S. */
 struct regs {
-	/* The strange layout of this struct is due to the construction of switch.S.
+	/* The layout of this struct is due to the construction of switch.S.
 	   See that file for the gory details. */
-	int r0, r1, pc;
-	int r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr;
+	int r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr, pc;
 	int psr;
 };
 

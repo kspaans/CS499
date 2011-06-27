@@ -62,33 +62,30 @@ task_activate:
 	ldr   r1, [r0, #64]
 	msr   spsr_cxsf, r1
 
-	@ Load user registers
-	add   r1, r0, #12
-	ldmia r1, {r2 - r14}^
+	@ Load usr pc
+	ldr lr, [r0, #60]
 
-	@ No banked register access after this, so no nop required
-	@ Load pc and spsr
-	ldmia r0, {r0 - r1, pc}^
+	@ Load user registers
+	ldmia r0, {r0 - r14}^
+
+	@ Exception return
+	movs pc, lr
 
 swi_enter:
-
-	@ Give ourselves some temporary room
-	stmdb sp, {r0, r1}
-
-	@ Grab task struct from r0
-	ldr   r0, [sp]
+	@ Stack usr_pc, load task pointer
+	str   lr, [sp, #-4]!
+	ldr   lr, [sp, #4]
 
 	@ Stash user registers
-	add   r1, r0, #12	@ skip r0, r1, pc
-	stmia r1, {r2 - r14}^
+	stmia lr, {r0 - r14}^
 
-	@ Store spsr
-	mrs   r1, spsr
-	str   r1, [r0, #64]
+	@ Store usr psr
+	mrs   r0, spsr
+	str   r0, [lr, #64]
 
-	@ Stash user r0, r1 and return address
-	ldmdb sp, {r2 - r3}
-	stmia r0, {r2 - r3, lr}
+	@ Store usr pc
+	ldr   r0, [sp], #4
+	str   r0, [lr, #60]
 
 	@ Restore kernel registers
 	pop {r0, r4 - r11, lr}
@@ -98,40 +95,36 @@ swi_enter:
 	b    task_syscall
 
 irq_enter:
-
 	@ Fixup user saved pc (irq handler sets lr = pc+4)
 	sub   lr, lr, #4
 
-	@ Stash registers (r0, r1 for scratch, lr since its only available in this mode)
+	@ Stack registers (r0 - r1 for scratch, lr since its only available in this mode)
 	stmia sp, {r0 - r1, lr}
 
-	@ Grab spsr
+	@ Grab irq stack, usr psr
+	mov   r0, sp
 	mrs   r1, spsr
 
 	@ Warp to supervisor mode
-	mrs   r0, cpsr
-	@bic   r0, r0, #0x1f @ Unnecessary because we are in IRQ or FIQ mode (0x11 or 0x12).
-	orr   r0, r0, #0x13
-	msr   cpsr_c, r0
+	mrs   lr, cpsr
+	eor   lr, lr, #(ARM_MODE_IRQ^ARM_MODE_SVC)
+	msr   cpsr_c, lr
 
 	@ Grab task struct from r0
-	ldr   r0, [sp]
+	ldr   lr, [sp], #4
 
-	@ Store spsr
-	str   r1, [r0, #64]
+	@ Store usr psr
+	str   r1, [lr, #64]
+
+	@ Store usr pc
+	ldr   r1, [r0, #8]
+	str   r1, [lr, #60]
+
+	@ Reload r0 - r1
+	ldmia r0, {r0 - r1}
 
 	@ Stash user registers
-	add   r1, r0, #12	@ skip r0, r1, pc
-	stmia r1, {r2 - r14}^
-	nop	@ needed to access banked regs after stm ^
-
-	@ Stash user r0, r1 and return address
-	ldr   r2, irq_stack_ptr
-	ldmia r2, {r3 - r5} @ user r0, r1 and pc (saved lr in irq mode)
-	stmia r0, {r3 - r5}
-
-	@ We've got r0, so adjust the stack past it
-	add   sp, sp, #4
+	stmia lr, {r0 - r14}^
 
 	@ Restore kernel registers
 	pop {r4 - r11, lr}
