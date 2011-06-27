@@ -66,18 +66,14 @@ task_activate:
 	@ Store all of our non-temporary registers, plus r0 (task)
 	push  {r0, r4 - r11, r14}
 
-	@ Load user psr
-	ldr   r1, [r0, #64]
-	msr   spsr_cxsf, r1
-
-	@ Load user pc
-	ldr   lr, [r0, #60]
+	@ Save offset of {pc, psr} for exception return
+	add   lr, r0, #60
 
 	@ Load user registers
 	ldmia r0, {r0 - r14}^
 
 	@ Exception return
-	movs  pc, lr
+	rfeia lr
 
 swi_enter:
 	@ Stack user pc, load task pointer
