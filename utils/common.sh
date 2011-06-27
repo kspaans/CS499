@@ -15,7 +15,7 @@ XAR=${XPREFIX}ar
 
 if test -e "$useclang"; then
   # comment for old-style compile
-  emit_llvm=-emit-llvm
+  #emit_llvm=-emit-llvm
 
   LLPREFIX=/export/scratch/mspang/cross
   LLPLUGIN=$LLPREFIX/lib/LLVMgold.so
