@@ -8,4 +8,20 @@ out=$1; in=$2
 
 redo-ifchange $in
 
-${XAS} -c ${CFLAGS} -o $out $in
+case $in in
+	*.S)
+		deps=$out.deps.tmp
+		;;
+	*.s)
+		deps=
+		;;
+esac
+
+if test -n "$deps"; then
+	${XAS} -c ${CFLAGS} -MD -MF $deps -o $out $in
+
+	DEPS=$(sed -e "s?^$out: ??" -e "N;" -e 's/\\//g' < $deps)
+	redo-ifchange $DEPS
+else
+	${XAS} -c ${CFLAGS} -o $out $in
+fi
