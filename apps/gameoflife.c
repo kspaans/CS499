@@ -11,28 +11,49 @@
 
 #define X_SIZE 10//0
 #define Y_SIZE 10//0
+#define HASH_SIZE 101
 
 #define UDP_SRCPORT 8889
 #define UDP_DSTPORT UDP_SRCPORT
 #define GUMSTIX_CS IP(10, 0, 0, 1)
 
 /*
+ * Simple hash for the Game Of Life that puts all the weight on the low 16 bits
+ * of the coordinates, effectively assigning unique hashes within a 64k x 64k
+ * field.
+ */
+static uint32_t life_hashfunc(uint32_t x, uint32_t y)
+{
+	x &= 0x0000FFFF;
+	x <<= 16;
+	y &= 0x0000FFFF;
+	return x | y;
+}
+
+/*
  * Put (0,0) cell in the upper-left
  */
-static void display(uint8_t **field, size_t x, size_t y)
+static void display(hashtable *field, size_t x, size_t y)
 {
+	void *state;
 	for (size_t i = 0; i < x; i += 1) {
 		for (size_t j = 0; j < y; j += 1) {
-			printf("%d ", field[i][j]);
+			if (hashtable_get(field, life_hashfunc(i, j), &state) == HT_NOKEY) {
+				printf("0 ");
+			} else {
+				printf("1 ");
+			}
 		}
 		printf("\n");
 	}
 }
 
-static void display_json(uint8_t **field, size_t x, size_t y)
+/*
+static void display_json(hashtable *field, size_t x, size_t y)
 {
-	char buf[X_SIZE * Y_SIZE * 4] = {}; /* should be enough for the JSON */
+	char buf[X_SIZE * Y_SIZE * 4] = {}; // should be enough for the JSON
 	size_t idx = 0;
+	void *state;
 
 	sprintf(buf, "[");
 	idx += 1;
@@ -48,7 +69,11 @@ static void display_json(uint8_t **field, size_t x, size_t y)
 				sprintf(buf + idx, ",");
 				idx += 1;
 			}
-			sprintf(buf + idx, "%d", field[i][j]);
+			if (hashtable_get(field, life_hashfunc(i, j), &state) == HT_NOKEY) {
+				sprintf(buf + idx, "0");
+			} else {
+				sprintf(buf + idx, "1");
+			}
 			idx += 1; // all values should be 0 or 1
 		}
 		sprintf(buf + idx, "]");
@@ -58,15 +83,17 @@ static void display_json(uint8_t **field, size_t x, size_t y)
 	idx += 1;
 	send_udp(UDP_SRCPORT, GUMSTIX_CS, UDP_DSTPORT, buf, idx);
 }
+*/
 
 /*
  * Use wrap-around semantics for the edges of the field
  */
-static uint8_t surround(uint8_t **field, size_t curx, size_t cury, size_t x, size_t y)
+static uint8_t surround(hashtable *field, size_t curx, size_t cury, size_t x, size_t y)
 {
-//	uint8_t count = 0;
+	uint8_t count = 0;
 	int8_t  leftmost = curx - 1;
 	int8_t  topmost  = cury - 1;
+	void *state;
 
 	if (leftmost < 0) {
 		leftmost = x - 1;
@@ -75,38 +102,37 @@ static uint8_t surround(uint8_t **field, size_t curx, size_t cury, size_t x, siz
 		topmost = y - 1;
 	}
 
-	return (field[leftmost][topmost] +
-		field[leftmost][(topmost + 1) % y] +
-		field[leftmost][(topmost + 2) % y] +
-		field[(leftmost + 1) % x][topmost] +
-		field[(leftmost + 1) % x][(topmost + 2) % y] +
-		field[(leftmost + 2) % x][topmost] +
-		field[(leftmost + 2) % x][(topmost + 1) % y] +
-		field[(leftmost + 2) % x][(topmost + 2) % y]);
+	if (hashtable_get(field, life_hashfunc(leftmost, topmost), &state) != HT_NOKEY) { ++count; }
+	if (hashtable_get(field, life_hashfunc(leftmost, (topmost + 1) % y), &state) != HT_NOKEY) { ++count; }
+	if (hashtable_get(field, life_hashfunc(leftmost, (topmost + 2) % y), &state) != HT_NOKEY) { ++count; }
+	if (hashtable_get(field, life_hashfunc((leftmost + 1) % x, topmost), &state) != HT_NOKEY) { ++count; }
+	if (hashtable_get(field, life_hashfunc((leftmost + 1) % x, (topmost + 2) % y), &state) != HT_NOKEY) { ++count; }
+	if (hashtable_get(field, life_hashfunc((leftmost + 2) % x, topmost), &state) != HT_NOKEY) { ++count; }
+	if (hashtable_get(field, life_hashfunc((leftmost + 2) % x, (topmost + 1) % y), &state) != HT_NOKEY) { ++count; }
+	if (hashtable_get(field, life_hashfunc((leftmost + 2) % x, (topmost + 2) % y), &state) != HT_NOKEY) { ++count; }
+	return count;
 }
 
-static void age(uint8_t **field, size_t x, size_t y)
+/*
+ * A little bit gross, we need access to the hash table store so that it can be
+ * copied.
+ */
+static void age(hashtable *field, struct ht_item *uni, size_t x, size_t y)
 {
-	uint8_t copy[x][y];
-	uint8_t *cptrs[x];
+	struct ht_item copy[HASH_SIZE];
+	hashtable hcopy;
 	uint8_t count;
 
-	for (size_t i = 0; i < x; i += 1) {
-		cptrs[i] = copy[i];
-	}
-	for (size_t i = 0; i < x; i += 1) {
-		for (size_t j = 0; j < y; j += 1) {
-			cptrs[i][j] = field[i][j];
-		}
-	}
+	memcpy(copy, uni, sizeof(copy));
+	memcpy(&hcopy, field, sizeof(hashtable));
 
 	for (size_t i = 0; i < x; i += 1) {
 		for (size_t j = 0; j < y; j += 1) {
-			count = surround(cptrs, i, j, x, y);
+			count = surround(&hcopy, i, j, x, y);
 			if (count > 3 || count < 2) {
-				field[i][j] = 0; // cell dies
+				hashtable_del(field, life_hashfunc(i, j)); // cell dies
 			} else if (count == 3) {
-				field[i][j] = 1; // cell is born
+				hashtable_put(field, life_hashfunc(i, j), (void *) 1); // cell is born
 			}
 		}
 	}
@@ -114,16 +140,18 @@ static void age(uint8_t **field, size_t x, size_t y)
 
 void gameoflife(void)
 {
-	uint8_t *field[X_SIZE];
-	uint8_t universe[X_SIZE][Y_SIZE] = {};
+	//uint8_t *field[X_SIZE];
+	//uint8_t universe[X_SIZE][Y_SIZE] = {};
+	hashtable field;
+	struct ht_item universe[HASH_SIZE];
 
-	for (size_t i = 0; i < X_SIZE; i += 1) {
-		field[i] = universe[i];
-	}
+	hashtable_init(&field, universe, HASH_SIZE, NULL, NULL);
 	// start it with a glider
-	field[0][1] = 1;
-	field[1][2] = 1;
-	field[2][0] = field[2][1] = field[2][2] = 1;
+	hashtable_put(&field, life_hashfunc(0, 1), (void *)1); //field[0][1] = 1;
+	hashtable_put(&field, life_hashfunc(1, 2), (void *)1); //field[1][2] = 1;
+	hashtable_put(&field, life_hashfunc(2, 0), (void *)1); //field[2][0] = field[2][1] = field[2][2] = 1;
+	hashtable_put(&field, life_hashfunc(2, 1), (void *)1);
+	hashtable_put(&field, life_hashfunc(2, 2), (void *)1);
 
 	/*
 	// the 5x5 infinite pattern
@@ -146,30 +174,8 @@ void gameoflife(void)
 
 	for (int i = 0; i < 50; i += 1) {
 		printf("Generation %d\n", i);
-		display_json(field, X_SIZE, Y_SIZE);
-		//display(field, X_SIZE, Y_SIZE);
-		age(field, X_SIZE, Y_SIZE);
+		//display_json(field, X_SIZE, Y_SIZE);
+		display(&field, X_SIZE, Y_SIZE);
+		age(&field, universe, X_SIZE, Y_SIZE);
 	}
-	return;
-	display(field, X_SIZE, Y_SIZE);
-	age(field, X_SIZE, Y_SIZE);
-	printf("-- -- -- --\n");
-
-	display(field, X_SIZE, Y_SIZE);
-	display_json(field, X_SIZE, Y_SIZE);
-	age(field, X_SIZE, Y_SIZE);
-	printf("-- -- -- --\n");
-
-	display(field, X_SIZE, Y_SIZE);
-	display_json(field, X_SIZE, Y_SIZE);
-	age(field, X_SIZE, Y_SIZE);
-	printf("-- -- -- --\n");
-
-	display(field, X_SIZE, Y_SIZE);
-	display_json(field, X_SIZE, Y_SIZE);
-	age(field, X_SIZE, Y_SIZE);
-	printf("-- -- -- --\n");
-
-	display(field, X_SIZE, Y_SIZE);
-	display_json(field, X_SIZE, Y_SIZE);
 }
