@@ -4,24 +4,18 @@ utils=$(dirname $0)
 redo-ifchange $0 $utils/common.sh
 source $utils/common.sh
 
-out=$1; in=$2
+out=$1; in=$2; deps=$out.deps.tmp
 
 redo-ifchange $in
 
+${XAS} -c ${CFLAGS} -MD -MF $deps -o $out $in
+
+# deps file only created if the preprocessor is run
 case $in in
-	*.S)
-		deps=$out.deps.tmp
-		;;
-	*.s)
-		deps=
-		;;
+  *.S)
+    DEPS=$(sed -e "s?^$out: ??" -e "N;" -e 's/\\//g' < $deps)
+    redo-ifchange $DEPS
+    ;;
+  *.s)
+  ;;
 esac
-
-if test -n "$deps"; then
-	${XAS} -c ${CFLAGS} -MD -MF $deps -o $out $in
-
-	DEPS=$(sed -e "s?^$out: ??" -e "N;" -e 's/\\//g' < $deps)
-	redo-ifchange $DEPS
-else
-	${XAS} -c ${CFLAGS} -o $out $in
-fi
