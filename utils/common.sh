@@ -26,7 +26,7 @@ else
 fi
 
 # Standard options
-CFLAGS="-pipe -Wall -Wextra -I include -std=gnu99 -O2"
+CFLAGS="-pipe -Wall -Wextra -I include -std=gnu99 -O3"
 
 # Debug options
 CFLAGS+=" -Werror"
