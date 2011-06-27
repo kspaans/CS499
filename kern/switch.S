@@ -81,21 +81,17 @@ swi_enter:
 	@ Stash user registers
 	add   r1, r0, #12	@ skip r0, r1, pc
 	stmia r1, {r2 - r14}^
-	nop	@ needed to access banked regs after stm ^
-
-	@ Stash user r0, r1 and return address
-	ldmdb sp, {r2 - r3}
-	stmia r0, {r2 - r3, lr}
-
-	@ We've got r0, so adjust the stack past it
-	add   sp, sp, #4
 
 	@ Store spsr
 	mrs   r1, spsr
 	str   r1, [r0, #64]
 
+	@ Stash user r0, r1 and return address
+	ldmdb sp, {r2 - r3}
+	stmia r0, {r2 - r3, lr}
+
 	@ Restore kernel registers
-	pop {r4 - r11, lr}
+	pop {r0, r4 - r11, lr}
 
 	@ handle syscall (tail call)
 	@ void task_syscall(struct task *task)
