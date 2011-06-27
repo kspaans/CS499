@@ -66,7 +66,7 @@ task_activate:
 	@ Store all of our non-temporary registers, plus r0 (task)
 	push  {r0, r4 - r11, r14}
 
-	@ Save offset of {pc, psr} for exception return
+	@ Calculate offset of {pc, psr} for exception return
 	add   lr, r0, #60
 
 	@ Load user registers
@@ -102,36 +102,25 @@ irq_enter:
 	@ Fixup user saved pc (irq handler sets lr = pc + 4)
 	sub   lr, lr, #4
 
-	@ Stack registers (r0 - r1 for scratch, lr since its only available in this mode)
-	stmia sp, {r0 - r1, lr}
+	@ Save return state to SVC stack
+	srsdb sp!, #ARM_MODE_SVC
 
-	@ Copy irq stack, user psr to shared registers
-	mov   r0, sp
-	mrs   r1, spsr
+	@ Warp to SVC mode
+	cps   #ARM_MODE_SVC
 
-	@ Warp to supervisor mode
-	mrs   lr, cpsr
-	eor   lr, lr, #(ARM_MODE_IRQ^ARM_MODE_SVC)
-	msr   cpsr_c, lr
+	@ Grab task struct from stack
+	ldr   lr, [sp, #8]
 
-	@ Grab task struct from r0
-	ldr   lr, [sp], #4
-
-	@ Store user psr
-	str   r1, [lr, #64]
-
-	@ Store user pc
-	ldr   r1, [r0, #8]
-	str   r1, [lr, #60]
-
-	@ Reload r0 - r1
-	ldmia r0, {r0 - r1}
-
-	@ Stash user registers
+	@ Save user registers
 	stmia lr, {r0 - r14}^
 
+	@ Save user pc, psr
+	pop   {r0 - r1}
+	str   r0, [lr, #60]
+	str   r1, [lr, #64]
+
 	@ Restore kernel registers
-	pop   {r4 - r11, lr}
+	pop   {r0, r4 - r11, lr}
 
 	@ handle irq
 	@ void task_irq(void)
