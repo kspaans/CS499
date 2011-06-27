@@ -46,7 +46,7 @@ CFLAGS+=" -ffreestanding"
 if test -n "$DEBUG"; then
 	CFLAGS+=' -g -DDEBUG -Wno-unused-function -Wno-unused-parameter'
 else
-	CFLAGS+=' -Wno-unused-parameter -Wmissing-prototypes -Wmissing-declarations -Wold-style-definition -Wstrict-prototypes -Winit-self -Wstrict-overflow -Wfloat-equal -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-format-attribute -Wredundant-decls -Wnested-externs -Winline -Wvolatile-register-var -Wdisabled-optimization'
+	CFLAGS+=' -Wno-unused-parameter -Wmissing-prototypes -Wmissing-declarations -Wold-style-definition -Wstrict-prototypes -Winit-self -Wstrict-overflow -Wfloat-equal -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-format-attribute -Wredundant-decls -Wnested-externs -Wvolatile-register-var -Wdisabled-optimization'
 fi
 
 CFLAGS+=" -DBUILDUSER=$USER"
@@ -58,7 +58,7 @@ LDFLAGS="-nostdlib"
 LDFLAGS+=" -n"
 
 # Build id
-LDFLAGS+=" --build-id=sha1"
+LDFLAGS+=" -Wl,--build-id=sha1"
 
 # Link libgcc for compiler-generated function calls
 LDLIBS+=" -lgcc"

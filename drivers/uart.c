@@ -93,8 +93,7 @@ void uart_putc(char c) {
 }
 
 void uart_rx_sts_err(void) {
-	volatile uint32_t *flags, *data;
-	flags = (uint32_t *)(UART3_PHYS_BASE + UART_LSR_OFFSET);
+	volatile uint32_t *data;
 	data = (uint32_t *)(UART3_PHYS_BASE + UART_RHR_OFFSET);
 
 	if (read32(UART3_PHYS_BASE + UART_LSR_OFFSET) & UART_BI_MASK) {

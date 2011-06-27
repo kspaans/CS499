@@ -58,24 +58,6 @@ __attribute__((unused)) static void flash_leds(void) {
 	}
 }
 
-#include <machine.h>
-#include <drivers/uart.h>
-__attribute__((unused)) static void console_loop(void) {
-	volatile uint32_t *flags, *data;
-	flags = (uint32_t *)(UART3_PHYS_BASE + UART_LSR_OFFSET);
-	data = (uint32_t *)(UART3_PHYS_BASE + UART_RHR_OFFSET);
-
-	printf("Press q to quit.\n");
-	for(;;) {
-		if(*flags & UART_DRS_MASK) {
-			char c = getchar();
-			if(c == 'q')
-				return;
-		}
-		yield();
-	}
-}
-
 #include <lib.h>
 #include <string.h>
 #include <timer.h>
@@ -382,7 +364,6 @@ void init_task(void) {
 	ASSERTNOERR(spawn(0, srrbench_task, 0));
 
 	ASSERTNOERR(spawn(4, flash_leds, SPAWN_DAEMON));
-	//ASSERTNOERR(spawn(4, console_loop, 0));
 	ASSERTNOERR(spawn(3, genesis_task, SPAWN_DAEMON));
 	ASSERTNOERR(spawn(5, shell, 0));
 	//ASSERTNOERR(spawn(6, gameoflife, 0));
