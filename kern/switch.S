@@ -19,8 +19,6 @@ get_user_psr:
 
 irq_stack:
 	.space 16
-irq_stack_ptr:
-	.word irq_stack
 
 .global init_cpumodes
 .type init_cpumodes, %function
@@ -29,7 +27,7 @@ init_cpumodes:
 	mrs   r0, cpsr
 	bic   r0, r0, #0x40	@ 0x40=FIQ disable
 	bic   r1, r0, #ARM_MODE_MASK
-	ldr   r3, irq_stack_ptr
+	ldr   r3, =irq_stack
 	@ FIQ mode
 	orr   r2, r1, #ARM_MODE_FIQ
 	msr   cpsr_c, r2
