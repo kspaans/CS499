@@ -1,18 +1,27 @@
 #ifndef KERN_SYSCALLNO_H
 #define KERN_SYSCALLNO_H
 
-#define SYS_SPAWN      1
-#define SYS_GETTID     2
-#define SYS_GETPTID    3
-#define SYS_YIELD      4
-#define SYS_EXIT       5
-#define SYS_SEND       6
-#define SYS_RECV       7
-#define SYS_WAITEVENT  8
-#define SYS_TASKSTAT   9
-#define SYS_SUSPEND    10
-#define SYS_CHANNEL    11
-#define SYS_CLOSE      12
-#define SYS_DUP        13
+#ifndef __ASSEMBLER__
+#define _SYSCALLNO(x) x,
+enum syscallno {
+#endif
+
+    _SYSCALLNO(SYS_SPAWN)
+    _SYSCALLNO(SYS_GETTID)
+    _SYSCALLNO(SYS_GETPTID)
+    _SYSCALLNO(SYS_YIELD)
+    _SYSCALLNO(SYS_EXIT)
+    _SYSCALLNO(SYS_SEND)
+    _SYSCALLNO(SYS_RECV)
+    _SYSCALLNO(SYS_WAITEVENT)
+    _SYSCALLNO(SYS_TASKSTAT)
+    _SYSCALLNO(SYS_SUSPEND)
+    _SYSCALLNO(SYS_CHANNEL)
+    _SYSCALLNO(SYS_CLOSE)
+    _SYSCALLNO(SYS_DUP)
+
+#ifndef __ASSEMBLER__
+};
+#endif
 
 #endif /* KERN_SYSCALLNO_H */

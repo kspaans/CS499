@@ -1,3 +1,5 @@
+.set syscallno, 0
+#define _SYSCALLNO(x) .set x, syscallno; .set syscallno, syscallno+1;
 #include <kern/syscallno.h>
 
 .macro syscall funcname callno
