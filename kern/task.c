@@ -352,7 +352,7 @@ static int syscall_dup(struct task *task, int oldfd, int newfd, int flags) {
 	return 0;
 }
 
-static void syscall_exit(struct task *task) {
+static void exit_task(struct task *task) {
 	if(!task->daemon)
 		--nondaemon_count;
 	--task_count;
@@ -365,6 +365,10 @@ static void syscall_exit(struct task *task) {
 	/* Task must have been running (not blocked or on the ready queue) to call sys_exit.
 	   So, it is safe to free the task. */
 	set_task_state(task, TASK_DEAD, &freequeue);
+}
+
+static void syscall_exit(struct task *task) {
+	exit_task(task);
 }
 
 /* Destroy, if implemented, needs to do more work than sys_exit:
@@ -579,7 +583,7 @@ void task_syscall(struct task *task) {
 
 #define PRINT_REG(x) printk(#x ":%08x ", regs->x)
 
-static void print_regs(struct regs *regs) {
+void print_regs(struct regs *regs) {
 	PRINT_REG(r0);
 	PRINT_REG(r1);
 	PRINT_REG(r2);
@@ -617,21 +621,30 @@ void print_task(struct task *task) {
 	printk("\n");
 }
 
+void dump_tasks(void) {
+	for (int i=0; i < next_tidx-1; ++i)
+		print_task(task_lookup[i]);
+}
+
 void sysrq(void) {
 	printk("SysRq\n");
-	for (int i=0; i < next_tidx-1; ++i) {
-		print_task(task_lookup[i]);
-	}
+	dump_tasks();
 }
 
 void task_dabt(struct task *task) {
+	printk("Task Killed - Data Abort\n");
 	print_task(task);
-	panic("Task Data Abort");
+	exit_task(task);
 }
 
-void kernel_dabt(struct regs *regs) {
-	printk("Kernel Registers:");
-	print_regs(regs);
-	panic("Kernel Data Abort");
+void task_pabt(struct task *task) {
+	printk("Task Killed - Prefetch Abort\n");
+	print_task(task);
+	exit_task(task);
 }
 
+void task_und(struct task *task) {
+	printk("Task Killed - Undefined Instruction\n");
+	print_task(task);
+	exit_task(task);
+}

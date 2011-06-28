@@ -91,37 +91,11 @@ swi_enter:
 	@ void task_syscall(struct task *task)
 	b     task_syscall
 
-irq_enter:
-	@ Fixup user saved pc (irq handler sets lr = pc + 4)
-	sub   lr, lr, #4
+.macro ex_handler name lr_off
 
-	@ Save return state to SVC stack
-	srsdb sp!, #ARM_MODE_SVC
-
-	@ Warp to SVC mode
-	cps   #ARM_MODE_SVC
-
-	@ Grab task struct from stack
-	ldr   lr, [sp, #8]
-
-	@ Save user registers
-	stmia lr, {r0 - r14}^
-
-	@ Save user pc, psr
-	pop   {r0 - r1}
-	str   r0, [lr, #60]
-	str   r1, [lr, #64]
-
-	@ Restore kernel registers
-	pop   {r0, r4 - r11, lr}
-
-	@ handle irq
-	@ void task_irq(void)
-	b     task_irq
-
-dabt_enter:
-	@ Fixup user saved pc (abt handler set lr = pc + 4)
-	sub   lr, lr, #4
+\name\()_enter:
+	@ Fixup saved program counter
+	sub   lr, lr, #\lr_off
 
 	@ Save return state to SVC stack
 	srsdb sp!, #ARM_MODE_SVC
@@ -130,7 +104,7 @@ dabt_enter:
 	mrs   lr, spsr
 	and   lr, lr, #ARM_MODE_MASK
 	cmp   lr, #ARM_MODE_USR
-	bne   dabt_svc
+	bne   \name\()_svc
 
 	@ Warp to SVC mode
 	cps   #ARM_MODE_SVC
@@ -150,10 +124,10 @@ dabt_enter:
 	pop   {r0, r4 - r11, lr}
 
 	@ handle irq
-	@ void task_irq(void)
-	b     task_dabt
+	@ void task_foo(struct task *)
+	b     task_\name
 
-dabt_svc:
+\name\()_svc:
 	@  Warp to SVC mode
 	cps   #ARM_MODE_SVC
 
@@ -168,8 +142,14 @@ dabt_svc:
 	@ Save pointer to start of struct regs
 	mov   r0, sp
 
-	@ Call panic_dabt(struct regs *)
-	b kernel_dabt
+	@ Call kernel_foo(struct regs *)
+	b kernel_\name
+.endm
+
+ex_handler irq  4
+ex_handler pabt 4
+ex_handler dabt 8
+ex_handler und  4
 
 @ PRM reset.
 .global prm_reset
@@ -197,15 +177,15 @@ vec_fiq:
 	ldr pc, vec_fiq_addr
 
 vec_undefined_addr:
-	.word panic_undef
+	.word und_enter
 vec_swi_addr:
 	.word swi_enter
 vec_prefetch_abort_addr:
-	.word panic_pabt
+	.word pabt_enter
 vec_data_abort_addr:
 	.word dabt_enter
 vec_unused_addr:
-	.word panic_unused
+	.word prm_reset
 vec_irq_addr:
 	.word irq_enter
 vec_fiq_addr:

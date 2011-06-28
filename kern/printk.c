@@ -45,7 +45,7 @@ void panic(const char *fmt, ...) {
 
 	if (!panic_recursion) {
 		panic_recursion = 1;
-		sysrq();
+		dump_tasks();
 	}
 
 	/* hacks */
@@ -54,23 +54,28 @@ void panic(const char *fmt, ...) {
 	prm_reset();
 }
 
-void panic_pabt(void) {
-	panic("Prefetch Abort");
+void kernel_dabt(struct regs *regs) {
+	printk("Kernel Data Abort\n");
+	print_regs(regs);
+	prm_reset();
 }
 
-void panic_dabt(void) {
-	//uint32_t dfar;
-	//asm ("mrc p15, 0, %0, c6, c0, 0" : "=r" (dfar));
-	//printk("You poked the wrong address: %08x\n", dfar);
-	panic("Data Abort");
+void kernel_pabt(struct regs *regs) {
+	printk("Kernel Prefetch Abort\n");
+	print_regs(regs);
+	prm_reset();
 }
 
-void panic_undef(void) {
-	panic("Undefined Instruction");
+void kernel_und(struct regs *regs) {
+	printk("Kernel Undefined Instruction\n");
+	print_regs(regs);
+	prm_reset();
 }
 
-void panic_unused(void) {
-	panic("Unused exception vector");
+void kernel_irq(struct regs *regs) {
+	printk("Kernel IRQ\n");
+	print_regs(regs);
+	prm_reset();
 }
 
 int vprintk(const char *fmt, va_list va) {
