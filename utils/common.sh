@@ -53,7 +53,7 @@ if test -n "$DEBUG"; then
 else
 	CFLAGS+=' -Wno-unused-parameter -Wmissing-prototypes -Wmissing-declarations'
 	CFLAGS+=' -Wold-style-definition -Wstrict-prototypes -Winit-self'
-	CFLGAS+=' -Wstrict-overflow -Wfloat-equal -Wshadow -Wpointer-arith'
+	CFLAGS+=' -Wstrict-overflow -Wfloat-equal -Wshadow -Wpointer-arith'
 	CFLAGS+=' -Wcast-align -Wwrite-strings -Wmissing-format-attribute'
 	CFLAGS+=' -Wredundant-decls -Wnested-externs -Wvolatile-register-var'
 	CFLAGS+=' -Wdisabled-optimization'
