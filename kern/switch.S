@@ -119,6 +119,58 @@ irq_enter:
 	@ void task_irq(void)
 	b     task_irq
 
+dabt_enter:
+	@ Fixup user saved pc (abt handler set lr = pc + 4)
+	sub   lr, lr, #4
+
+	@ Save return state to SVC stack
+	srsdb sp!, #ARM_MODE_SVC
+
+	@ Verify the abort happened in USR mode
+	mrs   lr, spsr
+	and   lr, lr, #ARM_MODE_MASK
+	cmp   lr, #ARM_MODE_USR
+	bne   dabt_svc
+
+	@ Warp to SVC mode
+	cps   #ARM_MODE_SVC
+
+	@ Grab task struct from stack
+	ldr   lr, [sp, #8]
+
+	@ Save user registers
+	stmia lr, {r0 - r14}^
+
+	@ Save user pc, psr
+	pop   {r0 - r1}
+	str   r0, [lr, #60]
+	str   r1, [lr, #64]
+
+	@ Restore kernel registers
+	pop   {r0, r4 - r11, lr}
+
+	@ handle irq
+	@ void task_irq(void)
+	b     task_dabt
+
+dabt_svc:
+	@  Warp to SVC mode
+	cps   #ARM_MODE_SVC
+
+	@ Save SVC registers
+	sub   sp, sp, #60
+	stmia sp, {r0 - r14}
+
+	@ Fixup stack pointer in struct regs (+sizeof(struct regs))
+	add   r0, sp, #68
+	str   r0, [sp, #52]
+
+	@ Save pointer to start of struct regs
+	mov   r0, sp
+
+	@ Call panic_dabt(struct regs *)
+	b kernel_dabt
+
 @ PRM reset.
 .global prm_reset
 prm_reset:
@@ -151,7 +203,7 @@ vec_swi_addr:
 vec_prefetch_abort_addr:
 	.word panic_pabt
 vec_data_abort_addr:
-	.word panic_dabt
+	.word dabt_enter
 vec_unused_addr:
 	.word panic_unused
 vec_irq_addr:

@@ -119,4 +119,7 @@ void sysrq(void);
 
 int main(void);
 
+void kernel_dabt(struct regs *regs);
+void task_dabt(struct task *task);
+
 #endif /* KERN_TASK_H */

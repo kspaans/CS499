@@ -577,11 +577,9 @@ void task_syscall(struct task *task) {
 	task->regs.r0 = ret;
 }
 
-#define PRINT_REG(x) printk(#x ":%08x ", task->regs.x)
-void print_task(struct task *task) {
-	if(task == NULL)
-		return;
-	printk("task %p tid:%08x ptid:%08x prio:%d, state:%d, daemon:%d\n", task, task->tid, task->ptid, task->priority, task->state, task->daemon);
+#define PRINT_REG(x) printk(#x ":%08x ", regs->x)
+
+static void print_regs(struct regs *regs) {
 	PRINT_REG(r0);
 	PRINT_REG(r1);
 	PRINT_REG(r2);
@@ -603,6 +601,14 @@ void print_task(struct task *task) {
 	PRINT_REG(psr);
 	printk("\n");
 
+}
+
+void print_task(struct task *task) {
+	if(task == NULL)
+		return;
+	printk("task %p tid:%08x ptid:%08x prio:%d, state:%d, daemon:%d\n", task, task->tid, task->ptid, task->priority, task->state, task->daemon);
+	print_regs(&task->regs);
+
 	printk("stack pc:%08x(%s) lr:%08x(%s) ", task->regs.pc, SYMBOL(task->regs.pc),
 	       task->regs.lr, SYMBOL(task->regs.lr));
 	unwind_stack((void *)task->regs.fp);
@@ -617,3 +623,15 @@ void sysrq(void) {
 		print_task(task_lookup[i]);
 	}
 }
+
+void task_dabt(struct task *task) {
+	print_task(task);
+	panic("Task Data Abort");
+}
+
+void kernel_dabt(struct regs *regs) {
+	printk("Kernel Registers:");
+	print_regs(regs);
+	panic("Kernel Data Abort");
+}
+
