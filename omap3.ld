@@ -25,6 +25,16 @@ SECTIONS
     *(.rodata.*)
   }
 
+  .ARM.extab :
+  {
+    *(.ARM.extab* .gnu.linkonce.armextab.*)
+  }
+
+  .ARM.exidx :
+  {
+    *(.ARM.exidx* .gnu.linkonce.armexidx.*)
+  }
+
   .data : /* Initialized data. */
   {
     data_start = .;
