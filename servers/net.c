@@ -680,6 +680,9 @@ static struct hostdata *get_host_data(struct mac_addr *mac) {
 }
 
 struct hostdata *get_host_data_from_name(const char *name) {
+	if(!strcmp(name, "localhost")) {
+		return this_host;
+	}
 	for (size_t i = 0; i < arraysize(hosts); ++i) {
 		if(!strcmp(hosts[i].hostname, name))
 			return &hosts[i];
