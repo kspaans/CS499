@@ -632,13 +632,17 @@ void sysrq(void) {
 }
 
 void task_dabt(struct task *task) {
-	printk("Task Killed - Data Abort\n");
+	uint32_t dfar;
+	asm ("mrc p15, 0, %0, c6, c0, 0" : "=r" (dfar));
+	printk("Task Killed - Data Abort, address 0x%08x\n", dfar);
 	print_task(task);
 	exit_task(task);
 }
 
 void task_pabt(struct task *task) {
-	printk("Task Killed - Prefetch Abort\n");
+	uint32_t ifar;
+	asm ("mrc p15, 0, %0, c6, c0, 2" : "=r" (ifar));
+	printk("Task Killed - Prefetch Abort, address 0x%08x\n", ifar);
 	print_task(task);
 	exit_task(task);
 }

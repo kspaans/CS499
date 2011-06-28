@@ -55,13 +55,17 @@ void panic(const char *fmt, ...) {
 }
 
 void kernel_dabt(struct regs *regs) {
-	printk("Kernel Data Abort\n");
+	uint32_t dfar;
+	asm ("mrc p15, 0, %0, c6, c0, 0" : "=r" (dfar));
+	printk("Kernel Data Abort, address 0x%08x\n", dfar);
 	print_regs(regs);
 	prm_reset();
 }
 
 void kernel_pabt(struct regs *regs) {
-	printk("Kernel Prefetch Abort\n");
+	uint32_t ifar;
+	asm ("mrc p15, 0, %0, c6, c0, 2" : "=r" (ifar));
+	printk("Kernel Prefetch Abort, address 0x%08x\n", ifar);
 	print_regs(regs);
 	prm_reset();
 }
