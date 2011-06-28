@@ -7,4 +7,4 @@ DEPS=(kern/obj/omap3.o kern/obj/compat.o kern/obj/nosyms.o
 
 mkdir -p ../kern/obj
 
-../utils/link $3 ${DEPS[@]/#/../}
+../utils/link $3 $1.link ${DEPS[@]/#/../}

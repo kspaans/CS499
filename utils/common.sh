@@ -67,8 +67,5 @@ LDFLAGS="-nostdlib"
 # Disable demand-pageable
 LDFLAGS+=" -n"
 
-# Build id
-LDFLAGS+=" -Wl,--build-id=sha1"
-
 # Link libgcc for compiler-generated function calls
 LDLIBS+=" -lgcc"

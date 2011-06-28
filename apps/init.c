@@ -10,7 +10,6 @@
 #include <servers/console.h>
 #include <servers/net.h>
 #include <apps.h>
-#include <id.h>
 
 #include <eth.h>
 #include <servers/net.h>
@@ -320,11 +319,6 @@ __attribute__((unused)) static void shell(void) {
 
 /* The first user program */
 void init_task(void) {
-	printk("build id ");
-	for (int i = 0; i < 20; ++i)
-		printk("%02x", build_sha1[i]);
-	printk("\n");
-
 	channel(0); /* stdin */
 	channel(0); /* stdout */
 	channel(0); /* fs */

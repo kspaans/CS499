@@ -4,8 +4,8 @@ utils=$(dirname $0)
 redo-ifchange $0 $utils/common.sh
 source $utils/common.sh
 
-out=$1; shift
+out=$1; map=$2; shift 2
 
 redo-ifchange $@ $utils/../omap3.ld
 
-${XLD} ${CFLAGS} ${LDFLAGS} -T $utils/../omap3.ld -o $out $@ $LDLIBS
+${XLD} ${CFLAGS} ${LDFLAGS} -T $utils/../omap3.ld -o $out -Wl,-Map,$map $@ $LDLIBS
