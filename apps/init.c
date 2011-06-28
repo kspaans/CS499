@@ -298,9 +298,9 @@ __attribute__((unused)) static void shell(void) {
 		} else if(!strcmp(argv[0], "ls")) {
 			dump_files();
 		} else if(!strcmp(argv[0], "genesis")) {
-			if(argc != 3) { 
+			if(argc != 3) {
 				printf("Usage: genesis hostname command\n");
-				continue; 
+				continue;
 			}
 			const struct hostdata *dest = get_host_data_from_name(argv[1]);
 			if(dest) {
