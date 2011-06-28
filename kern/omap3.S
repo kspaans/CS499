@@ -1,4 +1,4 @@
-.section .init, "ax", %progbits
+.section .text.init, "ax", %progbits
 
 .global omap3_start
 omap3_start:

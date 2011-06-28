@@ -13,16 +13,16 @@ SECTIONS
 
   .text : /* The actual instructions. */
   {
-    *(.init)
+    *(.text.init)
     *(.text)
     *(.text.*)
-    *(.got)
-    *(.got.plt)
+    *(.ksymtab) /* must be last */
+  }
+
+  .rodata : /* Read-only data */
+  {
     *(.rodata)
     *(.rodata.*)
-    *(.glue_7)
-    *(.glue_7t)
-    *(.ksymtab) /* must be last */
   }
 
   .data : /* Initialized data. */
