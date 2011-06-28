@@ -125,6 +125,7 @@ static void age(hashtable *field, struct ht_item *uni, size_t x, size_t y)
 
 	memcpy(copy, uni, sizeof(copy));
 	memcpy(&hcopy, field, sizeof(hashtable));
+	hcopy.arr = copy;
 
 	for (size_t i = 0; i < x; i += 1) {
 		for (size_t j = 0; j < y; j += 1) {
