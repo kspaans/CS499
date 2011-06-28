@@ -128,7 +128,7 @@ swi_enter:
 	b     task_\name
 
 \name\()_svc:
-	@  Warp to SVC mode
+	@ Warp to SVC mode
 	cps   #ARM_MODE_SVC
 
 	@ Save SVC registers
@@ -143,7 +143,7 @@ swi_enter:
 	mov   r0, sp
 
 	@ Call kernel_foo(struct regs *)
-	b kernel_\name
+	b     kernel_\name
 .endm
 
 ex_handler irq  4
