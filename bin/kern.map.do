@@ -4,4 +4,4 @@ redo-ifchange symkern
 
 . ../utils/common.sh
 
-${XPREFIX}nm -n symkern
+${XPREFIX}nm -n symkern > $3
