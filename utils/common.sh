@@ -1,5 +1,6 @@
 top=$utils/..
 useclang=$top/bin/use-clang
+usedebug=$top/bin/debug
 
 if test -e "$useclang"; then
   redo-ifchange $useclang
@@ -33,6 +34,9 @@ fi
 # Standard options
 CFLAGS="-pipe -Wall -Wextra -Werror -I include -std=gnu99 -O3"
 
+# Warnings
+CFLAGS+=" -Wall -Wextra -Werror -Wno-unused-parameter"
+
 # ARMv7 instruction set, Cortex-A8 tuning, ARM instrutions
 CFLAGS+=" -march=armv7-a -mtune=cortex-a8 -marm"
 
@@ -48,10 +52,10 @@ CFLAGS+=" -ffreestanding"
 # Super ricer-mode
 #CFLAGS+=" -flto"
 
-if test -n "$DEBUG"; then
-	CFLAGS+=' -g -DDEBUG -Wno-unused'
+if test -e "$usedebug"; then
+	CFLAGS+=' -g -DDEBUG -Wno-unused-function'
 else
-	CFLAGS+=' -Wno-unused-parameter -Wmissing-prototypes -Wmissing-declarations'
+	CFLAGS+=' -Wmissing-prototypes -Wmissing-declarations'
 	CFLAGS+=' -Wold-style-definition -Wstrict-prototypes -Winit-self'
 	CFLAGS+=' -Wstrict-overflow -Wfloat-equal -Wshadow -Wpointer-arith'
 	CFLAGS+=' -Wcast-align -Wwrite-strings -Wmissing-format-attribute'
