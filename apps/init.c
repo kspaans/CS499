@@ -6,10 +6,11 @@
 #include <syscall.h>
 #include <lib.h>
 #include <kern/printk.h>
-#include <servers/fs.h>
+#include <servers/clock.h>
 #include <servers/console.h>
-#include <servers/net.h>
+#include <servers/fs.h>
 #include <servers/genesis.h>
+#include <servers/net.h>
 #include <apps.h>
 
 #include <eth.h>
@@ -42,19 +43,6 @@ __attribute__((unused)) static void udp_rx_loop(void) {
 		char c = fgetc(netconin);
 		fputc(c, STDOUT_FILENO);
 		fputc(c, netconout);
-	}
-}
-
-#include <drivers/leds.h>
-#include <servers/clock.h>
-__attribute__((unused)) static void flash_leds(void) {
-	printf("Now flashing the blinkenlights.\n");
-	for(;;) {
-		for(enum leds led = LED1; led <= LED5; led++) {
-			led_set(led, 1);
-			msleep(100);
-			led_set(led, 0);
-		}
 	}
 }
 
@@ -247,7 +235,6 @@ void init_task(void) {
 	//ASSERTNOERR(spawn(2, srr_task, 0));
 	ASSERTNOERR(spawn(0, srrbench_task, 0));
 
-	ASSERTNOERR(spawn(4, flash_leds, SPAWN_DAEMON));
 	ASSERTNOERR(spawn(3, genesis_task, SPAWN_DAEMON));
 	ASSERTNOERR(spawn(5, shell_task, 0));
 	//ASSERTNOERR(spawn(6, gameoflife, 0));

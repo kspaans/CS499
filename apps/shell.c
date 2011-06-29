@@ -18,6 +18,20 @@ static int ls_cmd(int argc, char **argv) {
 	return 0;
 }
 
+#include <drivers/leds.h>
+#include <servers/clock.h>
+static int leds_cmd(int argc, char **argv) {
+	printf("Now flashing the blinkenlights.\n");
+	for(;;) {
+		for(enum leds led = LED1; led <= LED5; led++) {
+			led_set(led, 1);
+			msleep(100);
+			led_set(led, 0);
+		}
+	}
+	return 0;
+}
+
 static int genesis_cmd(int argc, char **argv) {
 	if(argc != 3) {
 		printf("Usage: genesis hostname command\n");
@@ -38,6 +52,8 @@ static int (*command_lookup(char *command))(int, char**) {
 		return genesis_cmd;
 	} else if(!strcmp("ls", command)) {
 		return ls_cmd;
+	} else if(!strcmp("leds", command)) {
+		return leds_cmd;
 	} else if(!strcmp("exit", command)) {
 		return exit_cmd;
 	}
