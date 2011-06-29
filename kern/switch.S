@@ -20,16 +20,13 @@ get_user_psr:
 	bic   r0, r0, #0xf0000000
 	bx    lr
 
-irq_stack:
-	.space 16
-
 .global init_cpumodes
 .type init_cpumodes, %function
 @ void init_cpumodes(void)
 init_cpumodes:
 
 	@ setup
-	ldr   r0, =irq_stack
+	ldr   r0, =0x55555555
 
 	@ FIQ mode
 	cps   #ARM_MODE_FIQ
