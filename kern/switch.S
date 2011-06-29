@@ -1,8 +1,5 @@
 #include <arm.h>
 
-.global task_syscall
-.global task_irq
-
 .global get_user_psr
 .type get_user_psr, %function
 @ int get_user_psr(void)
@@ -25,7 +22,7 @@ get_user_psr:
 @ void init_cpumodes(void)
 init_cpumodes:
 
-	@ setup
+	@ setup stack poison
 	ldr   r0, =0x55555555
 
 	@ FIQ mode
