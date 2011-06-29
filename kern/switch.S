@@ -1,8 +1,5 @@
 #include <arm.h>
 
-.global task_syscall
-.global task_irq
-
 .global get_user_psr
 .type get_user_psr, %function
 @ int get_user_psr(void)
