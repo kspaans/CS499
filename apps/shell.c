@@ -7,6 +7,43 @@
 #include <servers/net.h>
 #include <servers/fs.h>
 
+static int exit_cmd(int argc, char **argv) {
+	printf("Goodbye\n");
+	exit();
+	return 666; // Unreached
+}
+
+static int ls_cmd(int argc, char **argv) {
+	dump_files();
+	return 0;
+}
+
+static int genesis_cmd(int argc, char **argv) {
+	if(argc != 3) {
+		printf("Usage: genesis hostname command\n");
+		return 1;
+	}
+	const struct hostdata *dest = get_host_data_from_name(argv[1]);
+	if(dest) {
+		send_createreq(dest->ip, 2, argv[2], 0);
+		return 0;
+	} else {
+		printf("unknown host\n");
+		return -1;
+	}
+}
+
+static int (*command_lookup(char *command))(int, char**) {
+	if(!strcmp("genesis", command)) {
+		return genesis_cmd;
+	} else if(!strcmp("ls", command)) {
+		return ls_cmd;
+	} else if(!strcmp("exit", command)) {
+		return exit_cmd;
+	}
+	return 0;
+}
+
 void shell_task(void) {
 	char input[128];
 	char *argv[10];
@@ -89,26 +126,12 @@ void shell_task(void) {
 		if(argc == 0)
 			continue;
 
-		//void (*command)(int, char**) = command_lookup(argv[0]);
-		//command(argc, argv);
+		int (*command)(int, char**) = command_lookup(argv[0]);
 
-		if(!strcmp(argv[0], "exit")) {
-			printf("Goodbye\n");
-			exit();
-		} else if(!strcmp(argv[0], "logout")) {
-			exit();
-		} else if(!strcmp(argv[0], "ls")) {
-			dump_files();
-		} else if(!strcmp(argv[0], "genesis")) {
-			if(argc != 3) {
-				printf("Usage: genesis hostname command\n");
-				continue;
-			}
-			const struct hostdata *dest = get_host_data_from_name(argv[1]);
-			if(dest) {
-				send_createreq(dest->ip, 2, argv[2], 0);
-			} else {
-				printf("unknown host\n");
+		if(command) {
+			int ret = command(argc, argv);
+			if(ret != 0) {
+				printf("Nonzero return: %d\n", ret);
 			}
 		} else {
 			printf("argc=%d", argc);
