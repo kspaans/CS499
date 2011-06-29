@@ -1,7 +1,7 @@
 #!/bin/bash
 CMD=`which redo` || CMD="./utils/do"
 
-jobs=1
+jobs=-j1
 
 case $(hostname) in
 	corn-syrup)

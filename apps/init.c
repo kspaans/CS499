@@ -9,6 +9,7 @@
 #include <servers/fs.h>
 #include <servers/console.h>
 #include <servers/net.h>
+#include <servers/genesis.h>
 #include <apps.h>
 
 #include <eth.h>
@@ -141,19 +142,19 @@ __attribute__((unused)) static void srrbench_task(void) {
 	printf("srrbench_task[%d]: benchmark finished.\n", tid);
 }
 
-static void nulltask(void) {
+static void null_task(void) {
 }
 static void task_reclamation_2(void) {
 	for(int i=0; i<1000; ++i) {
-		printk("%05x ", spawn(5, nulltask, 0));
-		printk("%05x\n", spawn(5, nulltask, 0));
+		printk("%05x ", spawn(5, null_task, 0));
+		printk("%05x\n", spawn(5, null_task, 0));
 	}
 }
 __attribute__((unused)) static void task_reclamation_test(void) {
 	for(int i=0; i<1000; ++i) {
-		printk("%05x ", spawn(1, nulltask, 0));
-		printk("%05x ", spawn(1, nulltask, 0));
-		printk("%05x\n", spawn(3, nulltask, 0));
+		printk("%05x ", spawn(1, null_task, 0));
+		printk("%05x ", spawn(1, null_task, 0));
+		printk("%05x\n", spawn(3, null_task, 0));
 	}
 	spawn(4, task_reclamation_2, 0);
 }
@@ -206,117 +207,6 @@ __attribute__((unused)) static void fstest_task(void) {
 	}
 }
 
-#include <servers/genesis.h>
-#include <string.h>
-__attribute__((unused)) static void shell(void) {
-	char input[128];
-	char *argv[10];
-	size_t pos;
-
-	while(1) {
-		printf(
-#ifdef BUILDUSER
-	STRINGIFY2(BUILDUSER) "@"
-#endif
-				"%s:/# ", this_host->hostname);
-		pos = 0;
-		bool done = false;
-		while(!done) {
-			char c = getchar();
-			switch(c) {
-				case '\b':
-				case 127:
-					if(pos > 0) {
-						printf("\b \b");
-						--pos;
-					}
-					continue;
-				case '\r':
-				case '\n':
-					putchar('\n');
-					input[pos++] = '\n';
-					input[pos++] = '\0';
-					done = true;
-					break;
-				case 3:
-					printf("^C\n");
-					pos = 0;
-					done = true;
-					break;
-				case 4: // ^D
-					if(pos == 0) {
-						printf("logout\n");
-						exit();
-					}
-					break;
-				case '\033':
-					c = getchar();
-					if(c == '[') {
-						c = getchar();
-						if(c == 'A') {
-							/* up arrow */
-							break;
-						} else if(c == 'B') {
-							/* down arrow */
-							break;
-						} else if(c == 'C') {
-							/* right arrow */
-							break;
-						} else if(c == 'D') {
-							/* left arrow */
-							break;
-						} else {
-							/* fall through */
-						}
-					} else {
-						printf("\a");
-						/* fall through */
-					}
-				case '\t':
-					c = ' ';
-				default:
-					putchar(c);
-					input[pos++] = c;
-					if(pos >= sizeof(input)-3) {
-						--pos;
-						printf("\b");
-					}
-					break;
-			}
-		}
-		if(pos == 0)
-			continue;
-		int argc = parse_args(input, argv, arraysize(argv));
-		if(argc == 0)
-			continue;
-		if(!strcmp(argv[0], "exit")) {
-			printf("Goodbye\n");
-			exit();
-		} else if(!strcmp(argv[0], "logout")) {
-			exit();
-		} else if(!strcmp(argv[0], "ls")) {
-			dump_files();
-		} else if(!strcmp(argv[0], "genesis")) {
-			if(argc != 3) {
-				printf("Usage: genesis hostname command\n");
-				continue;
-			}
-			const struct hostdata *dest = get_host_data_from_name(argv[1]);
-			if(dest) {
-				send_createreq(dest->ip, 2, argv[2], 0);
-			} else {
-				printf("unknown host\n");
-			}
-		} else {
-			printf("argc=%d", argc);
-			for(int i=0; i<argc; ++i) {
-				printf(" argv[%d]=%s", i, argv[i]);
-			}
-			printf("\n");
-		}
-	}
-}
-
 /* The first user program */
 void init_task(void) {
 	channel(0); /* stdin */
@@ -359,6 +249,6 @@ void init_task(void) {
 
 	ASSERTNOERR(spawn(4, flash_leds, SPAWN_DAEMON));
 	ASSERTNOERR(spawn(3, genesis_task, SPAWN_DAEMON));
-	ASSERTNOERR(spawn(5, shell, 0));
+	ASSERTNOERR(spawn(5, shell_task, 0));
 	//ASSERTNOERR(spawn(6, gameoflife, 0));
 }
