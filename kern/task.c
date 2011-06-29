@@ -349,7 +349,7 @@ static int syscall_dup(struct task *task, int oldfd, int newfd, int flags) {
 
 	if(oldfd == newfd) {
 		task->channels[oldfd].flags = flags;
-		return 0;
+		return newfd;
 	}
 
 	if(newfd == -1) {
