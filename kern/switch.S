@@ -22,7 +22,7 @@ get_user_psr:
 @ void init_cpumodes(void)
 init_cpumodes:
 
-	@ setup
+	@ setup stack poison
 	ldr   r0, =0x55555555
 
 	@ FIQ mode
