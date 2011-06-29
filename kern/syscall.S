@@ -27,4 +27,5 @@ syscall sys_taskstat SYS_TASKSTAT
 syscall sys_suspend SYS_SUSPEND
 syscall sys_channel SYS_CHANNEL
 syscall sys_close SYS_CLOSE
+syscall sys_chanflags SYS_CHANFLAGS
 syscall sys_dup SYS_DUP

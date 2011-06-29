@@ -72,6 +72,7 @@ struct task {
 			const struct iovec *sendbuf;
 			int sendlen;
 			struct channel *destchan;
+			int sendchanflags;
 			struct channel *sendchan;
 		};
 		struct {
