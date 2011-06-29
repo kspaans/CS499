@@ -45,7 +45,14 @@ void send_createreq(uint32_t host, int priority, const char *name, int flags) {
 	req.flags = flags;
 	strlcpy(req.path, name, GENLEN);
 	printf("Spawning %s on host %d\n", req.path, host);
-	send_udp(GENESIS_SRCPORT, host, GENESIS_PORT, (char *)&req, sizeof(req));
+
+	// I'd like to avoid using the send_udp primitive if I can.
+	// If we have channels that work over the network, that might be better.
+	int ret = send_udp(GENESIS_SRCPORT, host, GENESIS_PORT, (char *)&req, sizeof(req));
+	if(ret != 0) {
+		printf("Error transmitting, %d", ret);
+	}
+	// Wait for a reply?
 }
 
 void genesis_task(void) {
