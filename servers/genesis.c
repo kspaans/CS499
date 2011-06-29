@@ -37,14 +37,31 @@ static void print_creation(struct creation_request *cr) {
 	printf("Name %s Magics: %x %x (%x %x), Flags %d, Pri %d\n", cr->path, cr->smagic, cr->emagic, SMAGIC, EMAGIC, cr->flags, cr->priority);
 }
 
+static void handle_createreq(int priority, const char *path, int flags) {
+	void (*code)(void) = address_for_symbol(path);
+	// This is some pointer to a symbol, which could quite possibly no
+	// be a function. Potential hurt there. So don't do that.
+	if(code) {
+		printf("Launching process %s with priority: %d, flags: %d\n",
+				path, priority, flags);
+		ASSERTNOERR(spawn(priority, code, flags));
+	} else {
+		printf("Failure: Unknown symbol %s\n", path);
+	}
+}
+
 void send_createreq(uint32_t host, int priority, const char *name, int flags) {
+	if(host == this_host->ip) {
+		handle_createreq(priority, name, flags);
+		return;
+	}
 	struct creation_request req;
 	req.smagic = SMAGIC;
 	req.emagic = EMAGIC;
 	req.priority = priority;
 	req.flags = flags;
 	strlcpy(req.path, name, GENLEN);
-	printf("Spawning %s on host %d\n", req.path, host);
+	printf("Spawning %s on host %08x\n", req.path, host);
 
 	// I'd like to avoid using the send_udp primitive if I can.
 	// If we have channels that work over the network, that might be better.
@@ -73,17 +90,7 @@ void genesis_task(void) {
 			print_creation(&reply.data);
 			continue;
 		}
-
-		void (*code)(void) = address_for_symbol(reply.data.path);
-		// This is some pointer to a symbol, which could quite possibly no
-		// be a function. Potential hurt there. So don't do that.
-		if(code) {
-			printf("Launching process %s with priority: %d, flags: %d\n",
-					reply.data.path, reply.data.priority, reply.data.flags);
-			ASSERTNOERR(spawn(reply.data.priority, code, reply.data.flags));
-		} else {
-			printf("Failure: Unknown symbol %s\n", reply.data.path);
-		}
+		handle_createreq(reply.data.priority, reply.data.path, reply.data.flags);
 	}
 	udp_release(GENESIS_PORT);
 }

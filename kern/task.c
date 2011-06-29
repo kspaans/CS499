@@ -302,6 +302,7 @@ static int syscall_channel(struct task *task) {
 	taskqueue_init(&channel->senders);
 	taskqueue_init(&channel->receivers);
 	task->channels[no].channel = channel;
+	task->channels[no].flags = CHAN_RECV | CHAN_SEND;
 	return no;
 }
 
@@ -324,7 +325,6 @@ static void close_channel(struct task *task, int no) {
 static int syscall_close(struct task *task, int no) {
 	if(no < 0 || no >= MAX_TASK_CHANNELS)
 		return EBADF;
-
 	if(task->channels[no].channel == NULL)
 		return EBADF;
 
@@ -332,27 +332,45 @@ static int syscall_close(struct task *task, int no) {
 	return 0;
 }
 
+static int syscall_chanflags(struct task *task, int fd) {
+	if(fd < 0 || fd >= MAX_TASK_CHANNELS)
+		return EBADF;
+	if(task->channels[fd].channel == NULL)
+		return EBADF;
+
+	return task->channels[fd].flags;
+}
+
 static int syscall_dup(struct task *task, int oldfd, int newfd, int flags) {
 	if(oldfd < 0 || oldfd >= MAX_TASK_CHANNELS)
 		return EBADF;
 	if(task->channels[oldfd].channel == NULL)
 		return EBADF;
+
 	if(oldfd == newfd) {
 		task->channels[oldfd].flags = flags;
-		return 0;
+		return newfd;
 	}
 
-	if(newfd < 0 || newfd >= MAX_TASK_CHANNELS)
+	if(newfd == -1) {
+		newfd = alloc_channel_desc(task);
+		if(newfd < 0)
+			return EMFILE;
+	} else if(newfd < 0 || newfd >= MAX_TASK_CHANNELS) {
 		return EBADF;
+	}
+
 	if(task->channels[newfd].channel != NULL) {
 		close_channel(task, newfd);
 	}
 	task->channels[oldfd].channel->refcount++;
 	task->channels[newfd] = task->channels[oldfd];
-	return 0;
+	return newfd;
 }
 
 static void exit_task(struct task *task) {
+	if(task->state != TASK_RUNNING)
+		panic("Tried to exit non-running task!");
 	if(!task->daemon)
 		--nondaemon_count;
 	--task_count;
@@ -414,6 +432,7 @@ static void handle_receive(struct channel *chan) {
 		if (cd < 0)
 			panic("out of channel descriptors");
 		receiver->channels[cd].channel = sender->sendchan;
+		receiver->channels[cd].flags = sender->sendchanflags;
 		*receiver->recvchan = cd;
 		sender->sendchan->refcount++;
 	}
@@ -431,16 +450,33 @@ static void handle_receive(struct channel *chan) {
 static int syscall_send(struct task *task, int chan, const struct iovec *iov, int iovlen, int sch, int flags) {
 	if (!valid_channel(task, chan))
 		return EBADF;
-	if (sch != -1 && !valid_channel(task, sch))
-		return EBADF;
+
+	int chanflags = task->channels[chan].flags;
 	struct channel *destchan = task->channels[chan].channel;
-	struct channel *sendchan = sch != -1 ? task->channels[sch].channel : NULL;
+	if(!(chanflags & CHAN_SEND))
+		return EBADF;
+	bool nonblock = (chanflags & CHAN_NONBLOCK) || (flags & RECV_NONBLOCK);
+	if(nonblock && taskqueue_empty(&destchan->receivers))
+		return EWOULDBLOCK;
+
+	int sendchanflags;
+	struct channel *sendchan;
+	if(sch != -1) {
+		if(!valid_channel(task, sch))
+			return EBADF;
+		sendchanflags = task->channels[sch].flags;
+		sendchan = task->channels[sch].channel;
+	} else {
+		sendchanflags = -1;
+		sendchan = NULL;
+	}
 
 	set_task_state(task, TASK_SEND_BLOCKED, &destchan->senders);
 
 	task->sendbuf = iov;
 	task->sendlen = iovlen;
 	task->destchan = destchan;
+	task->sendchanflags = sendchanflags;
 	task->sendchan = sendchan;
 
 	handle_receive(destchan);
@@ -451,7 +487,14 @@ static int syscall_send(struct task *task, int chan, const struct iovec *iov, in
 static int syscall_recv(struct task *task, int chan, const struct iovec *iov, int iovlen, int *rch, int flags) {
 	if (!valid_channel(task, chan))
 		return EBADF;
+
+	int chanflags = task->channels[chan].flags;
 	struct channel *srcchan = task->channels[chan].channel;
+	if(!(chanflags & CHAN_RECV))
+		return EBADF;
+	bool nonblock = (chanflags & CHAN_NONBLOCK) || (flags & RECV_NONBLOCK);
+	if(nonblock && taskqueue_empty(&srcchan->senders))
+		return EWOULDBLOCK;
 
 	set_task_state(task, TASK_RECV_BLOCKED, &srcchan->receivers);
 
@@ -571,6 +614,9 @@ void task_syscall(struct task *task) {
 		break;
 	case SYS_CLOSE:
 		ret = syscall_close(task, task->regs.r0);
+		break;
+	case SYS_CHANFLAGS:
+		ret = syscall_chanflags(task, task->regs.r0);
 		break;
 	case SYS_DUP:
 		ret = syscall_dup(task, task->regs.r0, task->regs.r1, task->regs.r2);

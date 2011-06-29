@@ -3,8 +3,8 @@ CMD=`which redo` || CMD="./utils/do"
 
 jobs=1
 
-case $(hostname -f) in
-	corn-syrup.csclub.uwaterloo.ca)
+case $(hostname) in
+	corn-syrup)
 		jobs=10
 		;;
 esac
