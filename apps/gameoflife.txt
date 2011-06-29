@@ -1,2 +1,2 @@
 to use, copy gameoflife_webserver.py to gumstix.cs, run from the board user's homedir.
-Then connect to port 8888 on gumstix.cs (may need to tunnel from the CSC)
+Then connect to port 8889 on gumstix.cs (may need to tunnel from the CSC)

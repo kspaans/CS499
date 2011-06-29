@@ -16,6 +16,7 @@ void sys_exit(void) __attribute__((noreturn));
 
 int sys_channel(int flags);
 int sys_close(int chan);
+int sys_chanflags(int chan);
 int sys_dup(int oldchan, int newchan, int flags);
 
 ssize_t sys_send(int chan, const struct iovec *iov, int iovlen, int  sch, int flags);
