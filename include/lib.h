@@ -6,24 +6,26 @@
 #include <types.h>
 
 #define offsetof(st, m) __builtin_offsetof(st, m)
+#define likely(x) __builtin_expect((x), 1)
+#define unlikely(x) __builtin_expect((x), 0)
 
 /* User mode asserts */
 #define STRINGIFY(x) #x
 #define STRINGIFY2(x) STRINGIFY(x)
-#define ASSERT(x) { \
-	if(!(x)) { \
+#define ASSERT(x) do { \
+	if(unlikely(!(x))) { \
 		printf("\033[1;41mAssert \"" #x "\" failed at " __FILE__ ":" STRINGIFY2(__LINE__) ": "); \
 		exit(); \
 	} \
-}
-#define ASSERTNOERR(ret) { \
+} while(0)
+#define ASSERTNOERR(ret) do { \
 	int rval = (ret); \
-	if(rval < 0) { \
+	if(unlikely(rval < 0)) { \
 		printf("\033[1;41mAssert \"" #ret " >= 0\" failed at " __FILE__ ":" STRINGIFY2(__LINE__) ": "); \
 		printf("Return value %d\033[m\n", rval); \
 		exit(); \
 	} \
-}
+} while(0)
 
 /* Circular buffers */
 #define QUEUE(T,Q) typedef struct { T *arr; int idx, len, max; } Q; \
