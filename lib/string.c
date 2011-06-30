@@ -46,11 +46,8 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 }
 
 char *strcpy(char *d, const char *s) {
-	char *p = d;
-	while(*s)
-		*p++ = *s++;
-	*p = '\0';
-	return d;
+	size_t n = strlen(s);
+	return memcpy(d, s, n+1);
 }
 
 size_t strlcpy(char *d, const char *s, size_t n) {
