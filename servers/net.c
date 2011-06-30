@@ -203,10 +203,13 @@ int send_udp(uint16_t srcport, uint32_t addr, uint16_t dstport, const char *data
 
 	uint32_t btag = MAKE_BTAG(0xbeef, sizeof(eth) + sizeof(ip) + sizeof(udp) + len);
 
+	int has_data = (data && len);
+
 	eth_tx(ETH1_BASE, &eth, sizeof(eth), 1, 0, btag);
 	eth_tx(ETH1_BASE, &ip, sizeof(ip), 0, 0, btag);
-	eth_tx(ETH1_BASE, &udp, sizeof(udp), 0, 0, btag);
-	eth_tx(ETH1_BASE, data, len, 0, 1, btag);
+	eth_tx(ETH1_BASE, &udp, sizeof(udp), 0, !has_data, btag);
+	if(has_data)
+		eth_tx(ETH1_BASE, data, len, 0, 1, btag);
 
 	return tx_wait_sts(btag);
 }
