@@ -53,7 +53,7 @@ static int srrbench_cmd(int argc, char **argv) {
 
 #define C(x) { #x, x##_cmd }
 static int (*command_lookup(char *command))(int, char**) {
-	struct cmd_defs { char cmd[12]; int (*function)(int, char**); }
+	static struct cmd_defs { char cmd[12]; int (*function)(int, char**); }
 	cmd_defs[] = {
 	C(exit), C(genesis), C(leds), C(ls), C(srrbench)
 	};
