@@ -26,18 +26,4 @@ struct task_stat {
 	int srrtid;
 };
 
-enum chanflags {
-	CHAN_RECV = 1,
-	CHAN_SEND = 2,
-	CHAN_NONBLOCK = 4
-};
-
-enum sendflags {
-	SEND_NONBLOCK = 1
-};
-
-enum recvflags {
-	RECV_NONBLOCK = 1
-};
-
 #endif /* TASK_H */

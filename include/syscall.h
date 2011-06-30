@@ -5,7 +5,23 @@
 #include <types.h>
 #include <msg.h>
 
-#define SPAWN_DAEMON 1
+enum spawnflags {
+	SPAWN_DAEMON = 1
+};
+
+enum chanflags {
+	CHAN_RECV = 1,
+	CHAN_SEND = 2,
+	CHAN_NONBLOCK = 4
+};
+
+enum sendflags {
+	SEND_NONBLOCK = 1
+};
+
+enum recvflags {
+	RECV_NONBLOCK = 1
+};
 
 int sys_spawn(int priority, void (*code)(void), int *chan, int chanlen, int flags);
 int sys_gettid(void);
