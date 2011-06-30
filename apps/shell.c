@@ -56,11 +56,84 @@ static int srrbench_cmd(int argc, char **argv) {
 	return -128;
 }
 
+#define NETSRR_PORT 47712
+#define NETSRR_STEPS 11
+#define NETSRR_RUNS 1024
+#include <servers/net.h>
+#include <timer.h>
+static int netsrr_server_cmd(int argc, char **argv) {
+	struct pkt {
+		struct packet_rec rec;
+		char payload[2048];
+	} pkt;
+	unsigned long long start, elapsed;
+
+	udp_bind(NETSRR_PORT);
+	printf("waiting for connection...\n");
+	ASSERTNOERR(udp_wait(NETSRR_PORT, &pkt.rec, sizeof(pkt)));
+	in_addr_t client_ip = pkt.rec.src_ip;
+	uint16_t client_port = pkt.rec.src_port;
+	printf("got connection from %08x:%d\n", client_ip, client_port);
+
+	for(int step=0; step<NETSRR_STEPS; ++step) {
+		printf("step %d (size %d): ", step, 1<<step);
+		start = read_timer();
+		for(int i=0; i<NETSRR_RUNS; ++i) {
+			udp_wait(NETSRR_PORT, &pkt.rec, sizeof(pkt));
+			send_udp(NETSRR_PORT, client_ip, client_port, pkt.payload, pkt.rec.data_len);
+		}
+		elapsed = read_timer() - start;
+		printf("%d ms ", (int)(elapsed/TICKS_PER_MSEC));
+		printf("(%lld ns/loop)\n", elapsed*1000000/TICKS_PER_MSEC/NETSRR_RUNS);
+	}
+
+	printf("done!\n");
+	udp_release(NETSRR_PORT);
+	return 0;
+}
+static int netsrr_client_cmd(int argc, char **argv) {
+	struct pkt {
+		struct packet_rec rec;
+		char payload[2048];
+	} pkt;
+	unsigned long long start, elapsed;
+
+	if(argc != 2) {
+		printf("Usage: %s client\n", argv[0]);
+		return 1;
+	}
+	const struct hostdata *dest = get_host_data_from_name(argv[1]);
+	if(!dest) {
+		printf("unknown host %s\n", argv[1]);
+		return -1;
+	}
+
+	udp_bind(NETSRR_PORT);
+	printf("starting srr to %s (IP: %08x)\n", argv[1], dest->ip);
+	ASSERTNOERR(send_udp(NETSRR_PORT, dest->ip, NETSRR_PORT, NULL, 0));
+	for(int step=0; step<NETSRR_STEPS; ++step) {
+		printf("step %d (size %d): ", step, 1<<step);
+		start = read_timer();
+		for(int i=0; i<NETSRR_RUNS; ++i) {
+			send_udp(NETSRR_PORT, dest->ip, NETSRR_PORT, pkt.payload, 1<<step);
+			udp_wait(NETSRR_PORT, &pkt.rec, sizeof(pkt));
+		}
+		elapsed = read_timer() - start;
+		printf("%d ms ", (int)(elapsed/TICKS_PER_MSEC));
+		printf("(%lld ns/loop)\n", elapsed*1000000/TICKS_PER_MSEC/NETSRR_RUNS);
+	}
+
+	printf("done!\n");
+	udp_release(NETSRR_PORT);
+	return 0;
+}
+
 #define C(x) { #x, x##_cmd }
 static int (*command_lookup(char *command))(int, char**) {
-	static struct cmd_defs { char cmd[12]; int (*function)(int, char**); }
+	static struct cmd_defs { char cmd[32]; int (*function)(int, char**); }
 	cmd_defs[] = {
-	C(exit), C(genesis), C(leds), C(ls), C(srrbench)
+	C(exit), C(genesis), C(leds), C(ls), C(srrbench),
+	C(netsrr_server), C(netsrr_client)
 	};
 #undef C
 	for (size_t i = 0; i < arraysize(cmd_defs); ++i) {
