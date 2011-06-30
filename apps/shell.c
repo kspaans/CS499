@@ -47,15 +47,20 @@ static int genesis_cmd(int argc, char **argv) {
 	}
 }
 
+static int srrbench_cmd(int argc, char **argv) {
+	return -128;
+}
+
+#define C(x) { #x, x##_cmd }
 static int (*command_lookup(char *command))(int, char**) {
-	if(!strcmp("genesis", command)) {
-		return genesis_cmd;
-	} else if(!strcmp("ls", command)) {
-		return ls_cmd;
-	} else if(!strcmp("leds", command)) {
-		return leds_cmd;
-	} else if(!strcmp("exit", command)) {
-		return exit_cmd;
+	struct cmd_defs { char cmd[12]; int (*function)(int, char**); }
+	cmd_defs[] = {
+	C(exit), C(genesis), C(leds), C(ls), C(srrbench)
+	};
+#undef C
+	for (size_t i = 0; i < arraysize(cmd_defs); ++i) {
+		if(!strcmp(cmd_defs[i].cmd, command))
+			return cmd_defs[i].function;
 	}
 	return 0;
 }
