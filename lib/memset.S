@@ -61,3 +61,4 @@ memset:
 	bcs     2b
 
 	bx lr
+.size	memset, .-memset
