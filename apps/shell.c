@@ -20,7 +20,7 @@ static int ls_cmd(int argc, char **argv) {
 
 #include <drivers/leds.h>
 #include <servers/clock.h>
-static int leds_cmd(int argc, char **argv) {
+static void leds_task(void) {
 	printf("Now flashing the blinkenlights.\n");
 	for(;;) {
 		for(enum leds led = LED1; led <= LED5; led++) {
@@ -29,6 +29,11 @@ static int leds_cmd(int argc, char **argv) {
 			led_set(led, 0);
 		}
 	}
+}
+static int leds_cmd(int argc, char **argv) {
+	int ret = spawn(2, leds_task, SPAWN_DAEMON);
+	if(ret < 0)
+		return ret;
 	return 0;
 }
 
