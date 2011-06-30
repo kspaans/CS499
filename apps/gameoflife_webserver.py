@@ -65,7 +65,7 @@ def sock2con(sock, addrs):
     global gamefield
     while 1:
         data, addrs[0] = sock.recvfrom(1500)
-        print 'Got json literal:', data
+        #print 'Got json literal:', data
         cells = loads(data)
         print 'JSON decoded:', cells
         html = []

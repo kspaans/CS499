@@ -3,6 +3,7 @@
  * use the standard 3/23 rule
  */
 #include <types.h>
+#include <mem.h>
 #include <ip.h>
 #include <servers/net.h>
 #include <string.h>
@@ -12,6 +13,7 @@
 #define X_SIZE 10//0
 #define Y_SIZE 10//0
 #define HASH_SIZE 101
+#define MTU 150
 
 #define UDP_SRCPORT 8889
 #define UDP_DSTPORT UDP_SRCPORT
@@ -49,41 +51,49 @@ static void display(hashtable *field, size_t x, size_t y)
 }
 
 /*
+ * To be more frugal, send only the live cells to the other end.
+ */
 static void display_json(hashtable *field, size_t x, size_t y)
 {
-	char buf[X_SIZE * Y_SIZE * 4] = {}; // should be enough for the JSON
+	char buf[MTU] = {};
 	size_t idx = 0;
 	void *state;
+	uint8_t flag_firstloop = 1;
 
 	sprintf(buf, "[");
 	idx += 1;
 	for (size_t i = 0; i < x; i += 1) {
-		if (i) {
-			sprintf(buf + idx, ",");
-			idx += 1;
-		}
-		sprintf(buf + idx, "[");
-		idx += 1;
 		for (size_t j = 0; j < y; j += 1) {
-			if (j) {
-				sprintf(buf + idx, ",");
-				idx += 1;
+			if (hashtable_get(field, life_hashfunc(i, j), &state) != HT_NOKEY) {
+				if (!flag_firstloop) {
+					sprintf(buf + idx, ",");
+					idx += 1;
+					if (idx >= MTU) goto error_send;
+				} else {
+					flag_firstloop = 0;
+				}
+				sprintf(buf + idx, "[%d,%d]", i, j);
+				idx += 5;
+				if (i >= 10)   idx += 1;
+				if (j >= 10)   idx += 1;
+				if (i >= 100)  idx += 1;
+				if (j >= 100)  idx += 1;
+				if (i >= 1000) idx += 1;
+				if (j >= 1000) idx += 1;
+				if (idx >= MTU) goto error_send;
 			}
-			if (hashtable_get(field, life_hashfunc(i, j), &state) == HT_NOKEY) {
-				sprintf(buf + idx, "0");
-			} else {
-				sprintf(buf + idx, "1");
-			}
-			idx += 1; // all values should be 0 or 1
 		}
-		sprintf(buf + idx, "]");
-		idx += 1;
 	}
 	sprintf(buf + idx, "]");
 	idx += 1;
+	if (idx >= MTU) goto error_send;
 	send_udp(UDP_SRCPORT, GUMSTIX_CS, UDP_DSTPORT, buf, idx);
+	return;
+
+error_send:
+	printf("ERROR: Whoops, overfilled the UDP buffer: %d\n", idx);
+	send_udp(UDP_SRCPORT, GUMSTIX_CS, UDP_DSTPORT, buf, MTU);
 }
-*/
 
 /*
  * Use wrap-around semantics for the edges of the field
@@ -115,7 +125,8 @@ static uint8_t surround(hashtable *field, size_t curx, size_t cury, size_t x, si
 
 /*
  * A little bit gross, we need access to the hash table store so that it can be
- * copied.
+ * copied -- this gives us an unchanging copy of the field with which to use
+ * while computing the next generation.
  */
 static void age(hashtable *field, struct ht_item *uni, size_t x, size_t y)
 {
@@ -175,7 +186,7 @@ void gameoflife(void)
 
 	for (int i = 0; i < 50; i += 1) {
 		printf("Generation %d\n", i);
-		//display_json(field, X_SIZE, Y_SIZE);
+		display_json(&field, X_SIZE, Y_SIZE);
 		display(&field, X_SIZE, Y_SIZE);
 		age(&field, universe, X_SIZE, Y_SIZE);
 	}
