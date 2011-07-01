@@ -4,6 +4,7 @@
 
 #include <stdarg.h>
 #include <types.h>
+#include <syscall.h>
 
 #define offsetof(st, m) __builtin_offsetof(st, m)
 #define likely(x) __builtin_expect((x), 1)
@@ -38,32 +39,6 @@
 QUEUE(char,charqueue)
 QUEUE(int,intqueue)
 #undef QUEUE
-
-/* Hash tables */
-struct ht_item {
-	uint32_t key;
-	void *value;
-	char deleted;
-	char valid;
-};
-
-typedef uint32_t (*ht_hashfunc)(int key);
-typedef int (*ht_cmpfunc)(int key1, int key2);
-
-typedef struct {
-	struct ht_item *arr;
-	uint32_t count;
-	uint32_t max;
-	ht_hashfunc hashfunc;
-	ht_cmpfunc cmpfunc;
-} hashtable;
-
-#define HT_NOKEY -1 // key not found
-#define HT_NOMEM -2 // out of memory
-void hashtable_init(hashtable *ht, struct ht_item *arr, int max, ht_hashfunc hashfunc, ht_cmpfunc cmpfunc);
-int hashtable_get(hashtable *ht, int key, void **value);
-int hashtable_put(hashtable *ht, int key, void *value);
-int hashtable_del(hashtable *ht, int key);
 
 /* Generic printing functions */
 // Function to send formatted strings to; returns >= 0 on success and <0 on failure

@@ -3,6 +3,7 @@
 #include <lib.h>
 #include <types.h>
 #include <stdbool.h>
+#include <hashtable.h>
 #include <syscall.h>
 
 /* Circular buffers */
@@ -24,15 +25,13 @@ QUEUE(int,intqueue)
 #undef QUEUE
 
 /* Hash tables */
-static uint32_t default_hashfunc(int value) {
-	return value;
+static uint32_t default_hashfunc(const void *cmpkey) {
+	return int_hash((int)cmpkey);
 }
-
-static int default_cmpfunc(int key1, int key2) {
-	return key1 - key2;
+static int default_cmpfunc(const void *htkey, const void *cmpkey) {
+	return (int)htkey-(int)cmpkey;
 }
-
-void hashtable_init(hashtable *ht, struct ht_item *arr, int max, ht_hashfunc hashfunc, ht_cmpfunc cmpfunc) {
+void hashtable_init(hashtable *ht, struct ht_item *arr, int max, ht_hashfunc_t hashfunc, ht_cmpfunc_t cmpfunc) {
 	if(hashfunc == NULL) hashfunc = default_hashfunc;
 	if(cmpfunc == NULL) cmpfunc = default_cmpfunc;
 	ht->arr = arr;
@@ -41,18 +40,19 @@ void hashtable_init(hashtable *ht, struct ht_item *arr, int max, ht_hashfunc has
 	ht->hashfunc = hashfunc;
 	ht->cmpfunc = cmpfunc;
 	for(int i=0; i<max; i++) {
-		arr[i].valid = 0;
+		arr[i].valid = false;
 	}
 }
 
-int hashtable_get(hashtable *ht, int key, void **value) {
-	uint32_t i = ht->hashfunc(key) % ht->max;
+static inline int hashtable_get_entry(hashtable *ht, const void *cmpkey, bool accept_invalid) {
+	uint32_t i = ht->hashfunc(cmpkey) % ht->max;
 	uint32_t count = ht->max;
 	while(ht->arr[i].valid) {
-		if(ht->cmpfunc(key, ht->arr[i].key) == 0 && !ht->arr[i].deleted) {
-			if(value) *value = ht->arr[i].value;
-			return 0;
+		if(!ht->arr[i].deleted && ht->cmpfunc(ht->arr[i].key, cmpkey) == 0) {
+			return i;
 		}
+		if(accept_invalid && ht->arr[i].deleted)
+			return i;
 		++i;
 		--count;
 		if(i >= ht->max)
@@ -60,44 +60,17 @@ int hashtable_get(hashtable *ht, int key, void **value) {
 		if(count == 0)
 			return HT_NOKEY;
 	}
+	if(accept_invalid)
+		return i;
 	return HT_NOKEY;
 }
 
-int hashtable_put(hashtable *ht, int key, void *value) {
-	uint32_t i = ht->hashfunc(key) % ht->max;
-	int count = ht->max;
-	while(ht->arr[i].valid && !ht->arr[i].deleted
-		&& ht->cmpfunc(key, ht->arr[i].key) != 0) {
-		++i;
-		--count;
-		if(i >= ht->max)
-			i -= ht->max;
-		if(count == 0)
-			return HT_NOMEM;
-	}
-	ht->arr[i].key = key;
-	ht->arr[i].value = value;
-	ht->arr[i].valid = 1;
-	ht->arr[i].deleted = 0;
-	return 0;
+int hashtable_get(hashtable *ht, const void *cmpkey) {
+	return hashtable_get_entry(ht, cmpkey, false);
 }
 
-int hashtable_del(hashtable *ht, int key) {
-	uint32_t i = ht->hashfunc(key) % ht->max;
-	int count = ht->max;
-	while(ht->arr[i].valid) {
-		if(ht->cmpfunc(key, ht->arr[i].key) == 0 && !ht->arr[i].deleted) {
-			ht->arr[i].deleted = 1;
-			return 0;
-		}
-		++i;
-		--count;
-		if(i >= ht->max)
-			i -= ht->max;
-		if(count == 0)
-			return HT_NOKEY;
-	}
-	return HT_NOKEY;
+int hashtable_reserve(hashtable *ht, const void *cmpkey) {
+	return hashtable_get_entry(ht, cmpkey, true);
 }
 
 /* Argument parsing */

@@ -18,6 +18,8 @@
 #include <servers/net.h>
 #include <servers/fs.h>
 
+#include <hashtable_old.h>
+
 /* TODO Use userspace malloc (once implemented) */
 #include <kern/kmalloc.h>
 #define malloc kmalloc

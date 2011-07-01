@@ -21,35 +21,6 @@ __attribute__((unused)) static void task_reclamation_test(void) {
 	spawn(4, task_reclamation_2, 0);
 }
 
-static uint32_t dumbhash(int x) { return 0; }
-static void hashtable_print(hashtable *ht) {
-	printf("{");
-	for(uint32_t i=0; i<ht->max; i++) {
-		if(!ht->arr[i].valid)
-			printf("*");
-		else if(ht->arr[i].deleted)
-			printf("x");
-		else
-			printf("%d:%p", ht->arr[i].key, ht->arr[i].value);
-		if(i != ht->max-1)
-			printf(",");
-	}
-	printf("}\n");
-}
-__attribute__((unused)) static void hashtable_test(void) {
-	hashtable ht;
-	struct ht_item ht_arr[3];
-	hashtable_init(&ht, ht_arr, 3, dumbhash, NULL);
-#define GET(i) { int k = (i); printf("get %d -> %d: ", k, hashtable_get(&ht, k, NULL)); hashtable_print(&ht); }
-#define PUT(i,j) { int k = (i); void *l = (void *)(j); printf("put %d -> %d: ", k, hashtable_put(&ht, k, l)); hashtable_print(&ht); }
-#define DEL(i) { int k = (i); printf("del %d -> %d: ", k, hashtable_del(&ht, k)); hashtable_print(&ht); }
-	GET(0); PUT(0,0); GET(0); DEL(0);
-	PUT(3,1); PUT(5,2); PUT(0,3); PUT(1,4); PUT(3,0); PUT(5,5); DEL(0); DEL(3); DEL(1); DEL(5);
-#undef GET
-#undef PUT
-#undef DEL
-}
-
 __attribute__((unused)) static void fstest_task(void) {
 	int chan;
 	char path[PATH_MAX+1];
@@ -68,4 +39,3 @@ __attribute__((unused)) static void fstest_task(void) {
 		ASSERTNOERR(close(chan));
 	}
 }
-

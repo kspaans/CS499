@@ -10,6 +10,8 @@
 #include <lib.h>
 #include <apps.h>
 
+#include <hashtable_old.h>
+
 #define X_SIZE 10//0
 #define Y_SIZE 10//0
 #define HASH_SIZE 101
