@@ -107,5 +107,7 @@ size_t iov_length(const struct iovec *iov, int iovlen);
 void iov_copy(const struct iovec *srciov, int srclen, const struct iovec *dstiov, int dstlen);
 
 int xspawn(int priority, void (*code)(void), int flags);
+ssize_t xsend(int chan, const struct iovec *iov, int iovlen, int sch, int flags);
+ssize_t xrecv(int chan, const struct iovec *iov, int iovlen, int *rch, int flags);
 
 #endif /* LIB_H */
