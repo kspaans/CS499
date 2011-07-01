@@ -8,7 +8,7 @@ else
   redo-ifcreate $useclang
 fi
 
-XPREFIX=arm-linux-gnueabi-
+XPREFIX=arm-eabi-
 XCC=${XPREFIX}gcc
 XLD=${XPREFIX}gcc
 XAS=${XPREFIX}gcc
@@ -50,7 +50,7 @@ CFLAGS+=" -fverbose-asm"
 CFLAGS+=" -ffreestanding"
 
 # Super ricer-mode
-#CFLAGS+=" -flto"
+CFLAGS+=" -flto"
 
 if test -e "$usedebug"; then
 	CFLAGS+=' -g -DDEBUG -Wno-unused-function'

@@ -84,15 +84,14 @@ static int netsrr_server_cmd(int argc, char **argv) {
 	printf("got connection from %08x:%d\n", client_ip, client_port);
 
 	for(int step=0; step<NETSRR_STEPS; ++step) {
-		printf("step %d (size %d): ", step, 1<<step);
+		printf("  %d bytes, ", 1<<step);
 		start = read_timer();
 		for(int i=0; i<NETSRR_RUNS; ++i) {
 			udp_wait(NETSRR_PORT, &pkt.rec, sizeof(pkt));
 			send_udp(NETSRR_PORT, client_ip, client_port, pkt.payload, pkt.rec.data_len);
 		}
 		elapsed = read_timer() - start;
-		printf("%d ms ", (int)(elapsed/TICKS_PER_MSEC));
-		printf("(%lld ns/loop)\n", elapsed*1000000/TICKS_PER_MSEC/NETSRR_RUNS);
+		printf("%lld ns\n", elapsed*1000000/TICKS_PER_MSEC/NETSRR_RUNS);
 	}
 
 	printf("done!\n");
@@ -120,15 +119,14 @@ static int netsrr_client_cmd(int argc, char **argv) {
 	printf("starting srr to %s (IP: %08x)\n", argv[1], dest->ip);
 	ASSERTNOERR(send_udp(NETSRR_PORT, dest->ip, NETSRR_PORT, NULL, 0));
 	for(int step=0; step<NETSRR_STEPS; ++step) {
-		printf("step %d (size %d): ", step, 1<<step);
+		printf("%d bytes, ", 1<<step);
 		start = read_timer();
 		for(int i=0; i<NETSRR_RUNS; ++i) {
 			send_udp(NETSRR_PORT, dest->ip, NETSRR_PORT, pkt.payload, 1<<step);
 			udp_wait(NETSRR_PORT, &pkt.rec, sizeof(pkt));
 		}
 		elapsed = read_timer() - start;
-		printf("%d ms ", (int)(elapsed/TICKS_PER_MSEC));
-		printf("(%lld ns/loop)\n", elapsed*1000000/TICKS_PER_MSEC/NETSRR_RUNS);
+		printf("%lld ns\n", elapsed*1000000/TICKS_PER_MSEC/NETSRR_RUNS);
 	}
 
 	printf("done!\n");
