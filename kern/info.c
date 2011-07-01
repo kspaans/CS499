@@ -4,6 +4,7 @@
 #include <types.h>
 #include <string.h>
 #include <arm.h>
+#include <coproc.h>
 
 struct regbits {
 	uint32_t mask;
@@ -144,9 +145,7 @@ const struct regdesc sctlr_desc = {
 };
 
 static uint32_t read_sctlr(void) {
-	uint32_t sctlr;
-	asm("mrc p15, 0, %0, c1, c0, 0" : "=r" (sctlr));
-	return sctlr;
+	return read_coproc(p15, 0, c1, c0, 0);
 }
 
 static uint32_t read_cpsr(void) {

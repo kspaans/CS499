@@ -4,6 +4,7 @@
 #include <event.h>
 #include <syscall.h>
 #include <panic.h>
+#include <coproc.h>
 #include <kern/task.h>
 #include <kern/syscallno.h>
 #include <kern/kmalloc.h>
@@ -678,16 +679,14 @@ void sysrq(void) {
 }
 
 void task_dabt(struct task *task) {
-	uint32_t dfar;
-	asm ("mrc p15, 0, %0, c6, c0, 0" : "=r" (dfar));
+	uint32_t dfar = read_coproc(p15, 0, c6, c0, 0);
 	printk("Task Killed - Data Abort, address 0x%08x\n", dfar);
 	print_task(task);
 	exit_task(task);
 }
 
 void task_pabt(struct task *task) {
-	uint32_t ifar;
-	asm ("mrc p15, 0, %0, c6, c0, 2" : "=r" (ifar));
+	uint32_t ifar = read_coproc(p15, 0, c6, c0, 2);
 	printk("Task Killed - Prefetch Abort, address 0x%08x\n", ifar);
 	print_task(task);
 	exit_task(task);

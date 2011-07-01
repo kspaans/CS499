@@ -38,24 +38,4 @@ void prep_pagetable(void)
 	printk("pagetable init\n");
 	set_ttbr(pagetable);
 	set_dacr(0x3); // domain 0 manager access
-
-/*
-uint32_t ttb;
-        asm ("mrc p15, 0, %0, c2, c0, 0" : "=r" (ttb));
-printk("ttb = %08x\n", ttb);
-	asm ("mrc p15, 0, %0, c1, c0, 0" : "=r" (ttb));
-printk("MMU = %08x\n", ttb);
-	asm ("MRC p15, 0, %0, c3, c0, 0" : "=r" (ttb));
-printk("DACR = %08x\n", ttb);
-	asm ("MRC p15, 0, %0, c0, c1, 4" : "=r" (ttb));
-printk("MEM MODEL FEATURE 0 = %08x\n", ttb);
-	asm ("MRC p15, 0, %0, c0, c1, 5" : "=r" (ttb));
-printk("MEM MODEL FEATURE 1 = %08x\n", ttb);
-	asm ("MRC p15, 0, %0, c0, c1, 6" : "=r" (ttb));
-printk("MEM MODEL FEATURE 2 = %08x\n", ttb);
-	asm ("MRC p15, 0, %0, c0, c1, 7" : "=r" (ttb));
-printk("MEM MODEL FEATURE 3 = %08x\n", ttb);
-	asm ("MRC p15, 0, %0, c0, c0, 3" : "=r" (ttb));
-printk("TLB Type Reigster = %08x\n", ttb);
-*/
 }

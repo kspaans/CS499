@@ -4,6 +4,7 @@
 #include <kern/task.h>
 #include <kern/printk.h>
 #include <panic.h>
+#include <coproc.h>
 
 static int panic_recursion;
 
@@ -52,16 +53,14 @@ void panic(const char *fmt, ...) {
 }
 
 void kernel_dabt(struct regs *regs) {
-	uint32_t dfar;
-	asm ("mrc p15, 0, %0, c6, c0, 0" : "=r" (dfar));
+	uint32_t dfar = read_coproc(p15, 0, c6, c0, 0);
 	printk("Kernel Data Abort, address 0x%08x\n", dfar);
 	print_regs(regs);
 	prm_reset();
 }
 
 void kernel_pabt(struct regs *regs) {
-	uint32_t ifar;
-	asm ("mrc p15, 0, %0, c6, c0, 2" : "=r" (ifar));
+	uint32_t ifar = read_coproc(p15, 0, c6, c0, 2);
 	printk("Kernel Prefetch Abort, address 0x%08x\n", ifar);
 	print_regs(regs);
 	prm_reset();
