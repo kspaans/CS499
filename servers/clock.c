@@ -66,7 +66,7 @@ static void delayinfoheap_push(delayinfo *delays, int *n, delayinfo value) {
 
 #define DELAYS 5000
 
-void clockserver_task(void) {
+static void clockserver_task(void) {
 	int tid;
 	int rcvlen;
 	int rcvdata;
@@ -129,4 +129,8 @@ static void clockserver_notifier(void) {
 		waitevent(EVENT_CLOCK_TICK);
 		MsgSend(clock_fd, CLOCK_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
+}
+
+void clockserver_init(void) {
+	xspawn(1, clockserver_task, SPAWN_DAEMON);
 }

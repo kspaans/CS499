@@ -3,6 +3,7 @@
 #include <lib.h>
 #include <types.h>
 #include <stdbool.h>
+#include <syscall.h>
 
 /* Circular buffers */
 #define QUEUE(T,Q) \
@@ -191,3 +192,13 @@ long strtol(const char *start, const char **end, int base) {
 int atoi(const char *s) {
 	return strtol(s, NULL, 10);
 }
+
+int xspawn(int priority, void (*code)(void), int flags) {
+	int tid = spawn(priority, code, flags);
+	if (tid < 0) {
+		printf("xspawn: failed to create task");
+		exit();
+	}
+	return tid;
+}
+

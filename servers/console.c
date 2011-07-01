@@ -78,7 +78,7 @@ void putchar(char c) {
 	MsgSend(STDOUT_FILENO, STDOUT_WRITE_MSG, &c, 1, NULL, 0, NULL);
 }
 
-void consoletx_task(void) {
+static void consoletx_task(void) {
 	int tid, rcvlen, msgcode;
 	char rcvbuf[PRINT_CHUNK];
 	char *cur;
@@ -149,7 +149,7 @@ void consoletx_task(void) {
 	}
 }
 
-void consolerx_task(void) {
+static void consolerx_task(void) {
 	int tid, rcvlen, msgcode;
 
 	spawn(0, consolerx_notifier, SPAWN_DAEMON);
@@ -204,4 +204,9 @@ static void consolerx_notifier(void) {
 		waitevent(EVENT_CONSOLE_RECEIVE);
 		MsgSend(STDIN_FILENO, CONSOLE_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
+}
+
+void console_init(void) {
+	xspawn(1, consoletx_task, SPAWN_DAEMON);
+	xspawn(1, consolerx_task, SPAWN_DAEMON);
 }

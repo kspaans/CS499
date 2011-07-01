@@ -19,6 +19,6 @@ int mkopenchan(const char *pathname);
 // debug functions
 void dump_files(void);
 
-void fileserver_task(void);
+void fileserver_init(void);
 
 #endif /* SERVER_FS_H */

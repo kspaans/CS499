@@ -5,6 +5,6 @@ void msleep(int msec);
 
 int time(void);
 
-void clockserver_task(void);
+void clockserver_init(void);
 
 #endif /* SERVER_CLOCK_H */

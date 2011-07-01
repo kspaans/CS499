@@ -72,7 +72,7 @@ void send_createreq(uint32_t host, int priority, const char *name, int flags) {
 	// Wait for a reply?
 }
 
-void genesis_task(void) {
+static void genesis_task(void) {
 	struct {
 		struct packet_rec rec;
 		struct creation_request data;
@@ -93,4 +93,8 @@ void genesis_task(void) {
 		handle_createreq(reply.data.priority, reply.data.path, reply.data.flags);
 	}
 	udp_release(GENESIS_PORT);
+}
+
+void genesis_init(void) {
+	xspawn(3, genesis_task, SPAWN_DAEMON);
 }

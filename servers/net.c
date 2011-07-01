@@ -719,4 +719,11 @@ void net_init(void) {
 		(this_host->ncip >> 8)  & 0xff,
 		(this_host->ncip >> 0)  & 0xff,
 		this_host->ncport);
+
+	xspawn(1, ethrx_task, SPAWN_DAEMON);
+	xspawn(1, icmpserver_task, SPAWN_DAEMON);
+	xspawn(1, arpserver_task, SPAWN_DAEMON);
+	xspawn(1, udprx_task, SPAWN_DAEMON);
+	xspawn(2, udpconrx_task, SPAWN_DAEMON);
+	xspawn(2, udpcontx_task, SPAWN_DAEMON);
 }

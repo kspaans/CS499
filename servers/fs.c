@@ -208,7 +208,7 @@ static void add_chan(int dirfd, const char *path, int chan) {
 	memcpy(fs.files[i].path, path, pathlen);
 }
 
-void fileserver_task(void) {
+static void fileserver_task(void) {
 	int tid, msgcode;
 	char path[PATH_MAX];
 
@@ -254,4 +254,8 @@ void dump_files(void) {
 		if (fs.files[i].valid && !fs.files[i].deleted)
 			printf("[%d] %.*s\n", i, PATH_MAX, fs.files[i].path);
 	}
+}
+
+void fileserver_init(void) {
+	xspawn(2, fileserver_task, SPAWN_DAEMON);
 }

@@ -5,7 +5,6 @@
 /* PRINT_CHUNK should not exceed UDPMTU (~1400) */
 #define PRINT_CHUNK 1024
 
-void consolerx_task(void);
-void consoletx_task(void);
+void console_init(void);
 
 #endif /* SERVER_CONSOLE_H */

@@ -149,7 +149,7 @@ static int (*command_lookup(char *command))(int, char**) {
 	return 0;
 }
 
-void shell_task(void) {
+static void shell_task(void) {
 	char input[128];
 	char *argv[10];
 	size_t pos;
@@ -246,4 +246,8 @@ void shell_task(void) {
 			printf("\n");
 		}
 	}
+}
+
+void shell_init(void) {
+	xspawn(5, shell_task, 0);
 }
