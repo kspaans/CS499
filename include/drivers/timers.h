@@ -36,7 +36,6 @@
 #define TTGR 0x030 // write to this register to trigger a reload
 #define TWPS 0x034 // write-posted status
 #define TOCR 0x054 // timer overflow counter (timers 1, 2 and 10 only)
-#define GP_TICKS_PER_SEC 26000000
 
 void timers_init(void);
 /* simple one-shot timer initialization: starts timer in autoreload mode */

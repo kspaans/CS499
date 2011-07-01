@@ -7,6 +7,7 @@
 #include <mem.h>
 #include <event.h>
 #include <kern/task.h>
+#include <timer.h>
 
 #include <drivers/timers.h>
 static void clock_isr(int irq) {
@@ -15,7 +16,7 @@ static void clock_isr(int irq) {
 }
 static void init_clock_irq(void) {
 	intc_register(IRQ_GPT5, clock_isr, 0);
-	timer_go(GPTIMER5, -26000, 1);
+	timer_go(GPTIMER5, -(int)TICKS_PER_MSEC, 1);
 	intc_intenable(IRQ_GPT5);
 }
 
