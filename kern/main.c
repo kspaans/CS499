@@ -11,6 +11,7 @@
 #include <lib.h>
 #include <syscall.h>
 #include <ip.h>
+#include <mem.h>
 
 #include <servers/clock.h>
 #include <servers/console.h>
@@ -24,6 +25,15 @@ static void idle_task(void) {
 
 int main(void) {
 	struct task *next;
+
+	/* Set the CPU speed */
+	uint32_t skuid = read32(DEVICEID_BASE + DEVICEID_SKUID_OFFSET);
+	uint32_t clksel_val = (1<<19) | 12;
+	if((skuid & DEVICEID_SKUID_CPUSPEED_MASK) == DEVICEID_SKUID_CPUSPEED_720)
+		clksel_val |= (720 << 8);
+	else
+		clksel_val |= (600 << 8);
+	write32(CM_MPU_BASE + PRM_CLKSEL1_PLL_MPU_OFFSET, clksel_val);
 
 	/* Basic hardware initialization */
 	init_cpumodes(); // set up CPU modes for interrupt handling

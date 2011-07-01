@@ -1,6 +1,9 @@
 #ifndef OMAP3_MACHINE_H
 #define OMAP3_MACHINE_H
 
+/* Device identification */
+#define DEVICEID_BASE 0x4830a200
+
 /* UARTs */
 #define UART1_PHYS_BASE 0x4806a000
 #define UART2_PHYS_BASE 0x4806c000
@@ -8,6 +11,7 @@
 
 /* PRCM */
 #define PRM_GLOBAL_BASE 0x48307200
+#define CM_MPU_BASE 0x48004900
 #define CM_CORE_BASE 0x48004A00
 #define CM_WKUP_BASE 0x48004C00
 #define CM_PER_BASE 0x48005000
