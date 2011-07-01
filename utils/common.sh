@@ -1,4 +1,5 @@
 top=$utils/..
+local=$utils/local.sh
 useclang=$top/bin/use-clang
 usedebug=$top/bin/debug
 
@@ -8,7 +9,16 @@ else
   redo-ifcreate $useclang
 fi
 
-XPREFIX=arm-eabi-
+if test -e "$local"; then
+  redo-ifchange $local
+  . $local
+else
+  redo-ifcreate $local
+fi
+
+if test "$XPREFIX" = ""; then
+  XPREFIX=arm-linux-gnueabi-
+fi
 XCC=${XPREFIX}gcc
 XLD=${XPREFIX}gcc
 XAS=${XPREFIX}gcc
@@ -32,7 +42,7 @@ if test -e "$useclang"; then
 fi
 
 # Standard options
-CFLAGS="-pipe -Wall -Wextra -Werror -I include -std=gnu99 -O3"
+CFLAGS+=" -pipe -Wall -Wextra -Werror -I include -std=gnu99 -O3"
 
 # Warnings
 CFLAGS+=" -Wall -Wextra -Werror -Wno-unused-parameter"
@@ -49,9 +59,6 @@ CFLAGS+=" -fverbose-asm"
 # No C library
 CFLAGS+=" -ffreestanding"
 
-# Super ricer-mode
-CFLAGS+=" -flto"
-
 if test -e "$usedebug"; then
 	CFLAGS+=' -g -DDEBUG -Wno-unused-function'
 else
@@ -66,7 +73,7 @@ fi
 CFLAGS+=" -DBUILDUSER=$USER"
 
 # Do not link in glibc
-LDFLAGS="-nostdlib"
+LDFLAGS+="-nostdlib"
 
 # Disable demand-pageable
 LDFLAGS+=" -n"

@@ -7,3 +7,4 @@ bin/*
 *.did
 .*.swp
 cscope.out
+utils/local.sh
