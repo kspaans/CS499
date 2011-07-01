@@ -1,4 +1,5 @@
 #Copyright Jon Berg , turtlemeat.com
+## Note to self, doublecheck that I'm actually allowed to use this.
 
 import string, cgi, time, threading
 from os import curdir, sep
@@ -68,17 +69,21 @@ def sock2con(sock, addrs):
         #print 'Got json literal:', data
         cells = loads(data)
         print 'JSON decoded:', cells
+        field_size = cells[0]
+        live_cells = cells[1:]
         html = []
-	html.append('<table>')
-        for x in cells:
+        html.append('<table>')
+        for x in xrange(0, field_size[0]):
             html.append('<tr height="1px" width="1px">')
-            for y in x:
-		if y:
-                    html.append('<td bgcolor="black"></td>')
-                else:
-                    html.append('<td></td>')
+            for y in xrange(0, field_size[2]):
+               if live_cells:
+                   live_cell_posn = live_cells.pop()
+                   if x == live_cell_posn[0] and y == live_cell_posn[1]:
+                       html.append('<td bgcolor="black"></td>')
+                   else:
+                       html.append('<td></td>')
             html.append('</tr>')
-	html.append('</table><hr />')
+        html.append('</table><hr />')
         gamefield.field = "%s%s" % (gamefield.field, "".join(html))
 
 def main():

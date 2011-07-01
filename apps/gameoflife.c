@@ -13,7 +13,7 @@
 #define X_SIZE 10//0
 #define Y_SIZE 10//0
 #define HASH_SIZE 101
-#define MTU 150
+#define MTU 1500
 
 #define UDP_SRCPORT 8889
 #define UDP_DSTPORT UDP_SRCPORT
@@ -62,6 +62,8 @@ static void display_json(hashtable *field, size_t x, size_t y)
 
 	sprintf(buf, "[");
 	idx += 1;
+	sprintf(buf + idx, "[% 8d,% 8d]", X_SIZE, Y_SIZE);
+	idx += 19;
 	for (size_t i = 0; i < x; i += 1) {
 		for (size_t j = 0; j < y; j += 1) {
 			if (hashtable_get(field, life_hashfunc(i, j), &state) != HT_NOKEY) {
@@ -72,14 +74,8 @@ static void display_json(hashtable *field, size_t x, size_t y)
 				} else {
 					flag_firstloop = 0;
 				}
-				sprintf(buf + idx, "[%d,%d]", i, j);
-				idx += 5;
-				if (i >= 10)   idx += 1;
-				if (j >= 10)   idx += 1;
-				if (i >= 100)  idx += 1;
-				if (j >= 100)  idx += 1;
-				if (i >= 1000) idx += 1;
-				if (j >= 1000) idx += 1;
+				sprintf(buf + idx, "[% 8d,% 8d]", i, j);
+				idx += 19;
 				if (idx >= MTU) goto error_send;
 			}
 		}
@@ -127,6 +123,7 @@ static uint8_t surround(hashtable *field, size_t curx, size_t cury, size_t x, si
  * A little bit gross, we need access to the hash table store so that it can be
  * copied -- this gives us an unchanging copy of the field with which to use
  * while computing the next generation.
+ * A possible extention would be a hast_table_foreach();
  */
 static void age(hashtable *field, struct ht_item *uni, size_t x, size_t y)
 {
