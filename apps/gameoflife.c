@@ -9,8 +9,7 @@
 #include <string.h>
 #include <lib.h>
 #include <apps.h>
-
-#include <hashtable_old.h>
+#include <hashtable.h>
 
 #define X_SIZE 10//0
 #define Y_SIZE 10//0
@@ -34,19 +33,66 @@ static uint32_t life_hashfunc(uint32_t x, uint32_t y)
 	return x | y;
 }
 
+/* This structure abstracts the implementation of the field.
+   You can replace the implementations of the init, get, add, del
+   functions as you see fit. */
+struct field {
+	struct ht_item ht_arr[HASH_SIZE];
+	hashtable ht;
+	/* add more fields as appropriate... */
+};
+
+static void field_init(struct field *field) {
+	hashtable_init(&field->ht, field->ht_arr, HASH_SIZE, NULL, NULL);
+}
+
+/* Returns 1 if the cell is alive and 0 otherwise */
+static int field_get(struct field *field, size_t x, size_t y) {
+	return (hashtable_get(&field->ht, life_hashfunc(x, y)) != HT_NOKEY);
+}
+
+static void field_add(struct field *field, size_t x, size_t y) {
+	uint32_t key = life_hashfunc(x, y);
+	/* Robert sez:
+	   New hashtable implementation is a bit different.
+	   Instead of doing a "put", you "reserve" a spot in the hashtable.
+	   This spot might be occupied by your key already, in which case
+	   you should update the entry as appropriate.
+	   Note, however, that the spot is not truly yours until you activate
+	   it. Do not call reserve twice in a row without activating an entry first
+	   or the first reservation may not be valid. */
+	int i = hashtable_reserve(&field->ht, key);
+	if(i < 0) {
+		/* Ran out of space...this is fatal */
+		printf("oh god, we have too many live cells\n");
+		return;
+	}
+	if(active_ht_item(&field->ht_arr[i])) {
+		/* Entry is already active. */
+		return;
+	}
+	field->ht_arr[i].intkey = key;
+	field->ht_arr[i].intvalue = 1;
+	activate_ht_item(&field->ht_arr[i]);
+}
+
+static void field_del(struct field *field, size_t x, size_t y) {
+	int i = hashtable_get(&field->ht, life_hashfunc(x, y));
+	if(i < 0) {
+		/* Entry was not active to begin with */
+		return;
+	}
+	delete_ht_item(&field->ht_arr[i]);
+}
+
 /*
  * Put (0,0) cell in the upper-left
  */
-static void display(hashtable *field, size_t x, size_t y)
+static void display(struct field *field, size_t x, size_t y)
 {
-	void *state;
 	for (size_t i = 0; i < x; i += 1) {
 		for (size_t j = 0; j < y; j += 1) {
-			if (hashtable_get(field, life_hashfunc(i, j), &state) == HT_NOKEY) {
-				printf("0 ");
-			} else {
-				printf("1 ");
-			}
+			printf("%d ", field_get(field, i, j));
 		}
 		printf("\n");
 	}
@@ -55,20 +101,19 @@ static void display(hashtable *field, size_t x, size_t y)
 /*
  * To be more frugal, send only the live cells to the other end.
  */
-static void display_json(hashtable *field, size_t x, size_t y)
+static void display_json(struct field *field, size_t x, size_t y)
 {
 	char buf[MTU] = {};
 	size_t idx = 0;
-	void *state;
 	uint8_t flag_firstloop = 1;
 
 	sprintf(buf, "[");
 	idx += 1;
-	sprintf(buf + idx, "[% 8d,% 8d]", X_SIZE, Y_SIZE);
+	sprintf(buf + idx, "[%8d, %8d]", X_SIZE, Y_SIZE);
 	idx += 19;
 	for (size_t i = 0; i < x; i += 1) {
 		for (size_t j = 0; j < y; j += 1) {
-			if (hashtable_get(field, life_hashfunc(i, j), &state) != HT_NOKEY) {
+			if (field_get(field, i, j)) {
 				if (!flag_firstloop) {
 					sprintf(buf + idx, ",");
 					idx += 1;
@@ -76,7 +121,7 @@ static void display_json(hashtable *field, size_t x, size_t y)
 				} else {
 					flag_firstloop = 0;
 				}
-				sprintf(buf + idx, "[% 8d,% 8d]", i, j);
+				sprintf(buf + idx, "[%8d, %8d]", i, j);
 				idx += 19;
 				if (idx >= MTU) goto error_send;
 			}
@@ -96,12 +141,11 @@ error_send:
 /*
  * Use wrap-around semantics for the edges of the field
  */
-static uint8_t surround(hashtable *field, size_t curx, size_t cury, size_t x, size_t y)
+static uint8_t surround(struct field *field, size_t curx, size_t cury, size_t x, size_t y)
 {
 	uint8_t count = 0;
 	int8_t  leftmost = curx - 1;
-	int8_t  topmost  = cury - 1;
-	void *state;
+	int8_t  topmost = cury - 1;
 
 	if (leftmost < 0) {
 		leftmost = x - 1;
@@ -110,14 +154,14 @@ static uint8_t surround(hashtable *field, size_t curx, size_t cury, size_t x, si
 		topmost = y - 1;
 	}
 
-	if (hashtable_get(field, life_hashfunc(leftmost, topmost), &state) != HT_NOKEY) { ++count; }
-	if (hashtable_get(field, life_hashfunc(leftmost, (topmost + 1) % y), &state) != HT_NOKEY) { ++count; }
-	if (hashtable_get(field, life_hashfunc(leftmost, (topmost + 2) % y), &state) != HT_NOKEY) { ++count; }
-	if (hashtable_get(field, life_hashfunc((leftmost + 1) % x, topmost), &state) != HT_NOKEY) { ++count; }
-	if (hashtable_get(field, life_hashfunc((leftmost + 1) % x, (topmost + 2) % y), &state) != HT_NOKEY) { ++count; }
-	if (hashtable_get(field, life_hashfunc((leftmost + 2) % x, topmost), &state) != HT_NOKEY) { ++count; }
-	if (hashtable_get(field, life_hashfunc((leftmost + 2) % x, (topmost + 1) % y), &state) != HT_NOKEY) { ++count; }
-	if (hashtable_get(field, life_hashfunc((leftmost + 2) % x, (topmost + 2) % y), &state) != HT_NOKEY) { ++count; }
+	count += field_get(field, leftmost, topmost);
+	count += field_get(field, leftmost, (topmost + 1) % y);
+	count += field_get(field, leftmost, (topmost + 2) % y);
+	count += field_get(field, (leftmost + 1) % x, topmost);
+	count += field_get(field, (leftmost + 1) % x, (topmost + 2) % y);
+	count += field_get(field, (leftmost + 2) % x, topmost);
+	count += field_get(field, (leftmost + 2) % x, (topmost + 1) % y);
+	count += field_get(field, (leftmost + 2) % x, (topmost + 2) % y);
 	return count;
 }
 
@@ -127,23 +171,19 @@ static uint8_t surround(hashtable *field, size_t curx, size_t cury, size_t x, si
  * while computing the next generation.
  * A possible extention would be a hast_table_foreach();
  */
-static void age(hashtable *field, struct ht_item *uni, size_t x, size_t y)
+static void age(struct field *field, size_t x, size_t y)
 {
-	struct ht_item copy[HASH_SIZE];
-	hashtable hcopy;
-	uint8_t count;
-
-	memcpy(copy, uni, sizeof(copy));
-	memcpy(&hcopy, field, sizeof(hashtable));
-	hcopy.arr = copy;
+	struct field copy;
+	memcpy(&copy, field, sizeof(copy));
+	copy.ht.arr = copy.ht_arr;
 
 	for (size_t i = 0; i < x; i += 1) {
 		for (size_t j = 0; j < y; j += 1) {
-			count = surround(&hcopy, i, j, x, y);
+			uint8_t count = surround(&copy, i, j, x, y);
 			if (count > 3 || count < 2) {
-				hashtable_del(field, life_hashfunc(i, j)); // cell dies
+				field_del(field, i, j); // cell dies
 			} else if (count == 3) {
-				hashtable_put(field, life_hashfunc(i, j), (void *) 1); // cell is born
+				field_add(field, i, j); // cell is born
 			}
 		}
 	}
@@ -151,19 +191,15 @@ static void age(hashtable *field, struct ht_item *uni, size_t x, size_t y)
 
 void gameoflife(void)
 {
-	//uint8_t *field[X_SIZE];
-	//uint8_t universe[X_SIZE][Y_SIZE] = {};
-	hashtable field;
-	struct ht_item universe[HASH_SIZE];
+	struct field field;
 
-	hashtable_init(&field, universe, HASH_SIZE, NULL, NULL);
+	field_init(&field);
 	// start it with a glider
-	hashtable_put(&field, life_hashfunc(0, 1), (void *)1); //field[0][1] = 1;
-	hashtable_put(&field, life_hashfunc(1, 2), (void *)1); //field[1][2] = 1;
-	hashtable_put(&field, life_hashfunc(2, 0), (void *)1); //field[2][0] = field[2][1] = field[2][2] = 1;
-	hashtable_put(&field, life_hashfunc(2, 1), (void *)1);
-	hashtable_put(&field, life_hashfunc(2, 2), (void *)1);
-
+	field_add(&field, 0, 1);
+	field_add(&field, 1, 2);
+	field_add(&field, 2, 0);
+	field_add(&field, 2, 1);
+	field_add(&field, 2, 2);
 	/*
 	// the 5x5 infinite pattern
 	field[47][47] = 1;
@@ -187,6 +223,6 @@ void gameoflife(void)
 		printf("Generation %d\n", i);
 		display_json(&field, X_SIZE, Y_SIZE);
 		display(&field, X_SIZE, Y_SIZE);
-		age(&field, universe, X_SIZE, Y_SIZE);
+		age(&field, X_SIZE, Y_SIZE);
 	}
 }
