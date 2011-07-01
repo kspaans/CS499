@@ -137,19 +137,28 @@ static int netsrr_client_cmd(int argc, char **argv) {
 	return 0;
 }
 
-#define C(x) { #x, x##_cmd }
+#define CMD(name,desc) { #name, name##_cmd, desc }
+static struct cmd_def {
+	const char *cmd;
+	cmd_func_t function;
+	const char *desc;
+} cmd_defs[] = {
+	{"reset", reset_cmd, "Reset board"},
+	{"exit", exit_cmd, "Exit back to U-Boot"},
+	{"genesis", genesis_cmd, "Start a task remotely"},
+	{"leds", leds_cmd, "Flash the blinkenlights"},
+	{"ls", ls_cmd, "List all files in the filesystem"},
+	{"netsrr_server", netsrr_server_cmd, "Start a server for benchmarking network SRR"},
+	{"netsrr_client", netsrr_client_cmd, "Connect to a server to benchmark network SRR"},
+	{"ipcbench", ipcbench_cmd, "Benchmark local SRR"},
+};
+
 static cmd_func_t command_lookup(char *command) {
-	static struct cmd_defs { char cmd[32]; cmd_func_t function; }
-	cmd_defs[] = {
-	C(reset), C(exit), C(genesis), C(leds), C(ls),
-	C(netsrr_server), C(netsrr_client), C(ipcbench)
-	};
-#undef C
 	for (size_t i = 0; i < arraysize(cmd_defs); ++i) {
 		if(!strcmp(cmd_defs[i].cmd, command))
 			return cmd_defs[i].function;
 	}
-	return 0;
+	return NULL;
 }
 
 static void shell_task(void) {
