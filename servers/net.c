@@ -2,6 +2,7 @@
 #include <string.h>
 #include <errno.h>
 #include <event.h>
+#include <hashtable.h>
 #include <syscall.h>
 #include <task.h>
 #include <msg.h>
@@ -17,8 +18,6 @@
 #include <servers/clock.h>
 #include <servers/net.h>
 #include <servers/fs.h>
-
-#include <hashtable_old.h>
 
 /* TODO Use userspace malloc (once implemented) */
 #include <kern/kmalloc.h>
@@ -349,26 +348,36 @@ void icmpserver_task(void) {
 
 static void arpserver_store(mac_addr_t *mac_arr, intqueue *ipq, hashtable *addrmap, uint32_t addr, mac_addr_t macaddr) {
 	mac_addr_t *loc;
-	if(hashtable_get(addrmap, addr, (void **)&loc) >= 0) {
+	int i = hashtable_reserve(addrmap, addr);
+	if(i < 0) {
+		panic("ran out of space in arpserver");
+		return;
+	} else if(active_ht_item(&addrmap->arr[i])) {
+		/* update existing entry */
+		loc = addrmap->arr[i].value;
 		*loc = macaddr;
-	} else if(intqueue_full(ipq)) {
-		/* Free up an old entry */
-		int old_addr = intqueue_front(ipq);
-		if(hashtable_get(addrmap, old_addr, (void **)&loc) < 0)
-			return;
-		hashtable_del(addrmap, old_addr);
-		if(hashtable_put(addrmap, addr, loc) < 0)
-			return;
-		*loc = macaddr;
-		intqueue_pop(ipq);
-		intqueue_push(ipq, addr);
-	} else {
-		loc = mac_arr + ipq->len;
-		if(hashtable_put(addrmap, addr, loc) < 0)
-			return;
-		*loc = macaddr;
-		intqueue_push(ipq, addr);
+		return;
 	}
+
+	if(intqueue_full(ipq)) {
+		/* free up an old entry */
+		int old_addr = intqueue_front(ipq);
+		int old_idx = hashtable_get(addrmap, old_addr);
+		if(old_idx < 0)
+			return;
+		loc = addrmap->arr[old_idx].value;
+		delete_ht_item(&addrmap->arr[old_idx]);
+		intqueue_pop(ipq);
+	} else {
+		/* allocate new entry */
+		loc = mac_arr + ipq->len;
+	}
+
+	*loc = macaddr;
+	addrmap->arr[i].intkey = addr;
+	addrmap->arr[i].value = loc;
+	activate_ht_item(&addrmap->arr[i]);
+	intqueue_push(ipq, addr);
 }
 
 void arpserver_task(void) {
@@ -378,15 +387,15 @@ void arpserver_task(void) {
 	} msg;
 	int tid, rcvlen, msgcode;
 
-	mac_addr_t mac_arr[1024];
+	mac_addr_t mac_arr[512];
 	intqueue ipq;
-	int ipq_arr[1024];
-	intqueue_init(&ipq, ipq_arr, 1024);
-	mac_addr_t *loc;
+	int ipq_arr[512];
+	intqueue_init(&ipq, ipq_arr, arraysize(ipq_arr));
+	int idx;
 
 	hashtable addrmap;
-	struct ht_item addrmap_arr[1537];
-	hashtable_init(&addrmap, addrmap_arr, 1537, NULL, NULL);
+	struct ht_item addrmap_arr[1024];
+	hashtable_init(&addrmap, addrmap_arr, arraysize(addrmap_arr), NULL, NULL);
 
 	int arpserver_fd = mkopenchan("/services/arp");
 
@@ -404,11 +413,12 @@ void arpserver_task(void) {
 			}
 			break;
 		case ARP_QUERY_MSG:
-			if(hashtable_get(&addrmap, msg.addr, (void **)&loc) < 0) {
+			idx = hashtable_get(&addrmap, msg.addr);
+			if(idx < 0) {
 				send_arp_request(msg.addr);
 				MsgReplyStatus(tid, EARP_PENDING);
 			} else {
-				MsgReply(tid, 0, loc, sizeof(mac_addr_t), -1);
+				MsgReply(tid, 0, addrmap_arr[idx].value, sizeof(mac_addr_t), -1);
 			}
 			break;
 		default:
@@ -495,8 +505,8 @@ void udprx_task(void) {
 	struct packet_rec *pkt;
 
 	hashtable portmap;
-	struct ht_item portmap_arr[389];
-	hashtable_init(&portmap, portmap_arr, 389, NULL, NULL);
+	struct ht_item portmap_arr[512];
+	hashtable_init(&portmap, portmap_arr, arraysize(portmap_arr), NULL, NULL);
 
 	while(1) {
 		rcvlen = MsgReceive(udprx_fd, &tid, &msgcode, &msg, sizeof(msg));
@@ -505,10 +515,12 @@ void udprx_task(void) {
 		switch(msgcode) {
 		case UDP_RX_DISPATCH_MSG: {
 			MsgReplyStatus(tid, 0);
-			if(hashtable_get(&portmap, ntohs(msg.pkt.udp.uh_dport), (void **)&buf) < 0) {
+			int idx = hashtable_get(&portmap, (int)ntohs(msg.pkt.udp.uh_dport));
+			if(idx < 0) {
 				/* TODO: send ICMP port-unreachable message? */
 				break;
 			}
+			buf = portmap_arr[idx].value;
 			size_t datalen = ntohs(msg.pkt.udp.uh_ulen) - sizeof(struct udphdr);
 			pkt = alloc_pkt(buf, calc_rec_size(datalen));
 			if(pkt != NULL) {
@@ -530,50 +542,61 @@ void udprx_task(void) {
 			break;
 		}
 		case UDP_RX_BIND_MSG: {
-			if(hashtable_get(&portmap, msg.port, NULL) >= 0) {
+			int idx = hashtable_reserve(&portmap, (int)msg.port);
+			if(idx < 0) {
+				MsgReplyStatus(tid, ENOMEM);
+				break;
+			}
+			if(active_ht_item(&portmap_arr[idx])) {
 				MsgReplyStatus(tid, EEXIST);
 				break;
 			}
+
 			if(free_head != NULL) {
 				buf = free_head;
 				free_head = buf->next_free;
 			} else {
 				buf = malloc(sizeof(*buf));
 			}
-			if(hashtable_put(&portmap, msg.port, buf) < 0) {
-				buf->next_free = free_head;
-				free_head = buf;
-				MsgReplyStatus(tid, ENOMEM);
-				break;
-			}
 			buf->head = buf->tail = buf->top = 0;
 			buf->tid = -1;
+
+			portmap_arr[idx].intkey = msg.port;
+			portmap_arr[idx].value = buf;
+			activate_ht_item(&portmap_arr[idx]);
 			MsgReplyStatus(tid, 0);
 			break;
 		}
 		case UDP_RX_RELEASE_MSG: {
-			if(hashtable_get(&portmap, msg.port, (void **)&buf) < 0) {
+			int idx = hashtable_get(&portmap, (int)msg.port);
+			if(idx < 0) {
 				MsgReplyStatus(tid, ENOENT);
 				break;
 			}
+			buf = portmap_arr[idx].value;
 			if(buf->tid != -1) {
 				MsgReplyStatus(tid, EBUSY);
 				break;
 			}
+
 			buf->next_free = free_head;
 			free_head = buf;
+			delete_ht_item(&portmap_arr[idx]);
 			MsgReplyStatus(tid, 0);
 			break;
 		}
 		case UDP_RX_REQ_MSG: {
-			if(hashtable_get(&portmap, msg.port, (void **)&buf) < 0) {
+			int idx = hashtable_get(&portmap, (int)msg.port);
+			if(idx < 0) {
 				MsgReplyStatus(tid, ENOENT);
 				break;
 			}
+			buf = portmap_arr[idx].value;
 			if(buf->tid != -1) {
 				MsgReplyStatus(tid, EBUSY);
 				break;
 			}
+
 			pkt = pop_pkt(buf);
 			if(pkt != NULL) {
 				int nbytes = calc_rec_size(pkt->data_len);
