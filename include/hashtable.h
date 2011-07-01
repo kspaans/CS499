@@ -44,7 +44,6 @@ typedef int (*ht_cmpfunc_t)(const void *htkey, const void *cmpkey);
 
 typedef struct {
 	struct ht_item *arr;
-	size_t count;
 	size_t max;
 	ht_hashfunc_t hashfunc;
 	ht_cmpfunc_t cmpfunc;

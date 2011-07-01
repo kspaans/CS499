@@ -35,7 +35,6 @@ void hashtable_init(hashtable *ht, struct ht_item *arr, int max, ht_hashfunc_t h
 	if(hashfunc == NULL) hashfunc = default_hashfunc;
 	if(cmpfunc == NULL) cmpfunc = default_cmpfunc;
 	ht->arr = arr;
-	ht->count = 0;
 	ht->max = max;
 	ht->hashfunc = hashfunc;
 	ht->cmpfunc = cmpfunc;
