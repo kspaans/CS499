@@ -10,7 +10,7 @@
 /* GP Timer 3 is the generic high-precision counter running at 26MHz.
    GP Timer 4 is the watchdog kicker. */
 
-volatile unsigned long long gpt3_ovf_count;
+volatile uint64_t gpt3_ovf_count;
 
 static void timer3_isr(int irq) {
 	++gpt3_ovf_count;
@@ -87,12 +87,12 @@ void timer_intreset(int base) {
 	timer_post_wait(base);
 }
 
-unsigned long long read_timer(void) {
+uint64_t read_timer(void) {
 	return (gpt3_ovf_count << 32) + mem32(GPTIMER3 + TCRR);
 }
 
 void udelay(int usec) {
-	unsigned long long ticks = read_timer() + ((unsigned long long)usec) * TICKS_PER_USEC;
+	uint64_t ticks = read_timer() + ((uint64_t)usec) * TICKS_PER_USEC;
 	while(read_timer() < ticks)
 		;
 }

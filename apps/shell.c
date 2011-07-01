@@ -81,7 +81,7 @@ static int netsrr_server_cmd(int argc, char **argv) {
 		struct packet_rec rec;
 		char payload[2048];
 	} pkt;
-	unsigned long long start, elapsed;
+	uint64_t start, elapsed;
 
 	ASSERTNOERR(udp_bind(NETSRR_PORT));
 	printf("waiting for connection...\n");
@@ -110,7 +110,7 @@ static int netsrr_client_cmd(int argc, char **argv) {
 		struct packet_rec rec;
 		char payload[2048];
 	} pkt;
-	unsigned long long start, elapsed;
+	uint64_t start, elapsed;
 
 	if(argc != 2) {
 		printf("Usage: %s client\n", argv[0]);

@@ -12,11 +12,10 @@ __attribute__((unused)) static void memcpy_bench(void) {
 	char *buf2 = kmalloc(1<<25);
 
 	int i;
-	unsigned long long start_time = read_timer();
+	uint64_t start_time = read_timer();
 	for(i=0; i<(1<<2); i++) {
 		memcpy(buf, buf2, 1<<25);
 	}
-	unsigned long long duration = read_timer() - start_time;
+	uint64_t duration = read_timer() - start_time;
 	printf("Did 128MB in %lu milliseconds\n", (unsigned long)(duration/TICKS_PER_MSEC));
 }
-
