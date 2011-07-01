@@ -68,7 +68,6 @@ int main(void) {
 	/* Initialize idle task */
 	syscall_spawn(NULL, 7, idle_task, NULL, 0, SPAWN_DAEMON);
 
-	cpu_info();
 	pmu_enable();
 
 	printk("userspace init\n");
