@@ -9,6 +9,12 @@ else
   redo-ifcreate $useclang
 fi
 
+if test -e "$usedebug"; then
+  redo-ifchange $usedebug
+else
+  redo-ifcreate $usedebug
+fi
+
 if test "$XPREFIX" = ""; then
   XPREFIX=arm-linux-gnueabi-
 fi
