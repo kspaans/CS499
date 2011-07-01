@@ -134,15 +134,57 @@
 
 void pmu_enable(void);
 void pmu_disable(void);
-void pmu_cycle_counter_enable(void);
-void pmu_cycle_counter_disable(void);
-uint32_t pmu_cycle_counter_value(void);
-void pmu_counter_event(int counter, int event);
-void pmu_counter_reset(int counter);
-void pmu_counter_disable(int counter);
-void pmu_counter_enable(int counter);
-uint32_t pmu_counter_value(int counter);
 
-uint32_t pmu_counter_setup(int counter, int event);
+static inline void pmu_stop_counters(void) {
+	pmu_cntenc_write(PMU_CNTENC_MASK);
+}
+
+static inline void pmu_start_counters(void) {
+	pmu_cntens_write(PMU_CNTENS_MASK);
+}
+
+static inline void pmu_cycle_counter_enable(void) {
+	pmu_cntens_write(PMU_CNTENS_C);
+}
+
+static inline void pmu_cycle_counter_disable(void) {
+	pmu_cntenc_write(PMU_CNTENC_C);
+}
+
+static inline uint32_t pmu_cycle_counter_value(void) {
+	return pmu_ccnt_read();
+}
+
+static inline void pmu_counter_event(int counter, int event) {
+	pmu_pmnxsel_write(PMU_PMNXSEL_P(counter) & PMU_PMNXSEL_MASK);
+	pmu_evtsel_write(event & PMU_EVTSEL_MASK);
+}
+
+static inline void pmu_counter_reset(int counter) {
+	pmu_pmnxsel_write(PMU_PMNXSEL_P(counter) & PMU_PMNXSEL_MASK);
+	pmu_pmcnt_write(0);
+}
+
+static inline void pmu_counter_disable(int counter) {
+	pmu_cntenc_write(PMU_CNTENC_P(counter) & PMU_CNTENC_MASK);
+}
+
+static inline void pmu_counter_enable(int counter) {
+	pmu_cntens_write(PMU_CNTENC_P(counter) & PMU_CNTENC_MASK);
+}
+
+static inline uint32_t pmu_counter_value(int counter) {
+	pmu_pmnxsel_write(PMU_PMNXSEL_P(counter) & PMU_PMNXSEL_MASK);
+	return pmu_pmcnt_read();
+}
+
+static inline uint32_t pmu_counter_setup(int counter, int event) {
+	pmu_counter_disable(counter);
+	pmu_counter_reset(counter);
+	pmu_counter_event(counter, event);
+	uint32_t ret = pmu_counter_value(counter);
+	pmu_counter_enable(counter);
+	return ret;
+}
 
 #endif

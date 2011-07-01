@@ -169,8 +169,26 @@ int atoi(const char *s) {
 int xspawn(int priority, void (*code)(void), int flags) {
 	int tid = spawn(priority, code, flags);
 	if (tid < 0) {
-		printf("xspawn: failed to create task");
+		printf("xspawn: failed to create task: %d", tid);
 		exit();
 	}
 	return tid;
+}
+
+ssize_t xsend(int chan, const struct iovec *iov, int iovlen, int sch, int flags) {
+	ssize_t ret = send(chan, iov, iovlen, sch, flags);
+	if (ret < 0) {
+		printf("xsend: failed to send: %d\n", ret);
+		exit();
+	}
+	return ret;
+}
+
+ssize_t xrecv(int chan, const struct iovec *iov, int iovlen, int *rch, int flags) {
+	ssize_t ret = recv(chan, iov, iovlen, rch, flags);
+	if (ret < 0) {
+		printf("xrecv: failed to recv: %d\n", ret);
+		exit();
+	}
+	return ret;
 }

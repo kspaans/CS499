@@ -12,6 +12,11 @@ static int reset_cmd(int argc, char **argv) {
 	prm_reset();
 }
 
+static int ipcbench_cmd(int arc, char **argv) {
+	spawn(0, ipc_bench_task, 0);
+	return 0;
+}
+
 static int exit_cmd(int argc, char **argv) {
 	printf("Goodbye\n");
 	exit();
@@ -139,7 +144,7 @@ static int (*command_lookup(char *command))(int, char**) {
 	static struct cmd_defs { char cmd[32]; int (*function)(int, char**); }
 	cmd_defs[] = {
 	C(reset), C(exit), C(genesis), C(leds), C(ls), C(srrbench),
-	C(netsrr_server), C(netsrr_client)
+	C(netsrr_server), C(netsrr_client), C(ipcbench)
 	};
 #undef C
 	for (size_t i = 0; i < arraysize(cmd_defs); ++i) {
