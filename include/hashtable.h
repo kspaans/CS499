@@ -1,6 +1,18 @@
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
 
+/* Hashtable implementation.
+
+Typical usage:
+To retrieve a value, call hashtable_get with the key to get the index
+	of the item. Get the value as ht->arr[index].value.
+To store a value, call hashtable_reserve with the key to get the index
+	of the key's item, or a new unused item. Use active_ht_item to check
+	if the item is valid; if it is, update the existing item, and if not,
+	set its key and value fields and activate the item with activate_ht_item.
+To delete an item, call hashtable_get with the key to get the index
+	of the item, and call delete_ht_item on that item to delete it.
+*/
 #include <lib.h>
 #include <types.h>
 #include <stdbool.h>
