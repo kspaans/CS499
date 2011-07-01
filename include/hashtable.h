@@ -60,13 +60,13 @@ static inline void activate_ht_item(struct ht_item *item) {
 /* http://www.concentric.net/~ttwang/tech/inthash.htm */
 /* This is very fast on ARM, taking only 9 instructions
    by using shifted operands on arithmetic operations */
-static inline uint32_t int_hash(int key) {
+static inline uint32_t int_hash(uint32_t key) {
 	key = ~key + (key << 15); // key = (key << 15) - key - 1
-	key = key ^ (((uint32_t)key) >> 12);
+	key = key ^ (key >> 12);
 	key = key + (key << 2);
-	key = key ^ (((uint32_t)key) >> 4);
+	key = key ^ (key >> 4);
 	key = key + (key << 3) + (key << 11);
-	key = key ^ (((uint32_t)key) >> 16);
+	key = key ^ (key >> 16);
 	return key;
 }
 /* djb2: http://www.cse.yorku.ca/~oz/hash.html */

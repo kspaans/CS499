@@ -26,7 +26,7 @@ QUEUE(int,intqueue)
 
 /* Hash tables */
 static uint32_t default_hashfunc(const void *cmpkey) {
-	return int_hash((int)cmpkey);
+	return int_hash((uint32_t)cmpkey);
 }
 static int default_cmpfunc(const void *htkey, const void *cmpkey) {
 	return (int)htkey-(int)cmpkey;
