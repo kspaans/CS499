@@ -12,6 +12,7 @@
 #include <servers/genesis.h>
 #include <servers/net.h>
 #include <apps.h>
+#include <drivers/pmu.h>
 
 #include <eth.h>
 #include <servers/net.h>
@@ -89,12 +90,16 @@ static void srrbench_child(void) {
 #include <drivers/timers.h>
 #define BENCH(name, init, code) do { \
 	printf("SRR Benchmarking: " name ": "); \
+	pmu_cycle_counter_enable(); \
+	int cstart = pmu_cycle_counter_value(); \
 	start = read_timer(); \
 	init; \
 	for(i=0; i<SRR_RUNS; i++) code; \
 	elapsed = read_timer()-start; \
+	int cend = pmu_cycle_counter_value(); \
 	printf("%d ms ", (int)(elapsed/TICKS_PER_MSEC)); \
-	printf("(%d ns/loop)\n", (int)(elapsed*1000000/TICKS_PER_MSEC/SRR_RUNS)); \
+	printf("(%d ns/loop) ", (int)(elapsed*1000000/TICKS_PER_MSEC/SRR_RUNS)); \
+	printf("(%d cycles/loop)\n", (cend - cstart)/SRR_RUNS); \
 } while(0)
 __attribute__((unused)) static void srrbench_task(void) {
 	int tid = gettid();

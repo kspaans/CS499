@@ -8,6 +8,7 @@
 #include <drivers/mmu.h>
 #include <kern/printk.h>
 #include <kern/task.h>
+#include <drivers/pmu.h>
 #include <lib.h>
 #include <syscall.h>
 #include <ip.h>
@@ -64,6 +65,7 @@ int main(void) {
 	syscall_spawn(NULL, 7, idle_task, NULL, 0, SPAWN_DAEMON);
 
 	cpu_info();
+	pmu_enable();
 
 	printk("userspace init\n");
 
@@ -75,6 +77,8 @@ int main(void) {
 		task_activate(next);
 		check_stack(next);
 	}
+
+	pmu_disable();
 	intc_reset();
 	eth_deinit();
 	deinit_mmu();
