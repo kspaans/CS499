@@ -67,10 +67,6 @@ static int genesis_cmd(int argc, char **argv) {
 	}
 }
 
-static int srrbench_cmd(int argc, char **argv) {
-	return -128;
-}
-
 #define NETSRR_PORT 47712
 #define NETSRR_STEPS 11
 #define NETSRR_RUNS 1024
@@ -145,7 +141,7 @@ static int netsrr_client_cmd(int argc, char **argv) {
 static cmd_func_t command_lookup(char *command) {
 	static struct cmd_defs { char cmd[32]; cmd_func_t function; }
 	cmd_defs[] = {
-	C(reset), C(exit), C(genesis), C(leds), C(ls), C(srrbench),
+	C(reset), C(exit), C(genesis), C(leds), C(ls),
 	C(netsrr_server), C(netsrr_client), C(ipcbench)
 	};
 #undef C
