@@ -1,11 +1,16 @@
 #include <string.h>
 #include <lib.h>
 #include <syscall.h>
-
 #include <apps.h>
-#include <servers/genesis.h>
-#include <servers/net.h>
-#include <servers/fs.h>
+
+#include <panic.h>
+static int reset_cmd(int argc, char **argv) {
+	printf("Resetting...\n");
+	volatile int i = 10000000;
+	while(i-->0)
+		;
+	prm_reset();
+}
 
 static int exit_cmd(int argc, char **argv) {
 	printf("Goodbye\n");
@@ -13,6 +18,7 @@ static int exit_cmd(int argc, char **argv) {
 	return 666; // Unreached
 }
 
+#include <servers/fs.h>
 static int ls_cmd(int argc, char **argv) {
 	dump_files();
 	return 0;
@@ -37,6 +43,8 @@ static int leds_cmd(int argc, char **argv) {
 	return 0;
 }
 
+#include <servers/genesis.h>
+#include <servers/net.h>
 static int genesis_cmd(int argc, char **argv) {
 	if(argc != 3) {
 		printf("Usage: genesis hostname command\n");
@@ -132,7 +140,7 @@ static int netsrr_client_cmd(int argc, char **argv) {
 static int (*command_lookup(char *command))(int, char**) {
 	static struct cmd_defs { char cmd[32]; int (*function)(int, char**); }
 	cmd_defs[] = {
-	C(exit), C(genesis), C(leds), C(ls), C(srrbench),
+	C(reset), C(exit), C(genesis), C(leds), C(ls), C(srrbench),
 	C(netsrr_server), C(netsrr_client)
 	};
 #undef C

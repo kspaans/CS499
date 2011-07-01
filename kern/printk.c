@@ -5,9 +5,6 @@
 #include <kern/printk.h>
 #include <panic.h>
 
-__attribute__((noreturn))
-void prm_reset(void);
-
 static int panic_recursion;
 
 /* Busy-wait I/O */

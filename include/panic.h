@@ -1,6 +1,9 @@
 #ifndef PANIC_H
 #define PANIC_H
 
+void prm_reset(void)
+	__attribute__((noreturn));
+
 void panic(const char *fmt, ...)
 	__attribute__ ((format (printf, 1, 2)))
 	__attribute__((noreturn));
