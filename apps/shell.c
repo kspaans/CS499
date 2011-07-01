@@ -143,14 +143,15 @@ static struct cmd_def {
 	cmd_func_t function;
 	const char *desc;
 } cmd_defs[] = {
-	{"reset", reset_cmd, "Reset board"},
+	{"help", NULL, "List all commands"},
 	{"exit", exit_cmd, "Exit back to U-Boot"},
+	{"reset", reset_cmd, "Reset board"},
 	{"genesis", genesis_cmd, "Start a task remotely"},
 	{"leds", leds_cmd, "Flash the blinkenlights"},
 	{"ls", ls_cmd, "List all files in the filesystem"},
+	{"ipcbench", ipcbench_cmd, "Benchmark local SRR"},
 	{"netsrr_server", netsrr_server_cmd, "Start a server for benchmarking network SRR"},
 	{"netsrr_client", netsrr_client_cmd, "Connect to a server to benchmark network SRR"},
-	{"ipcbench", ipcbench_cmd, "Benchmark local SRR"},
 };
 
 static cmd_func_t command_lookup(char *command) {
@@ -249,6 +250,16 @@ static void shell_task(void) {
 			int ret = command(argc, argv);
 			if(ret != 0) {
 				printf("Nonzero return: %d\n", ret);
+			}
+		} else if(strcmp(argv[0], "help") == 0) {
+			size_t maxlen = 0;
+			for(size_t i=0; i<arraysize(cmd_defs); ++i) {
+				size_t cmdlen = strlen(cmd_defs[i].cmd);
+				if(cmdlen > maxlen)
+					maxlen = cmdlen;
+			}
+			for(size_t i=0; i<arraysize(cmd_defs); ++i) {
+				printf("%-*s - %s\n", maxlen, cmd_defs[i].cmd, cmd_defs[i].desc);
 			}
 		} else {
 			printf("argc=%d", argc);
