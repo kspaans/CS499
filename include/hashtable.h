@@ -8,14 +8,19 @@
 #define HT_NOKEY (-1) /* key not found */
 #define HT_NOMEM (-2) /* out of memory */
 
+typedef union {
+	const void *voidval;
+	intptr_t intval;
+} ht_key_t __attribute__((__transparent_union__));
+
 struct ht_item {
 	union {
 		void *key;
-		int intkey;
+		intptr_t intkey;
 	};
 	union {
 		void *value;
-		int intvalue;
+		intptr_t intvalue;
 	};
 	bool deleted;
 	bool valid;
@@ -34,9 +39,9 @@ typedef struct {
 
 void hashtable_init(hashtable *ht, struct ht_item *arr, int max, ht_hashfunc_t hashfunc, ht_cmpfunc_t cmpfunc);
 /* Lookup an element and return its index in the item array; return <0 if not found */
-int hashtable_get(hashtable *ht, const void *cmpkey);
+int hashtable_get(hashtable *ht, ht_key_t cmpkey);
 /* Lookup an element and return its index in the item array if found, else return the first inactive item */
-int hashtable_reserve(hashtable *ht, const void *cmpkey);
+int hashtable_reserve(hashtable *ht, ht_key_t cmpkey);
 
 static inline bool active_ht_item(struct ht_item *item) {
 	return (item->valid && !item->deleted);

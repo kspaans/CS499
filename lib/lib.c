@@ -65,12 +65,12 @@ static inline int hashtable_get_entry(hashtable *ht, const void *cmpkey, bool ac
 	return HT_NOKEY;
 }
 
-int hashtable_get(hashtable *ht, const void *cmpkey) {
-	return hashtable_get_entry(ht, cmpkey, false);
+int hashtable_get(hashtable *ht, ht_key_t cmpkey) {
+	return hashtable_get_entry(ht, cmpkey.voidval, false);
 }
 
-int hashtable_reserve(hashtable *ht, const void *cmpkey) {
-	return hashtable_get_entry(ht, cmpkey, true);
+int hashtable_reserve(hashtable *ht, ht_key_t cmpkey) {
+	return hashtable_get_entry(ht, cmpkey.voidval, true);
 }
 
 /* Argument parsing */
