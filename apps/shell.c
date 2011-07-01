@@ -3,6 +3,8 @@
 #include <syscall.h>
 #include <apps.h>
 
+typedef int (*cmd_func_t)(int argc, char **argv);
+
 #include <panic.h>
 static int reset_cmd(int argc, char **argv) {
 	printf("Resetting...\n");
@@ -140,8 +142,8 @@ static int netsrr_client_cmd(int argc, char **argv) {
 }
 
 #define C(x) { #x, x##_cmd }
-static int (*command_lookup(char *command))(int, char**) {
-	static struct cmd_defs { char cmd[32]; int (*function)(int, char**); }
+static cmd_func_t command_lookup(char *command) {
+	static struct cmd_defs { char cmd[32]; cmd_func_t function; }
 	cmd_defs[] = {
 	C(reset), C(exit), C(genesis), C(leds), C(ls), C(srrbench),
 	C(netsrr_server), C(netsrr_client), C(ipcbench)
@@ -236,7 +238,7 @@ static void shell_task(void) {
 		if(argc == 0)
 			continue;
 
-		int (*command)(int, char**) = command_lookup(argv[0]);
+		cmd_func_t command = command_lookup(argv[0]);
 
 		if(command) {
 			int ret = command(argc, argv);
