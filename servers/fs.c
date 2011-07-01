@@ -145,7 +145,7 @@ static int do_mkchan(struct fastfs *fs, const struct fs_key *key, int chan) {
 	memcpy(fs->ht_keys[i].path, key->path, key->pathlen);
 
 	fs->ht_arr[i].key = &fs->ht_keys[i];
-	fs->ht_arr[i].value = (void *)chan;
+	fs->ht_arr[i].intvalue = chan;
 	activate_ht_item(&fs->ht_arr[i]);
 	return i;
 }
@@ -156,7 +156,7 @@ static int do_rmchan(struct fastfs *fs, const struct fs_key *key) {
 	if(i < 0)
 		return ENOENT;
 
-	close((int)fs->ht_arr[i].value);
+	close(fs->ht_arr[i].intvalue);
 	delete_ht_item(&fs->ht_arr[i]);
 	return 0;
 }
@@ -193,7 +193,7 @@ static void fileserver_task(void) {
 			case FILE_OPEN:
 				ret = do_open(&rootfs, &key);
 				if(ret >= 0) {
-					MsgReply(tid, 0, NULL, 0, (int)rootfs.ht_arr[ret].value);
+					MsgReply(tid, 0, NULL, 0, rootfs.ht_arr[ret].intvalue);
 					continue;
 				}
 				break;

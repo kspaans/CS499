@@ -9,8 +9,14 @@
 #define HT_NOMEM (-2) /* out of memory */
 
 struct ht_item {
-	void *key;
-	void *value;
+	union {
+		void *key;
+		int intkey;
+	};
+	union {
+		void *value;
+		int intvalue;
+	};
 	bool deleted;
 	bool valid;
 };
