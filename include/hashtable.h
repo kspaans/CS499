@@ -11,6 +11,7 @@
 typedef union {
 	const void *voidval;
 	intptr_t intval;
+	uintptr_t uintval;
 } ht_key_t __attribute__((__transparent_union__));
 
 struct ht_item {
