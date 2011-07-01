@@ -9,13 +9,6 @@ else
   redo-ifcreate $useclang
 fi
 
-if test -e "$local"; then
-  redo-ifchange $local
-  . $local
-else
-  redo-ifcreate $local
-fi
-
 if test "$XPREFIX" = ""; then
   XPREFIX=arm-linux-gnueabi-
 fi
@@ -80,3 +73,10 @@ LDFLAGS+=" -n"
 
 # Link libgcc for compiler-generated function calls
 LDLIBS+=" -lgcc"
+
+if test -e "$local"; then
+  redo-ifchange $local
+  . $local
+else
+  redo-ifcreate $local
+fi
