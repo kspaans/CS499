@@ -78,7 +78,7 @@ static void genesis_task(void) {
 		struct creation_request data;
 	} __attribute__((__packed__)) reply;
 
-	printf("Listening for creation requests\n");
+	printf("genesis init\n");
 	udp_bind(GENESIS_PORT);
 
 	while(1) {
