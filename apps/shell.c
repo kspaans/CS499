@@ -264,8 +264,11 @@ linereset:
 			}
 		}
 		input[pos] = 0;
-		if(pos == 0)
+		if(pos == 0) {
+			/* restore history */
+			strcpy(historyalt[histpos], history[histpos]);
 			continue;
+		}
 
 		char buf[sizeof(history[0])];
 		memcpy(buf, input, pos+1);
