@@ -162,18 +162,31 @@ static cmd_func_t command_lookup(char *command) {
 	return NULL;
 }
 
+#define IDXP1(x,arr) (((x)+1)%arraysize(arr))
+#define IDXM1(x,arr) (((x)+(arraysize(arr))-1)%arraysize(arr))
+
 static void shell_task(void) {
-	char input[128];
-	char *argv[10];
+	char history[32][128];    /* canonical history buffer */
+	char historyalt[32][128]; /* altered history buffer */
+	int histstart=0, histpos=0, histend=0;
+
+	char *input;
 	size_t pos;
+	int promptlen;
 
 	while(1) {
-		printf(
+		promptlen = printf(
 #ifdef BUILDUSER
 	STRINGIFY2(BUILDUSER) "@"
 #endif
 				"%s:/# ", this_host->hostname);
-		pos = 0;
+		history[histend][0] = 0;
+		historyalt[histend][0] = 0;
+		histpos = histend;
+linereset:
+		input = historyalt[histpos];
+		pos = strlen(historyalt[histpos]);
+		printf("\033[%dG%s\033[K", promptlen+1, input);
 		bool done = false;
 		while(!done) {
 			char c = getchar();
@@ -188,8 +201,6 @@ static void shell_task(void) {
 				case '\r':
 				case '\n':
 					putchar('\n');
-					input[pos++] = '\n';
-					input[pos++] = '\0';
 					done = true;
 					break;
 				case 3:
@@ -209,9 +220,23 @@ static void shell_task(void) {
 						c = getchar();
 						if(c == 'A') {
 							/* up arrow */
+							if(histpos != histstart) {
+								input[pos] = 0;
+								histpos = IDXM1(histpos, history);
+								goto linereset;
+							} else {
+								printf("\a");
+							}
 							break;
 						} else if(c == 'B') {
 							/* down arrow */
+							if(histpos != histend) {
+								input[pos] = 0;
+								histpos = IDXP1(histpos, history);
+								goto linereset;
+							} else {
+								printf("\a");
+							}
 							break;
 						} else if(c == 'C') {
 							/* right arrow */
@@ -231,16 +256,36 @@ static void shell_task(void) {
 				default:
 					putchar(c);
 					input[pos++] = c;
-					if(pos >= sizeof(input)-3) {
+					if(pos >= arraysize(history[0])-3) {
 						--pos;
 						printf("\b");
 					}
 					break;
 			}
 		}
+		input[pos] = 0;
 		if(pos == 0)
 			continue;
-		int argc = parse_args(input, argv, arraysize(argv));
+
+		char buf[sizeof(history[0])];
+		memcpy(buf, input, pos+1);
+
+		if(histstart == histend ||
+			strcmp(input, history[IDXM1(histend, history)]) != 0) {
+			/* add a new history entry only if previous entry is not equal */
+			memcpy(history[histend], buf, pos+1);
+			memcpy(historyalt[histend], buf, pos+1);
+			histend = IDXP1(histend, history);
+			if(histstart == histend)
+				histstart = IDXP1(histstart, history);
+		}
+		/* restore history */
+		strcpy(historyalt[histpos], history[histpos]);
+
+		buf[pos++] = '\n';
+		buf[pos] = '\0';
+		char *argv[10];
+		int argc = parse_args(buf, argv, arraysize(argv));
 		if(argc == 0)
 			continue;
 
