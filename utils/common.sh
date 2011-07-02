@@ -63,7 +63,7 @@ if test -e "$usedebug"; then
 else
 	CFLAGS+=' -Wmissing-prototypes -Wmissing-declarations'
 	CFLAGS+=' -Wold-style-definition -Wstrict-prototypes -Winit-self'
-	CFLAGS+=' -Wstrict-overflow -Wfloat-equal -Wshadow -Wpointer-arith'
+	CFLAGS+=' -Wstrict-overflow -Wfloat-equal -Wpointer-arith'
 	CFLAGS+=' -Wcast-align -Wwrite-strings -Wmissing-format-attribute'
 	CFLAGS+=' -Wredundant-decls -Wnested-externs -Wvolatile-register-var'
 	CFLAGS+=' -Wdisabled-optimization'
