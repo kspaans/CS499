@@ -17,5 +17,6 @@
 #define EEXIST -13
 #define EBUSY -14
 #define EWOULDBLOCK -15
+#define EFAULT -16
 
 #endif /* ERRNO_H */

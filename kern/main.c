@@ -14,6 +14,7 @@
 #include <ip.h>
 #include <mem.h>
 #include <panic.h>
+#include <drivers/etm.h>
 
 #include <servers/clock.h>
 #include <servers/console.h>
@@ -69,6 +70,7 @@ int main(void) {
 	syscall_spawn(NULL, 7, idle_task, NULL, 0, SPAWN_DAEMON);
 
 	pmu_enable();
+	trace_init();
 
 	printk("userspace init\n");
 

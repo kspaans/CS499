@@ -13,10 +13,12 @@ SECTIONS
 
   .text : /* The actual instructions. */
   {
+    text_start = .;
     *(.text.init)
     *(.text)
     *(.text.*)
     *(.ksymtab) /* must be last */
+    text_end = .;
   }
 
   .rodata : /* Read-only data */

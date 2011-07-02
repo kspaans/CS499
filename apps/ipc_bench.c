@@ -6,6 +6,7 @@
 #include <drivers/pmu.h>
 #include <timer.h>
 #include <drivers/timers.h>
+#include <drivers/etm.h>
 
 #define BENCH_RUNS 16384
 
@@ -103,10 +104,16 @@ static inline void yield_bench(void) {
 
 	bench_init(&c);
 
-	for (int i = 0; i < BENCH_RUNS; ++i)
+	for (int i = 0; i < BENCH_RUNS; ++i) {
+		if (i == BENCH_RUNS - 1)
+			trace_start();
 		yield();
+		if (i == BENCH_RUNS - 1)
+			trace_stop();
+	}
 
 	bench_done(&c);
+	trace_dump();
 
 	printf("  yield, ");
 	bench_print(&c);
