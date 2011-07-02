@@ -278,7 +278,7 @@ linereset:
 		memcpy(buf, input, pos+1);
 
 		if(histstart == histend ||
-			strcmp(input, history[IDXM1(histend, history)]) != 0) {
+		  strcmp(input, history[IDXM1(histend, history)]) != 0) {
 			/* add a new history entry only if previous entry is not equal */
 			memcpy(history[histend], buf, pos+1);
 			memcpy(historyalt[histend], buf, pos+1);
