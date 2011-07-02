@@ -378,9 +378,8 @@ int func_printf(printfunc_t printfunc, void *data, const char *fmt, ...) {
 
 static int printfunc_sprintf(void *data, const char *buf, size_t len) {
 	char *ptr = *(char **)data;
-	while(len--) {
-		*ptr++ = *buf++;
-	}
+	memcpy(ptr, buf, len);
+	ptr += len;
 	*ptr = '\0';
 	*(char **)data = ptr;
 	return 0;
