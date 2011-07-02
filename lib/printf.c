@@ -215,6 +215,7 @@ int func_vprintf(printfunc_t printfunc, void *data, const char *fmt, va_list va)
 			continue;
 		}
 		if(runstart) {
+			len += fmt-runstart-1;
 			_p_printfunc(&pf, runstart, fmt-runstart-1);
 			runstart = NULL;
 		}
