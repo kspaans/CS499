@@ -17,8 +17,9 @@ static int bw_printfunc(void *unused, const char *str, size_t len) {
 			uart_putc('\r');
 			uart_putc('\n');
 		} else {
-			uart_putc(*str++);
+			uart_putc(*str);
 		}
+		++str;
 	}
 	return 0;
 }
