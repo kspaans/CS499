@@ -4,7 +4,7 @@
 
 #include <types.h>
 #include <kern/cpu.h>
-#include <drivers/mmu.h>
+#include <kern/mmu.h>
 #include <lib.h>
 #include <string.h> // memset
 #include <kern/printk.h>

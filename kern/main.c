@@ -5,7 +5,7 @@
 #include <drivers/uart.h>
 #include <drivers/timers.h>
 #include <kern/cpu.h>
-#include <drivers/mmu.h>
+#include <kern/mmu.h>
 #include <kern/printk.h>
 #include <kern/task.h>
 #include <drivers/pmu.h>
