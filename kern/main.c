@@ -4,7 +4,7 @@
 #include <drivers/gpio.h>
 #include <drivers/uart.h>
 #include <drivers/timers.h>
-#include <drivers/cpu.h>
+#include <kern/cpu.h>
 #include <drivers/mmu.h>
 #include <kern/printk.h>
 #include <kern/task.h>

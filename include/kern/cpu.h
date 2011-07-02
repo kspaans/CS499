@@ -1,5 +1,5 @@
-#ifndef CPU_DRIVER_H
-#define CPU_DRIVER_H
+#ifndef KERN_CPU_H
+#define KERN_CPU_H
 
 #define DEVICEID_SKUID_OFFSET 0xc
 #define DEVICEID_SKUID_CPUSPEED_MASK 0x00000008
@@ -15,4 +15,4 @@ void deinit_mmu(void);
 void set_ttbr(uint32_t *pagetable);
 void set_dacr(uint32_t dacr);
 
-#endif /* CPU_DRIVER_H */
+#endif /* KERN_CPU_H */

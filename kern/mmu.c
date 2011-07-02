@@ -3,7 +3,7 @@
  */
 
 #include <types.h>
-#include <drivers/cpu.h>
+#include <kern/cpu.h>
 #include <drivers/mmu.h>
 #include <lib.h>
 #include <string.h> // memset
