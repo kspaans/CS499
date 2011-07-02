@@ -187,8 +187,9 @@ static void shell_task(void) {
 	char historyalt[32][128]; /* altered history buffer */
 	int histstart=0, histpos=0, histend=0;
 
-	char *input;
-	size_t pos;
+	char line[128];
+	size_t linepos, endpos, linelen;
+
 	int promptlen;
 
 	while(1) {
@@ -201,18 +202,22 @@ static void shell_task(void) {
 		historyalt[histend][0] = 0;
 		histpos = histend;
 linereset:
-		input = historyalt[histpos];
-		pos = strlen(historyalt[histpos]);
-		printf("\033[%dG%s\033[K", promptlen+1, input);
+		linepos = linelen = strlen(historyalt[histpos]);
+		endpos = sizeof(line);
+		memcpy(line, historyalt[histpos], linelen);
+		printf("\033[%dG", promptlen+1); // set cursor to end of prompt
+		printf("%s", historyalt[histpos]); // print line
+		printf("\033[K"); // kill rest of line
 		bool done = false;
 		while(!done) {
 			char c = getchar();
 			switch(c) {
 				case '\b':
 				case 127:
-					if(pos > 0) {
-						printf("\b \b");
-						--pos;
+					if(linepos > 0) {
+						printf("\b\033[P"); // delete one character
+						--linepos;
+						--linelen;
 					}
 					continue;
 				case '\r':
@@ -222,11 +227,12 @@ linereset:
 					break;
 				case 3:
 					printf("^C\n");
-					pos = 0;
+					linepos = linelen = 0;
+					endpos = sizeof(line);
 					done = true;
 					break;
 				case 4: // ^D
-					if(pos == 0) {
+					if(linelen == 0) {
 						printf("logout\n");
 						exit();
 					}
@@ -238,7 +244,7 @@ linereset:
 						if(c == 'A') {
 							/* up arrow */
 							if(histpos != histstart) {
-								input[pos] = 0;
+								sprintf(historyalt[histpos], "%.*s%.*s", linepos, line, linelen-linepos, line+endpos);
 								histpos = IDXM1(histpos, history);
 								goto linereset;
 							} else {
@@ -248,7 +254,7 @@ linereset:
 						} else if(c == 'B') {
 							/* down arrow */
 							if(histpos != histend) {
-								input[pos] = 0;
+								sprintf(historyalt[histpos], "%.*s%.*s", linepos, line, linelen-linepos, line+endpos);
 								histpos = IDXP1(histpos, history);
 								goto linereset;
 							} else {
@@ -257,9 +263,17 @@ linereset:
 							break;
 						} else if(c == 'C') {
 							/* right arrow */
+							if(linepos < linelen) {
+								printf("\033[C");
+								line[linepos++] = line[endpos++];
+							}
 							break;
 						} else if(c == 'D') {
 							/* left arrow */
+							if(linepos > 0) {
+								printf("\033[D");
+								line[--endpos] = line[--linepos];
+							}
 							break;
 						} else {
 							/* fall through */
@@ -268,37 +282,46 @@ linereset:
 						printf("\a");
 						/* fall through */
 					}
-				case '\t':
-					c = ' ';
 				default:
-					if(c < 32) {
+					if(c == '\t') {
+						c = ' ';
+					} else if(c < 32) {
 						printf("^%c\b\b", c+0x40);
 						break;
 					}
-					putchar(c);
-					input[pos++] = c;
-					if(pos >= arraysize(history[0])-3) {
-						--pos;
-						printf("\b");
+					if(linelen >= arraysize(history[0])-3) {
+						if(linepos < linelen) {
+							line[endpos] = c;
+						}
+						putchar(c);
+						putchar('\b');
+						break;
 					}
+					if(linepos == linelen) {
+						putchar(c);
+					} else {
+						printf("\033[@"); // insert blank character
+						putchar(c);
+					}
+					line[linepos++] = c;
+					linelen++;
 					break;
 			}
 		}
-		input[pos] = 0;
-		if(pos == 0) {
+		if(linelen == 0) {
 			/* restore history */
 			strcpy(historyalt[histpos], history[histpos]);
 			continue;
 		}
 
 		char buf[sizeof(history[0])];
-		memcpy(buf, input, pos+1);
+		sprintf(buf, "%.*s%.*s", linepos, line, linelen-linepos, line+endpos);
 
 		if(histstart == histend ||
-		  strcmp(input, history[IDXM1(histend, history)]) != 0) {
+		  strcmp(buf, history[IDXM1(histend, history)]) != 0) {
 			/* add a new history entry only if previous entry is not equal */
-			memcpy(history[histend], buf, pos+1);
-			memcpy(historyalt[histend], buf, pos+1);
+			memcpy(history[histend], buf, linelen+1);
+			memcpy(historyalt[histend], buf, linelen+1);
 			histend = IDXP1(histend, history);
 			if(histstart == histend)
 				histstart = IDXP1(histstart, history);
@@ -306,8 +329,8 @@ linereset:
 		/* restore history */
 		strcpy(historyalt[histpos], history[histpos]);
 
-		buf[pos++] = '\n';
-		buf[pos] = '\0';
+		buf[linelen] = '\n';
+		buf[linelen+1] = '\0';
 		char *argv[10];
 		int argc = parse_args(buf, argv, arraysize(argv));
 		if(argc == 0)
