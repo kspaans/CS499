@@ -254,6 +254,10 @@ linereset:
 				case '\t':
 					c = ' ';
 				default:
+					if(c < 32) {
+						printf("^%c\b\b", c+0x40);
+						break;
+					}
 					putchar(c);
 					input[pos++] = c;
 					if(pos >= arraysize(history[0])-3) {
