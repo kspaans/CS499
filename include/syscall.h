@@ -26,13 +26,13 @@ enum recvflags {
 enum pollevents {
 	POLL_EVENT_RECV = 0, /* Event fires when a sender is waiting to be received */
 	POLL_EVENT_SEND = 1, /* Event fires when a receiver is waiting to be sent to */
-	POLL_EVENT_COUNT = 2,
+	POLL_NEVENTS = 2,
 };
 
 enum pollflags {
 	POLL_RECV = (1<<POLL_EVENT_RECV),
 	POLL_SEND = (1<<POLL_EVENT_SEND),
-	POLL_ALL = (1<<POLL_EVENT_COUNT)-1,
+	POLL_ALL = (1<<POLL_NEVENTS)-1,
 };
 
 struct pollresult {
