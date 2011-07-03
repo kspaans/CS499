@@ -15,6 +15,7 @@ enum taskstate {
 	TASK_RECV_BLOCKED,	/* blocked in sys_recv */
 	TASK_DEAD,			/* called sys_exit() */
 	TASK_EVENT_BLOCKED, /* blocked in sys_event_wait */
+	TASK_POLL_BLOCKED,  /* blocked in sys_poll_wait */
 };
 
 struct task_stat {
