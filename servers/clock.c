@@ -126,7 +126,7 @@ static void clockserver_notifier(void) {
 	int clock_fd = xopen(ROOT_DIRFD, "/services/clock");
 
 	while(1) {
-		waitevent(EVENT_CLOCK_TICK);
+		event_wait(EVENT_CLOCK_TICK);
 		MsgSend(clock_fd, CLOCK_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }

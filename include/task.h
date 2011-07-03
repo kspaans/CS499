@@ -10,11 +10,11 @@
 /* Publically query-able task state. */
 
 enum taskstate {
-	TASK_RUNNING,		/* Active or ready to run */
+	TASK_RUNNING,		/* running or ready to run */
 	TASK_SEND_BLOCKED,	/* blocked in sys_send */
 	TASK_RECV_BLOCKED,	/* blocked in sys_recv */
-	TASK_DEAD,			/* Called sys_exit() */
-	TASK_EVENT_BLOCKED,
+	TASK_DEAD,			/* called sys_exit() */
+	TASK_EVENT_BLOCKED, /* blocked in sys_event_wait */
 };
 
 struct task_stat {

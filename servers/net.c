@@ -296,7 +296,7 @@ void ethrx_task(void) {
 static void ethrx_notifier(void) {
 	int ethrx_fd = xopen(ROOT_DIRFD, "/services/ethrx");
 	while(1) {
-		waitevent(EVENT_ETH_RECEIVE);
+		event_wait(EVENT_ETH_RECEIVE);
 		MsgSend(ethrx_fd, ETH_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }

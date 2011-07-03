@@ -194,14 +194,14 @@ static void consolerx_task(void) {
 
 static void consoletx_notifier(void) {
 	while(1) {
-		waitevent(EVENT_CONSOLE_TRANSMIT);
+		event_wait(EVENT_CONSOLE_TRANSMIT);
 		MsgSend(STDOUT_FILENO, CONSOLE_TX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }
 
 static void consolerx_notifier(void) {
 	while(1) {
-		waitevent(EVENT_CONSOLE_RECEIVE);
+		event_wait(EVENT_CONSOLE_RECEIVE);
 		MsgSend(STDIN_FILENO, CONSOLE_RX_NOTIFY_MSG, NULL, 0, NULL, 0, NULL);
 	}
 }

@@ -22,7 +22,7 @@ syscall sys_yield SYS_YIELD
 syscall sys_exit SYS_EXIT
 syscall sys_send SYS_SEND
 syscall sys_recv SYS_RECV
-syscall sys_waitevent SYS_WAITEVENT
+syscall sys_event_wait SYS_EVENT_WAIT
 syscall sys_taskstat SYS_TASKSTAT
 syscall sys_suspend SYS_SUSPEND
 syscall sys_channel SYS_CHANNEL

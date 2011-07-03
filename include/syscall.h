@@ -59,7 +59,7 @@ int sys_poll_wait(struct pollresult *result);
 ssize_t sys_send(int chan, const struct iovec *iov, int iovlen, int  sch, int flags);
 ssize_t sys_recv(int chan, const struct iovec *iov, int iovlen, int *rch, int flags);
 
-int sys_waitevent(int eventid);
+int sys_event_wait(int eventid);
 int sys_taskstat(int tid, struct task_stat *stat);
 
 // "wrappers" for userspace
@@ -78,7 +78,7 @@ static inline int spawn(int priority, void (*code)(void), int flags) {
 #define dup(oldchan, newchan, flags) sys_dup(oldchan, newchan, flags)
 #define send(chan, iov, iovlen, sch, flags) sys_send(chan, iov, iovlen, sch, flags)
 #define recv(chan, iov, iovlen, rch, flags) sys_recv(chan, iov, iovlen, rch, flags)
-#define waitevent(eventid) sys_waitevent(eventid)
+#define event_wait(eventid) sys_event_wait(eventid)
 #define taskstat(eventid) sys_taskstat(eventid)
 
 #endif /* SYSCALL_H */

@@ -534,7 +534,7 @@ void event_unblock_one(int eventid, int return_value) {
 	}
 }
 
-static int syscall_waitevent(struct task *task, int eventid) {
+static int syscall_event_wait(struct task *task, int eventid) {
 	if(eventid < 0 || eventid >= NEVENTS)
 		return EINVAL;
 
@@ -613,8 +613,8 @@ void task_syscall(struct task *task) {
 			(int *)/* rch */task->regs.r3,
 			(int)/* flags */STACK_ARG(task, 4));
 		break;
-	case SYS_WAITEVENT:
-		ret = syscall_waitevent(task, task->regs.r0);
+	case SYS_EVENT_WAIT:
+		ret = syscall_event_wait(task, task->regs.r0);
 		break;
 	case SYS_TASKSTAT:
 		ret = syscall_taskstat(task, task->regs.r0, (useraddr_t)task->regs.r1);
