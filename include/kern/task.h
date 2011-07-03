@@ -2,6 +2,7 @@
 #define KERN_TASK_H
 
 #include <task.h>
+#include <syscall.h>
 
 typedef void* useraddr_t;
 typedef const void* const_useraddr_t;

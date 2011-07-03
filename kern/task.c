@@ -521,10 +521,6 @@ static int syscall_poll_wait(struct task *task, useraddr_t presult) {
 	return ENOSYS;
 }
 
-static int syscall_poll_clear(struct task *task) {
-	return ENOSYS;
-}
-
 void event_unblock_all(int eventid, int return_value) {
 	while (!taskqueue_empty(&eventqueues[eventid]))
 		event_unblock_one(eventid, return_value);
@@ -646,9 +642,6 @@ void task_syscall(struct task *task) {
 		break;
 	case SYS_POLL_WAIT:
 		ret = syscall_poll_wait(task, (useraddr_t)task->regs.r0);
-		break;
-	case SYS_POLL_CLEAR:
-		ret = syscall_poll_clear(task);
 		break;
 	default:
 		ret = ENOSYS;

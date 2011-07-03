@@ -55,7 +55,6 @@ int sys_dup(int oldchan, int newchan, int flags);
 int sys_poll_add(int chan, int flags);
 int sys_poll_remove(int chan, int flags);
 int sys_poll_wait(struct pollresult *result);
-int sys_poll_clear(void);
 
 ssize_t sys_send(int chan, const struct iovec *iov, int iovlen, int  sch, int flags);
 ssize_t sys_recv(int chan, const struct iovec *iov, int iovlen, int *rch, int flags);
