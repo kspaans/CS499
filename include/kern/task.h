@@ -41,16 +41,27 @@ typedef struct {
 	struct task *start;
 } taskqueue;
 
+struct cdnode {
+	struct cdnode *next, *prev;
+	struct channel_desc *cd;
+};
+
 struct channel {
-	int refcount;
-	taskqueue senders;
-	taskqueue receivers;
-	struct channel *next_free_channel;
+	int refcount; /* Number of open channel descriptors to this channel */
+	taskqueue senders; /* Queue of tasks send-blocked on this channel */
+	taskqueue receivers; /* Queue of tasks receive-blocked on this channel */
+	struct cdnode poll_list[POLL_NEVENTS]; /* Circular list of channel descriptors polling on this channel */
+	struct channel *next_free_channel; /* Channel free list */
 };
 
 struct channel_desc {
 	int flags;
+	struct task *task;
 	struct channel *channel;
+	/* Channel descriptors are on at most one list per event at any given time:
+	   they are either on the channel poll list, the task poll queue, or no
+	   list at all. */
+	struct cdnode poll_nodes[POLL_NEVENTS];
 	int next_free_cd;
 };
 
@@ -67,6 +78,8 @@ struct task {
 	int free_cd_head;
 	int next_free_cd;
 	struct channel_desc channels[MAX_TASK_CHANNELS];
+	struct cdnode poll_queue[POLL_NEVENTS]; /* Circular list of channel descriptors which have reported an event */
+	int poll_count; /* Number of events polled by this task */
 
 	union {
 		struct {
@@ -82,6 +95,7 @@ struct task {
 			struct channel *srcchan;
 			int *recvchan;
 		};
+		struct pollresult *pollresult;
 		int eventid;
 	};
 

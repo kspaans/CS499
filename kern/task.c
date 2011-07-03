@@ -188,6 +188,56 @@ static bool valid_channel(struct task *task, int chan) {
 	return chan >= 0 && chan < MAX_TASK_CHANNELS && task->channels[chan].channel;
 }
 
+static void cdnode_init(struct cdnode *list, struct channel_desc *cd) {
+	list->next = list->prev = list;
+	list->cd = cd;
+}
+
+static void cdlist_init(struct cdnode list[POLL_NEVENTS]) {
+	for(int ev=0; ev<POLL_NEVENTS; ++ev) {
+		cdnode_init(&list[ev], NULL);
+	}
+}
+
+static void cdnodes_init(struct channel_desc *cd) {
+	for(int ev=0; ev<POLL_NEVENTS; ++ev) {
+		cdnode_init(&cd->poll_nodes[ev], cd);
+	}
+}
+
+static bool cdnode_singleton(struct cdnode *node) {
+	if(node->next == NULL || node->prev == NULL) {
+		panic("NULLs on cdnode");
+	}
+	return (node->next == node || node->prev == node);
+}
+
+static bool cdlist_empty(struct cdnode *list) {
+	return cdnode_singleton(list);
+}
+
+static void cdnode_append(struct cdnode *list, struct cdnode *node) {
+	if(!cdnode_singleton(node)) {
+		/* must append only singleton nodes */
+		panic("attempted to append non-singleton cdnode");
+	}
+	node->prev = list->prev;
+	node->next = list;
+	list->prev->next = node;
+	list->prev = node;
+}
+
+static void cdnode_delete(struct cdnode *node) {
+	if(cdnode_singleton(node)) {
+		/* deleting a singleton node is a no-op */
+		return;
+	}
+	node->next->prev = node->prev;
+	node->prev->next = node->next;
+	node->prev = node;
+	node->next = node;
+}
+
 int syscall_spawn(struct task *task, int priority, void (*code)(void), int *chan, int chanlen, int flags) {
 	int daemon = !!(flags & SPAWN_DAEMON);
 
@@ -219,6 +269,8 @@ int syscall_spawn(struct task *task, int priority, void (*code)(void), int *chan
 	newtask->state = TASK_RUNNING;
 
 	memset(newtask->channels, 0, sizeof(newtask->channels));
+	cdlist_init(newtask->poll_queue);
+	newtask->poll_count = 0;
 
 	/* Set up registers. */
 	newtask->regs.pc = (int)task_run;
@@ -235,8 +287,12 @@ int syscall_spawn(struct task *task, int priority, void (*code)(void), int *chan
 		newtask->next_free_cd = chanlen;
 
 		for (int i = 0; i < chanlen; ++i) {
-			newtask->channels[i] = task->channels[chan[i]];
-			newtask->channels[i].channel->refcount++;
+			struct channel_desc *cd = &task->channels[chan[i]];
+			cd->channel->refcount++;
+			newtask->channels[i].task = task;
+			newtask->channels[i].channel = cd->channel;
+			newtask->channels[i].flags = cd->flags;
+			cdnodes_init(&newtask->channels[i]);
 		}
 	} else {
 		newtask->free_cd_head = -1;
@@ -284,6 +340,7 @@ static int alloc_channel_desc(struct task *task) {
 		no = task->free_cd_head;
 		task->free_cd_head = task->channels[no].next_free_cd;
 	}
+	task->channels[no].task = task;
 	return no;
 }
 
@@ -291,6 +348,7 @@ static int syscall_channel(struct task *task) {
 	int no = alloc_channel_desc(task);
 	if (no < 0)
 		return EMFILE;
+
 	struct channel *channel;
 	if(free_channel_head == NULL) {
 		channel = kmalloc(sizeof(*channel));
@@ -298,26 +356,36 @@ static int syscall_channel(struct task *task) {
 		channel = free_channel_head;
 		free_channel_head = channel->next_free_channel;
 	}
+
 	memset(channel, 0, sizeof(*channel));
 	channel->refcount++;
 	taskqueue_init(&channel->senders);
 	taskqueue_init(&channel->receivers);
+	cdlist_init(channel->poll_list);
+
 	task->channels[no].channel = channel;
 	task->channels[no].flags = CHAN_RECV | CHAN_SEND;
+	cdnodes_init(&task->channels[no]);
 	return no;
 }
 
 static void close_channel(struct task *task, int no) {
 	struct channel *channel = task->channels[no].channel;
 	task->channels[no].channel = NULL;
+	for(int ev=0; ev<POLL_NEVENTS; ++ev)
+		cdnode_delete(&task->channels[no].poll_nodes[ev]);
 	free_channel_desc(task, no);
 
 	channel->refcount--;
 	if(channel->refcount == 0) {
 		if(!taskqueue_empty(&channel->receivers))
 			panic("Invalid refcount on channel: receivers still exist");
-		if(channel->senders.start != NULL)
+		if(!taskqueue_empty(&channel->senders))
 			panic("Invalid refcount on channel: senders still exist");
+		for(int ev=0; ev<POLL_NEVENTS; ++ev) {
+			if(!cdlist_empty(&channel->poll_list[ev]))
+				panic("Invalid refcount on channel: pollers still exist");
+		}
 		channel->next_free_channel = free_channel_head;
 		free_channel_head = channel;
 	}
@@ -345,6 +413,7 @@ static int syscall_chanflags(struct task *task, int fd) {
 static int syscall_dup(struct task *task, int oldfd, int newfd, int flags) {
 	if(oldfd < 0 || oldfd >= MAX_TASK_CHANNELS)
 		return EBADF;
+
 	if(task->channels[oldfd].channel == NULL)
 		return EBADF;
 
@@ -365,7 +434,9 @@ static int syscall_dup(struct task *task, int oldfd, int newfd, int flags) {
 		close_channel(task, newfd);
 	}
 	task->channels[oldfd].channel->refcount++;
-	task->channels[newfd] = task->channels[oldfd];
+	task->channels[newfd].channel = task->channels[oldfd].channel;
+	task->channels[newfd].flags = task->channels[oldfd].flags;
+	cdnodes_init(&task->channels[newfd]);
 	return newfd;
 }
 
@@ -394,6 +465,57 @@ static void syscall_exit(struct task *task) {
  * - Destroy must remove tasks from the queue that they are on.
  *   - This requires a task to know which queue it is on.
  */
+
+static bool poll_check(struct channel_desc *cd, enum pollevents ev) {
+	switch(ev) {
+	case POLL_EVENT_RECV:
+		return !taskqueue_empty(&cd->channel->senders);
+	case POLL_EVENT_SEND:
+		return !taskqueue_empty(&cd->channel->receivers);
+	default:
+		panic("Bad event ID in poll_check");
+	}
+}
+
+static bool handle_poll(struct task *task, enum pollevents ev) {
+	struct cdnode *list = &task->poll_queue[ev];
+	while(!cdlist_empty(list)) {
+		struct cdnode *node = list->next;
+		if(node->cd->task != task) {
+			panic("Unrecognized channel descriptor on poll queue");
+		}
+		cdnode_delete(node);
+
+		if(poll_check(node->cd, ev)) {
+			/* Event is still active. Unblock user on it. */
+			task->pollresult->chan = (node->cd - task->channels)/sizeof(struct channel_desc);
+			task->pollresult->event = ev;
+			/* Given that the event is still live,
+			   we have to enqueue it on the poll queue. If the event becomes
+			   inactive later, then the else clause below will take care of it. */
+			cdnode_append(list, node);
+			/* Unblock task */
+			set_task_running(task);
+			task->regs.r0 = 0;
+			return true;
+		} else {
+			/* Event is inactive: ignore the event and go back to polling it */
+			cdnode_append(&node->cd->channel->poll_list[ev], node);
+		}
+	}
+	return false;
+}
+
+static void poll_trigger_all(struct cdnode *list, enum pollevents ev) {
+	while(!cdlist_empty(list)) {
+		struct cdnode *node = list->next;
+		struct task *task = node->cd->task;
+		cdnode_delete(node);
+		cdnode_append(&task->poll_queue[ev], node);
+		if(task->state == TASK_POLL_BLOCKED)
+			handle_poll(task, ev);
+	}
+}
 
 /* Handle a receive transaction, unblocking the receiver. */
 static void handle_receive(struct channel *chan) {
@@ -432,10 +554,11 @@ static void handle_receive(struct channel *chan) {
 		int cd = alloc_channel_desc(receiver);
 		if (cd < 0)
 			panic("out of channel descriptors");
+		sender->sendchan->refcount++;
 		receiver->channels[cd].channel = sender->sendchan;
 		receiver->channels[cd].flags = sender->sendchanflags;
+		cdnodes_init(&receiver->channels[cd]);
 		*receiver->recvchan = cd;
-		sender->sendchan->refcount++;
 	}
 
 	// receiver unblocked, return length of message
@@ -482,6 +605,10 @@ static int syscall_send(struct task *task, int chan, const struct iovec *iov, in
 
 	handle_receive(destchan);
 
+	if(!taskqueue_empty(&destchan->senders)) {
+		poll_trigger_all(&destchan->poll_list[POLL_EVENT_RECV], POLL_EVENT_RECV);
+	}
+
 	return task->regs.r0;
 }
 
@@ -506,19 +633,72 @@ static int syscall_recv(struct task *task, int chan, const struct iovec *iov, in
 
 	handle_receive(srcchan);
 
+	if(!taskqueue_empty(&srcchan->receivers)) {
+		poll_trigger_all(&srcchan->poll_list[POLL_EVENT_SEND], POLL_EVENT_SEND);
+	}
+
 	return task->regs.r0;
 }
 
 static int syscall_poll_add(struct task *task, int chan, int flags) {
-	return ENOSYS;
+	if (!valid_channel(task, chan))
+		return EBADF;
+
+	struct channel_desc *cd = &task->channels[chan];
+
+	if((flags & POLL_RECV) && !(cd->flags & CHAN_RECV))
+		return EBADF;
+	if((flags & POLL_SEND) && !(cd->flags & CHAN_SEND))
+		return EBADF;
+
+	for(int ev=0; ev<POLL_NEVENTS; ++ev) {
+		struct cdnode *node = &cd->poll_nodes[ev];
+		if((flags & (1<<ev)) && cdnode_singleton(node)) {
+			if(poll_check(cd, ev)) {
+				/* immediately enqueue this event */
+				cdnode_append(&task->poll_queue[ev], node);
+			} else {
+				/* start polling this event */
+				cdnode_append(&cd->channel->poll_list[ev], node);
+			}
+			++task->poll_count;
+		}
+	}
+	return 0;
 }
 
 static int syscall_poll_remove(struct task *task, int chan, int flags) {
-	return ENOSYS;
+	if (!valid_channel(task, chan))
+		return EBADF;
+
+	struct channel_desc *cd = &task->channels[chan];
+
+	for(int ev=0; ev<POLL_NEVENTS; ++ev) {
+		struct cdnode *node = &cd->poll_nodes[ev];
+		if((flags & (1<<ev)) && !cdnode_singleton(node)) {
+			cdnode_delete(node);
+			--task->poll_count;
+		}
+	}
+	return 0;
 }
 
 static int syscall_poll_wait(struct task *task, useraddr_t presult) {
-	return ENOSYS;
+	if(task->poll_count == 0) {
+		return EINVAL;
+	}
+	if(presult == NULL) {
+		return EFAULT;
+	}
+
+	set_task_state(task, TASK_POLL_BLOCKED, &pollqueue);
+	task->pollresult = presult;
+
+	for(int ev=0; ev<POLL_NEVENTS; ++ev) {
+		if(handle_poll(task, ev))
+			break;
+	}
+	return task->regs.r0;
 }
 
 void event_unblock_all(int eventid, int return_value) {
