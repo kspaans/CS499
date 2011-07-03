@@ -30,6 +30,10 @@
    after the ethernet header to be DWORD aligned, which improves performance,
    at the expense of a bit of clarity.
    This setting can be changed in the RX_CFG register.
+2) TODO TODO TODO XXX XXX XXX
+   For now, ethernet transmission is NOT synchronized. Attempting to perform
+   two simultaneous transmissions may interleave the FIFO data, resulting in
+   UNPREDICTABLE results.
 */
 
 #define RXPAD 2 /* set in drivers/eth.c with RX_CFG */
