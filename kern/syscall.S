@@ -29,3 +29,7 @@ syscall sys_channel SYS_CHANNEL
 syscall sys_close SYS_CLOSE
 syscall sys_chanflags SYS_CHANFLAGS
 syscall sys_dup SYS_DUP
+syscall sys_poll_add SYS_POLL_ADD
+syscall sys_poll_remove SYS_POLL_REMOVE
+syscall sys_poll_wait SYS_POLL_WAIT
+syscall sys_poll_clear SYS_POLL_CLEAR

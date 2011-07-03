@@ -23,6 +23,23 @@ enum recvflags {
 	RECV_NONBLOCK = 1
 };
 
+enum pollevents {
+	POLL_EVENT_RECV = 0, /* Event fires when a sender is waiting to be received */
+	POLL_EVENT_SEND = 1, /* Event fires when a receiver is waiting to be sent to */
+	POLL_EVENT_COUNT = 2,
+};
+
+enum pollflags {
+	POLL_RECV = (1<<POLL_EVENT_RECV),
+	POLL_SEND = (1<<POLL_EVENT_SEND),
+	POLL_ALL = (1<<POLL_EVENT_COUNT)-1,
+};
+
+struct pollresult {
+	int chan;
+	enum pollevents event;
+};
+
 int sys_spawn(int priority, void (*code)(void), int *chan, int chanlen, int flags);
 int sys_gettid(void);
 int sys_getptid(void);
@@ -34,6 +51,11 @@ int sys_channel(int flags);
 int sys_close(int chan);
 int sys_chanflags(int chan);
 int sys_dup(int oldchan, int newchan, int flags);
+
+int sys_poll_add(int chan, int flags);
+int sys_poll_remove(int chan, int flags);
+int sys_poll_wait(struct pollresult *result);
+int sys_poll_clear(void);
 
 ssize_t sys_send(int chan, const struct iovec *iov, int iovlen, int  sch, int flags);
 ssize_t sys_recv(int chan, const struct iovec *iov, int iovlen, int *rch, int flags);
