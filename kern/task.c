@@ -15,7 +15,6 @@
 static taskqueue freequeue;
 static taskqueue taskqueues[TASK_NPRIO];
 static taskqueue eventqueues[NEVENTS];
-static taskqueue replyqueue;
 
 static int next_tidx;
 static struct task *task_lookup[MAX_TASKS];
@@ -34,7 +33,6 @@ static void task_move(struct task *task, taskqueue *queue);
 void init_tasks(void) {
 	int i;
 	taskqueue_init(&freequeue);
-	taskqueue_init(&replyqueue);
 	/* Initialize task queues */
 	for(i=0; i<TASK_NPRIO; i++) {
 		taskqueue_init(&taskqueues[i]);
