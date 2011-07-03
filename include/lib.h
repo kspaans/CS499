@@ -81,6 +81,7 @@ int parse_args(char *buf, char **argv, int argv_len);
 size_t iov_length(const struct iovec *iov, int iovlen);
 void iov_copy(const struct iovec *srciov, int srclen, const struct iovec *dstiov, int dstlen);
 
+const char *strerror(int errno);
 int xspawn(int priority, void (*code)(void), int flags);
 ssize_t xsend(int chan, const struct iovec *iov, int iovlen, int sch, int flags);
 ssize_t xrecv(int chan, const struct iovec *iov, int iovlen, int *rch, int flags);

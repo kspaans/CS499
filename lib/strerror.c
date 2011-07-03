@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <types.h>
+#include <lib.h>
 
 static const char *errdesc[] = {
 	[0] = "Success",

@@ -19,8 +19,4 @@
 #define EWOULDBLOCK -15
 #define EFAULT -16
 
-#ifndef __ASSEMBLER__
-const char *strerror(int errno);
-#endif
-
 #endif /* ERRNO_H */
