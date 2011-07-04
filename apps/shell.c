@@ -188,12 +188,16 @@ static int lock_test_cmd(int argc, char **argv) {
 	int chans[] = {0, 1, 2, channel(0), channel(0)};
 	int lock = lockchan_register(chans[3]);
 	ASSERTNOERR(lock);
-	ASSERTNOERR(sys_spawn(6, lock_test_child, chans, arraysize(chans), SPAWN_DAEMON));
-	ASSERTNOERR(sys_spawn(6, lock_test_child, chans, arraysize(chans), SPAWN_DAEMON));
-	ASSERTNOERR(sys_spawn(6, lock_test_child, chans, arraysize(chans), SPAWN_DAEMON));
-	xrecv(chans[4], NULL, 0, NULL, 0);
-	xrecv(chans[4], NULL, 0, NULL, 0);
-	xrecv(chans[4], NULL, 0, NULL, 0);
+
+	lock_channel(chans[3]);
+	for(int i=0; i<10; ++i)
+		ASSERTNOERR(sys_spawn(0, lock_test_child, chans, arraysize(chans), SPAWN_DAEMON));
+	unlock_channel(chans[3]);
+
+	/* wait for termination */
+	for(int i=0; i<10; ++i)
+		xrecv(chans[4], NULL, 0, NULL, 0);
+
 	ASSERTNOERR(lockchan_unregister(lock));
 	return 0;
 }
