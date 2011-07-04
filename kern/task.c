@@ -488,7 +488,7 @@ static bool handle_poll(struct task *task, enum pollevents ev) {
 
 		if(poll_check(node->cd, ev)) {
 			/* Event is still active. Unblock user on it. */
-			task->pollresult->chan = (node->cd - task->channels)/sizeof(struct channel_desc);
+			task->pollresult->chan = node->cd - task->channels;
 			task->pollresult->event = ev;
 			/* Given that the event is still live,
 			   we have to enqueue it on the poll queue. If the event becomes
