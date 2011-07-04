@@ -5,6 +5,7 @@
 #include <servers/console.h>
 #include <servers/fs.h>
 #include <servers/genesis.h>
+#include <servers/lock.h>
 #include <servers/net.h>
 #include <apps.h>
 
@@ -16,6 +17,7 @@ void init_task(void) {
 	console_init();
 	fileserver_init();
 	clockserver_init();
+	lockserver_init();
 	net_init();
 
 	// any servers above this point will not be be able to use the netconsole
