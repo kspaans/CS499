@@ -131,7 +131,7 @@ void event_unblock_one(int eventid, int return_value);
 
 void cpu_info(void);
 
-void sysrq(void);
+void sysrq(char cmd);
 
 int main(void);
 

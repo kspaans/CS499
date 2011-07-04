@@ -3,6 +3,7 @@
 #include <drivers/uart.h>
 #include <types.h>
 #include <mem.h>
+#include <kern/printk.h>
 #include <panic.h>
 #include <kern/task.h>
 
@@ -98,7 +99,8 @@ void uart_rx_sts_err(void) {
 
 	if (read32(UART3_PHYS_BASE + UART_LSR_OFFSET) & UART_BI_MASK) {
 		*data;
-		sysrq();
+		printk("SysRq: waiting for character");
+		sysrq(uart_getc());
 		return;
 	}
 

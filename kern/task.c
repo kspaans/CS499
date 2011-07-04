@@ -874,9 +874,14 @@ void dump_tasks(void) {
 		print_task(task_lookup[i]);
 }
 
-void sysrq(void) {
-	printk("SysRq\n");
-	dump_tasks();
+void sysrq(char cmd) {
+	switch(cmd) {
+	case 'd':
+		dump_tasks();
+		break;
+	default:
+		panic("Unrecognized SysRq character %c", cmd);
+	}
 }
 
 void task_dabt(struct task *task) {
