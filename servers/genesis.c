@@ -44,7 +44,7 @@ static void handle_createreq(int priority, const char *path, int flags) {
 	if(code) {
 		printf("Launching process %s with priority: %d, flags: %d\n",
 				path, priority, flags);
-		ASSERTNOERR(spawn(priority, code, flags));
+		xspawn(priority, code, flags);
 	} else {
 		printf("Failure: Unknown symbol %s\n", path);
 	}

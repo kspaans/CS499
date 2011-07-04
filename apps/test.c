@@ -18,7 +18,7 @@ __attribute__((unused)) static void task_reclamation_test(void) {
 		printf("%05x ", spawn(1, null_task, 0));
 		printf("%05x\n", spawn(3, null_task, 0));
 	}
-	spawn(4, task_reclamation_2, 0);
+	xspawn(4, task_reclamation_2, 0);
 }
 
 __attribute__((unused)) static void fstest_task(void) {

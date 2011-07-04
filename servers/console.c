@@ -84,7 +84,9 @@ static void consoletx_task(void) {
 	char *cur;
 	int newline_seen;
 
-	spawn(0, consoletx_notifier, SPAWN_DAEMON);
+	int ret = spawn(0, consoletx_notifier, SPAWN_DAEMON);
+	if(ret < 0)
+		panic("consoletx_notifier failed to start: %s (%d)", strerror(ret), ret);
 
 	charqueue chq;
 	char chq_arr[TX_BUF_MAX];
@@ -152,7 +154,7 @@ static void consoletx_task(void) {
 static void consolerx_task(void) {
 	int tid, rcvlen, msgcode;
 
-	spawn(0, consolerx_notifier, SPAWN_DAEMON);
+	xspawn(0, consolerx_notifier, SPAWN_DAEMON);
 
 	intqueue tidq;
 	int tidq_arr[RX_TIDS_MAX];
@@ -207,6 +209,8 @@ static void consolerx_notifier(void) {
 }
 
 void console_init(void) {
-	xspawn(1, consoletx_task, SPAWN_DAEMON);
+	int res = spawn(1, consoletx_task, SPAWN_DAEMON);
+	if(res < 0)
+		panic("consoletx_task failed to start: %s (%d)", strerror(res), res);
 	xspawn(1, consolerx_task, SPAWN_DAEMON);
 }

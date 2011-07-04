@@ -181,7 +181,7 @@ static struct task __attribute__((malloc)) *task_alloc(void) {
 
 static void task_run(void (*code)(void)) {
 	code();
-	sys_exit();
+	exit();
 }
 
 static bool valid_channel(struct task *task, int chan) {

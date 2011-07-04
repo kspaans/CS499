@@ -76,7 +76,7 @@ static void clockserver_task(void) {
 
 	int clock_fd = mkopenchan("/services/clock");
 
-	spawn(0, clockserver_notifier, SPAWN_DAEMON);
+	xspawn(0, clockserver_notifier, SPAWN_DAEMON);
 
 	int num_delays = 0;
 	while(1) {

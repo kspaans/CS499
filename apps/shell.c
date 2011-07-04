@@ -15,7 +15,7 @@ static int reset_cmd(int argc, char **argv) {
 }
 
 static int ipcbench_cmd(int arc, char **argv) {
-	spawn(0, ipc_bench_task, 0);
+	xspawn(0, ipc_bench_task, 0);
 	return 0;
 }
 
@@ -44,7 +44,7 @@ static void leds_task(void) {
 	}
 }
 static int leds_cmd(int argc, char **argv) {
-	int ret = spawn(2, leds_task, SPAWN_DAEMON);
+	int ret = xspawn(2, leds_task, SPAWN_DAEMON);
 	if(ret < 0)
 		return ret;
 	return 0;
@@ -139,14 +139,14 @@ static int netsrr_client_cmd(int argc, char **argv) {
 
 static void poll_test_child(void) {
 	struct pollresult pres;
-	ASSERTNOERR(sys_poll_add(3, POLL_RECV));
-	ASSERTNOERR(sys_poll_add(4, POLL_RECV));
-	ASSERTNOERR(sys_poll_add(5, POLL_RECV));
+	ASSERTNOERR(poll_add(3, POLL_RECV));
+	ASSERTNOERR(poll_add(4, POLL_RECV));
+	ASSERTNOERR(poll_add(5, POLL_RECV));
 	while(1) {
 		printf("Polling...\n");
-		ASSERTNOERR(sys_poll_wait(&pres));
+		ASSERTNOERR(poll_wait(&pres));
 		printf("Got %d %d: ", pres.chan, pres.event);
-		ASSERTNOERR(sys_recv(pres.chan, NULL, 0, NULL, 0));
+		ASSERTNOERR(recv(pres.chan, NULL, 0, NULL, 0));
 		printf("received!\n");
 		if(pres.chan == 5)
 			return;
@@ -166,7 +166,7 @@ static int poll_test_cmd(int argc, char **argv) {
 			printf("invalid selection\n");
 			continue;
 		}
-		ASSERTNOERR(sys_send(chans[chan], NULL, 0, -1, 0));
+		xsend(chans[chan], NULL, 0, -1, 0);
 		if(chan == 5)
 			return 0;
 	}

@@ -272,7 +272,7 @@ void ethrx_task(void) {
 
 	int ethrx_fd = mkopenchan("/services/ethrx");
 
-	spawn(0, ethrx_notifier, SPAWN_DAEMON);
+	xspawn(0, ethrx_notifier, SPAWN_DAEMON);
 
 	while(1) {
 		rcvlen = MsgReceive(ethrx_fd, &tid, &msgcode, NULL, 0);
@@ -647,7 +647,7 @@ void udpconrx_task(void) {
 
 	int udpconrx_fd = mkopenchan("/dev/netconin");
 
-	spawn(0, udpconrx_notifier, SPAWN_DAEMON);
+	xspawn(0, udpconrx_notifier, SPAWN_DAEMON);
 
 	char buf[FRAME_MAX];
 

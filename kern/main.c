@@ -23,7 +23,7 @@
 
 static void idle_task(void) {
 	for (;;)
-		sys_suspend();
+		suspend();
 }
 
 int main(void) {
