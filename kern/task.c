@@ -850,7 +850,6 @@ void print_regs(struct regs *regs) {
 	PRINT_REG(pc);
 	PRINT_REG(psr);
 	printk("\n");
-
 }
 
 void print_task(struct task *task) {
@@ -874,11 +873,17 @@ void dump_tasks(void) {
 
 void sysrq(char cmd) {
 	switch(cmd) {
-	case 'd':
+	case 'b':
+		panic("SysRq Reboot");
+		break;
+	case 't':
 		dump_tasks();
 		break;
+	case 'h':
 	default:
-		panic("Unrecognized SysRq character %c", cmd);
+		printk("b - hard reboot\n");
+		printk("h - this help message\n");
+		printk("t - print all task state\n");
 	}
 }
 
