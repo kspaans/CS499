@@ -106,5 +106,7 @@ static void lockserver_task(void) {
 }
 
 void lockserver_init(void) {
+	printf("lock init\n");
+
 	xspawn(0, lockserver_task, SPAWN_DAEMON);
 }
