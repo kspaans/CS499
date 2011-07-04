@@ -172,6 +172,32 @@ static int poll_test_cmd(int argc, char **argv) {
 	}
 }
 
+#include <servers/lock.h>
+static void lock_test_child(void) {
+	for(int i=0; i<10; ++i) {
+		lock_channel(3);
+		for(int j=0; j<10; ++j) {
+			printf("%d ", gettid()&0xfff);
+		}
+		printf("\n");
+		unlock_channel(3);
+	}
+	xsend(4, NULL, 0, -1, 0);
+}
+static int lock_test_cmd(int argc, char **argv) {
+	int chans[] = {0, 1, 2, channel(0), channel(0)};
+	int lock = lockchan_register(chans[3]);
+	ASSERTNOERR(lock);
+	ASSERTNOERR(sys_spawn(6, lock_test_child, chans, arraysize(chans), SPAWN_DAEMON));
+	ASSERTNOERR(sys_spawn(6, lock_test_child, chans, arraysize(chans), SPAWN_DAEMON));
+	ASSERTNOERR(sys_spawn(6, lock_test_child, chans, arraysize(chans), SPAWN_DAEMON));
+	xrecv(chans[4], NULL, 0, NULL, 0);
+	xrecv(chans[4], NULL, 0, NULL, 0);
+	xrecv(chans[4], NULL, 0, NULL, 0);
+	ASSERTNOERR(lockchan_unregister(lock));
+	return 0;
+}
+
 static int help_cmd(int argc, char **argv);
 
 #define CMD(name,desc) { #name, name##_cmd, desc }
@@ -190,6 +216,7 @@ static struct cmd_def {
 	{"netsrr_server", netsrr_server_cmd, "Start a server for benchmarking network SRR"},
 	{"netsrr_client", netsrr_client_cmd, "Connect to a server to benchmark network SRR"},
 	{"poll_test", poll_test_cmd, "Test polling functions"},
+	{"lock_test", lock_test_cmd, "Test locking functions"},
 };
 
 static int help_cmd(int argc, char **argv) {
