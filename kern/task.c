@@ -538,8 +538,6 @@ static void handle_receive(struct channel *chan) {
 	// TODO: nasty case, for now I want this to be loud
 	if (sendlen > recvlen)
 		panic("message is too long");
-	if (!sender->sendbuf || !receiver->recvbuf)
-		panic("missing buffers");
 
 	/* Copy the message */
 	iov_copy(sender->sendbuf, sender->sendlen, receiver->recvbuf, receiver->recvlen);
