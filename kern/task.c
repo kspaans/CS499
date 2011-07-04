@@ -872,6 +872,7 @@ void dump_tasks(void) {
 }
 
 void sysrq(char cmd) {
+	printk("\n");
 	switch(cmd) {
 	case 'b':
 		panic("SysRq Reboot");
