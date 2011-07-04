@@ -137,6 +137,41 @@ static int netsrr_client_cmd(int argc, char **argv) {
 	return 0;
 }
 
+static void poll_test_child(void) {
+	struct pollresult pres;
+	ASSERTNOERR(sys_poll_add(3, POLL_RECV));
+	ASSERTNOERR(sys_poll_add(4, POLL_RECV));
+	ASSERTNOERR(sys_poll_add(5, POLL_RECV));
+	while(1) {
+		printf("Polling...\n");
+		ASSERTNOERR(sys_poll_wait(&pres));
+		printf("Got %d %d: ", pres.chan, pres.event);
+		ASSERTNOERR(sys_recv(pres.chan, NULL, 0, NULL, 0));
+		printf("received!\n");
+		if(pres.chan == 5)
+			return;
+	}
+}
+static int poll_test_cmd(int argc, char **argv) {
+	int chans[] = {0, 1, 2, channel(0), channel(0), channel(0)};
+	ASSERTNOERR(sys_spawn(2, poll_test_child, chans, arraysize(chans), SPAWN_DAEMON));
+	while(1) {
+		printf("send on which channel (3,4,5)? ");
+		char c = getchar();
+		printf("%c\n", c);
+		if(c == 'q')
+			return 0;
+		int chan = c - '0';
+		if(chan < 3 || chan > 5) {
+			printf("invalid selection\n");
+			continue;
+		}
+		ASSERTNOERR(sys_send(chans[chan], NULL, 0, -1, 0));
+		if(chan == 5)
+			return 0;
+	}
+}
+
 static int help_cmd(int argc, char **argv);
 
 #define CMD(name,desc) { #name, name##_cmd, desc }
@@ -154,6 +189,7 @@ static struct cmd_def {
 	{"ipcbench", ipcbench_cmd, "Benchmark local SRR"},
 	{"netsrr_server", netsrr_server_cmd, "Start a server for benchmarking network SRR"},
 	{"netsrr_client", netsrr_client_cmd, "Connect to a server to benchmark network SRR"},
+	{"poll_test", poll_test_cmd, "Test polling functions"},
 };
 
 static int help_cmd(int argc, char **argv) {
