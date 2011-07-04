@@ -11,6 +11,7 @@ enum lockmsg {
 	LOCK_UNREGISTER_MSG,
 };
 
+/* Emulate a MsgSend, but substitute the lock channel for the reply channel */
 int lockchan_register(int chan) {
 	int fd = open(ROOT_DIRFD, "/services/lock");
 	if(fd < 0)
@@ -36,6 +37,9 @@ int lockchan_unregister(int chan) {
 	return sendpath("/services/lock", LOCK_UNREGISTER_MSG, &chan, sizeof(chan), NULL, 0);
 }
 
+/* locking == sending, unlocking == receiving.
+ * An "unlocking" task can directly unlock (receive) a "locking" task,
+ * without having to go through the lockserver first. This actually works. */
 int lock_channel(int chan) {
 	return send(chan, NULL, 0, -1, 0);
 }
@@ -52,6 +56,7 @@ static void lockserver_task(void) {
 	struct iovec iov[] = {
 		{ &msg, sizeof(msg) },
 	};
+
 	int ret;
 	struct iovec reply_iov[] = {
 		{ &ret, sizeof(ret) },
@@ -66,6 +71,7 @@ static void lockserver_task(void) {
 	while(1) {
 		ASSERTNOERR(poll_wait(&pres));
 		if(pres.chan == lock_fd) {
+			/* Emulate a MsgReceive and MsgReply */
 			int rcvchan = -1;
 			int rcvlen = recv(lock_fd, iov, arraysize(iov), &rcvchan, RECV_NONBLOCK);
 			if(rcvlen < 4) {
