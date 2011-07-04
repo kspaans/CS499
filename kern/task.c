@@ -289,7 +289,7 @@ int syscall_spawn(struct task *task, int priority, void (*code)(void), int *chan
 		for (int i = 0; i < chanlen; ++i) {
 			struct channel_desc *cd = &task->channels[chan[i]];
 			cd->channel->refcount++;
-			newtask->channels[i].task = task;
+			newtask->channels[i].task = newtask;
 			newtask->channels[i].channel = cd->channel;
 			newtask->channels[i].flags = cd->flags;
 			cdnodes_init(&newtask->channels[i]);
