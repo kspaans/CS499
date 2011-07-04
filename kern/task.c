@@ -897,7 +897,8 @@ void task_pabt(struct task *task) {
 }
 
 void task_und(struct task *task) {
-	printk("Task Killed - Undefined Instruction\n");
+	printk("Task Killed - Undefined Instruction ");
+	printk("0x%08x\n", *(uint32_t *)task->regs.pc);
 	print_task(task);
 	exit_task(task);
 }
