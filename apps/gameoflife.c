@@ -10,6 +10,7 @@
 #include <lib.h>
 #include <apps.h>
 #include <hashtable.h>
+#include "gameoflife.h"
 
 #define X_SIZE 10//0
 #define Y_SIZE 10//0
@@ -107,28 +108,23 @@ static void display_json(struct field *field, size_t x, size_t y)
 	size_t idx = 0;
 	uint8_t flag_firstloop = 1;
 
-	sprintf(buf, "[");
-	idx += 1;
-	sprintf(buf + idx, "[%8d, %8d]", X_SIZE, Y_SIZE);
-	idx += 19;
+	idx += sprintf(buf, "{");
+	idx += sprintf(buf + idx, "\"x\":%d,\"y\":%d,\"f\":[", X_SIZE, Y_SIZE);
 	for (size_t i = 0; i < x; i += 1) {
 		for (size_t j = 0; j < y; j += 1) {
 			if (field_get(field, i, j)) {
 				if (!flag_firstloop) {
-					sprintf(buf + idx, ",");
-					idx += 1;
+					idx += sprintf(buf + idx, ",");
 					if (idx >= MTU) goto error_send;
 				} else {
 					flag_firstloop = 0;
 				}
-				sprintf(buf + idx, "[%8d, %8d]", i, j);
-				idx += 19;
+				idx += sprintf(buf + idx, "[%d,%d]", i, j);
 				if (idx >= MTU) goto error_send;
 			}
 		}
 	}
-	sprintf(buf + idx, "]");
-	idx += 1;
+	idx += sprintf(buf + idx, "]}");
 	if (idx >= MTU) goto error_send;
 	send_udp(UDP_SRCPORT, GUMSTIX_CS, UDP_DSTPORT, buf, idx);
 	return;

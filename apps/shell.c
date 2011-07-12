@@ -202,6 +202,13 @@ static int lock_test_cmd(int argc, char **argv) {
 	return 0;
 }
 
+#include "gameoflife.h"
+static int gol_cmd(int argc, char **argv)
+{
+	gameoflife();
+	return 0;
+}
+
 static int help_cmd(int argc, char **argv);
 
 #define CMD(name,desc) { #name, name##_cmd, desc }
@@ -221,6 +228,7 @@ static struct cmd_def {
 	{"netsrr_client", netsrr_client_cmd, "Connect to a server to benchmark network SRR"},
 	{"poll_test", poll_test_cmd, "Test polling functions"},
 	{"lock_test", lock_test_cmd, "Test locking functions"},
+	{"gol", gol_cmd, "Game Of Life application"},
 };
 
 static int help_cmd(int argc, char **argv) {
