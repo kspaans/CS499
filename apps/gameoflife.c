@@ -12,14 +12,16 @@
 #include <hashtable.h>
 #include "gameoflife.h"
 
-#define X_SIZE 10//0
-#define Y_SIZE 10//0
-#define HASH_SIZE 101
+#define X_SIZE 100
+#define Y_SIZE 100
+#define HASH_SIZE 303
 #define MTU 1500
 
 #define UDP_SRCPORT 8889
 #define UDP_DSTPORT UDP_SRCPORT
 #define GUMSTIX_CS IP(10, 0, 0, 1)
+
+int livecnt = 0;
 
 /*
  * Simple hash for the Game Of Life that puts all the weight on the low 16 bits
@@ -75,6 +77,7 @@ static void field_add(struct field *field, size_t x, size_t y) {
 	field->ht_arr[i].intkey = key;
 	field->ht_arr[i].intvalue = 1;
 	activate_ht_item(&field->ht_arr[i]);
+	++livecnt;
 }
 
 static void field_del(struct field *field, size_t x, size_t y) {
@@ -84,6 +87,7 @@ static void field_del(struct field *field, size_t x, size_t y) {
 		return;
 	}
 	delete_ht_item(&field->ht_arr[i]);
+	--livecnt;
 }
 
 /*
@@ -190,35 +194,36 @@ void gameoflife(void)
 	struct field field;
 
 	field_init(&field);
+	/*
 	// start it with a glider
 	field_add(&field, 0, 1);
 	field_add(&field, 1, 2);
 	field_add(&field, 2, 0);
 	field_add(&field, 2, 1);
 	field_add(&field, 2, 2);
-	/*
-	// the 5x5 infinite pattern
-	field[47][47] = 1;
-	field[47][48] = 1;
-	field[47][49] = 1;
-	field[47][51] = 1;
-	field[48][47] = 1;
-	field[49][50] = 1;
-	field[49][51] = 1;
-	field[50][48] = 1;
-	field[50][49] = 1;
-	field[50][51] = 1;
-	field[51][47] = 1;
-	field[51][49] = 1;
-	field[51][51] = 1;
 	*/
+	// the 5x5 infinite pattern
+	field_add(&field, 47, 47); //field[47][47] = 1;
+	field_add(&field, 47, 48); //field[47][48] = 1;
+	field_add(&field, 47, 49); //field[47][49] = 1;
+	field_add(&field, 47, 51); //field[47][51] = 1;
+	field_add(&field, 48, 47); //field[48][47] = 1;
+	field_add(&field, 49, 50); //field[49][50] = 1;
+	field_add(&field, 49, 51); //field[49][51] = 1;
+	field_add(&field, 50, 48); //field[50][48] = 1;
+	field_add(&field, 50, 49); //field[50][49] = 1;
+	field_add(&field, 50, 51); //field[50][51] = 1;
+	field_add(&field, 51, 47); //field[51][47] = 1;
+	field_add(&field, 51, 49); //field[51][49] = 1;
+	field_add(&field, 51, 51); //field[51][51] = 1;
 
 	printf("Cyleway's Game of Life\n");
+	display(&field, X_SIZE, Y_SIZE);
 
 	for (int i = 0; i < 50; i += 1) {
-		printf("Generation %d\n", i);
+		printf("Generation %d, %d cells alive\n", i, livecnt);
 		display_json(&field, X_SIZE, Y_SIZE);
-		display(&field, X_SIZE, Y_SIZE);
+		//display(&field, X_SIZE, Y_SIZE);
 		age(&field, X_SIZE, Y_SIZE);
 	}
 }

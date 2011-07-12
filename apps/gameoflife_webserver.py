@@ -14,6 +14,7 @@ class Field():
             self.field = "Hi there!\n"
 
 gamefield = Field()
+gennum    = 0
 
 class MyHandler(BaseHTTPRequestHandler):
 
@@ -64,12 +65,15 @@ class MyHandler(BaseHTTPRequestHandler):
 
 def sock2con(sock, addrs):
     global gamefield
+    global gennum
     while 1:
         data, addrs[0] = sock.recvfrom(1500)
         #print 'Got json literal:', data
         cells = loads(data)
         print 'JSON decoded:', cells
         html = []
+        html.append('Generation %d</br>' % gennum)
+        gennum += 1
         html.append('<table>')
         for x in xrange(0, cells['x']):
             html.append('<tr height="1px" width="1px">')
